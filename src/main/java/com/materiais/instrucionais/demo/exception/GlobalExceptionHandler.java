@@ -13,29 +13,29 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EmailJaCadastradoException.class)
-    public ProblemDetail handleEmailJaCadastrado(EmailJaCadastradoException ex) {
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ProblemDetail handleEmailAlreadyRegistered(EmailAlreadyRegisteredException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
-        problem.setTitle("E-mail já cadastrado");
+        problem.setTitle("Email already registered");
         return problem;
     }
 
-    @ExceptionHandler(DominioInstitucionalNaoPermitidoException.class)
-    public ProblemDetail handleDominioInstitucional(DominioInstitucionalNaoPermitidoException ex) {
+    @ExceptionHandler(InstitutionalDomainNotAllowedException.class)
+    public ProblemDetail handleInstitutionalDomain(InstitutionalDomainNotAllowedException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
-        problem.setTitle("Domínio institucional não permitido neste fluxo");
+        problem.setTitle("Institutional domain not allowed in this flow");
         return problem;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidacao(MethodArgumentNotValidException ex) {
-        Map<String, String> erros = ex.getBindingResult().getFieldErrors().stream()
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage, (a, b) -> a));
 
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problem.setTitle("Dados inválidos");
-        problem.setDetail("Um ou mais campos não passaram na validação");
-        problem.setProperty("erros", erros);
+        problem.setTitle("Invalid request");
+        problem.setDetail("One or more fields failed validation");
+        problem.setProperty("errors", errors);
         return problem;
     }
 }

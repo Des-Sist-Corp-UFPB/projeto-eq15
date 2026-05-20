@@ -1,7 +1,7 @@
 package com.materiais.instrucionais.demo.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.materiais.instrucionais.demo.dto.CadastroUsuarioRequest;
+import com.materiais.instrucionais.demo.dto.RegisterUserRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
-class UsuarioControllerTest {
+class UserControllerTest {
 
     @Container
     @ServiceConnection
@@ -34,76 +34,76 @@ class UsuarioControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void cadastrar_comDadosValidos_deveRetornar201ComUsuarioCriado() throws Exception {
-        var request = new CadastroUsuarioRequest("João Silva", "joao@gmail.com", "senha@123");
+    void register_withValidData_shouldReturn201WithCreatedUser() throws Exception {
+        var request = new RegisterUserRequest("John Doe", "john@gmail.com", "password@123");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.nome").value("João Silva"))
-                .andExpect(jsonPath("$.email").value("joao@gmail.com"))
-                .andExpect(jsonPath("$.perfil").value("COMUM"))
-                .andExpect(jsonPath("$.status").value("ATIVO"))
-                .andExpect(jsonPath("$.senha").doesNotExist());
+                .andExpect(jsonPath("$.name").value("John Doe"))
+                .andExpect(jsonPath("$.email").value("john@gmail.com"))
+                .andExpect(jsonPath("$.role").value("COMMON"))
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.password").doesNotExist());
     }
 
     @Test
-    void cadastrar_comEmailDuplicado_deveRetornar409() throws Exception {
-        var request = new CadastroUsuarioRequest("Maria Souza", "duplicado@gmail.com", "senha@123");
+    void register_withDuplicateEmail_shouldReturn409() throws Exception {
+        var request = new RegisterUserRequest("Jane Doe", "duplicate@gmail.com", "password@123");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
     }
 
     @Test
-    void cadastrar_comDominioInstitucional_deveRetornar422() throws Exception {
-        var request = new CadastroUsuarioRequest("Pedro", "pedro@dcx.ufpb.br", "senha@123");
+    void register_withInstitutionalDomain_shouldReturn422() throws Exception {
+        var request = new RegisterUserRequest("Peter", "peter@dcx.ufpb.br", "password@123");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
-    void cadastrar_comEmailInvalido_deveRetornar400() throws Exception {
-        var request = new CadastroUsuarioRequest("Ana", "email-invalido", "senha@123");
+    void register_withInvalidEmail_shouldReturn400WithFieldError() throws Exception {
+        var request = new RegisterUserRequest("Anna", "not-an-email", "password@123");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erros.email").exists());
+                .andExpect(jsonPath("$.errors.email").exists());
     }
 
     @Test
-    void cadastrar_semNome_deveRetornar400() throws Exception {
-        var request = new CadastroUsuarioRequest("", "ana@gmail.com", "senha@123");
+    void register_withBlankName_shouldReturn400WithFieldError() throws Exception {
+        var request = new RegisterUserRequest("", "anna@gmail.com", "password@123");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erros.nome").exists());
+                .andExpect(jsonPath("$.errors.name").exists());
     }
 
     @Test
-    void cadastrar_comSenhaCurta_deveRetornar400() throws Exception {
-        var request = new CadastroUsuarioRequest("Lucas", "lucas@gmail.com", "abc");
+    void register_withShortPassword_shouldReturn400WithFieldError() throws Exception {
+        var request = new RegisterUserRequest("Lucas", "lucas@gmail.com", "abc");
 
-        mockMvc.perform(post("/usuarios")
+        mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.erros.senha").exists());
+                .andExpect(jsonPath("$.errors.password").exists());
     }
 }

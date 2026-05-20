@@ -1,5 +1,5 @@
 package com.materiais.instrucionais.demo.domain;
 
-public enum StatusUsuario {
-    ATIVO, SUSPENSO
+public enum UserStatus {
+    ACTIVE, SUSPENDED
 }

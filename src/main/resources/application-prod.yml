@@ -12,6 +12,12 @@ spring:
   flyway:
     enabled: true
 
+app:
+  security:
+    jwt:
+      secret: ${APP_SECURITY_JWT_SECRET}
+      expiration-minutes: ${APP_SECURITY_JWT_EXPIRATION_MINUTES:60}
+
 logging:
   level:
     root: WARN

@@ -19,6 +19,13 @@ spring:
     # Localização dos scripts de migração SQL
     locations: classpath:db/migration
 
+app:
+  security:
+    jwt:
+      # Base64-encoded 256-bit secret — override via APP_SECURITY_JWT_SECRET env var in dev
+      secret: ${APP_SECURITY_JWT_SECRET:ZGV2LXNlY3JldC1rZXktZm9yLWRldi1vbmx5LW5vdC1mb3ItcHJvZHVjdGlvbiE=}
+      expiration-minutes: ${APP_SECURITY_JWT_EXPIRATION_MINUTES:60}
+
 logging:
   level:
     com.materiais.instrucionais: DEBUG

@@ -14,6 +14,13 @@ spring:
     # O Flyway executa as migrações no container PostgreSQL antes dos testes.
     locations: classpath:db/migration
 
+app:
+  security:
+    jwt:
+      # 44-char Base64 = 32 decoded bytes = valid 256-bit HS256 key — test only
+      secret: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      expiration-minutes: 60
+
 logging:
   level:
     com.materiais.instrucionais: DEBUG

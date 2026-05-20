@@ -3,7 +3,7 @@
 ## Visão Geral
 
 ```
-Browser
+Front-end
   │
   ▼
 Controller (Spring MVC)
@@ -17,27 +17,6 @@ Repository (Spring Data JPA)
   ▼
 PostgreSQL
 ```
-
-## Padrão HTMX: Server-Side Rendering Reativo
-
-Em vez de uma SPA (React/Vue), usamos **HTMX**: o servidor retorna fragmentos HTML que o HTMX injeta na página sem reload completo.
-
-```
-Browser                         Servidor
-  │                               │
-  │  GET /produtos/novo           │
-  │──────────────────────────────►│
-  │                               │  Retorna apenas o fragmento HTML do form
-  │◄──────────────────────────────│  (não a página inteira)
-  │                               │
-  │  HTMX injeta o fragment       │
-  │  no elemento alvo (#modal)    │
-```
-
-**Vantagens para este projeto**:
-- Sem JavaScript customizado
-- Templates no servidor (Thymeleaf) com acesso direto ao contexto Spring
-- Fácil de entender e depurar
 
 ## Flyway: Gerenciamento de Schema
 
@@ -54,13 +33,12 @@ V2__adicionar_campo_xxx.sql   ← aplicado quando adicionado (NÃO editar V1!)
 - Recebe requisição HTTP
 - Valida DTO com `@Valid`
 - Chama Service
-- Retorna template Thymeleaf (página completa ou fragment)
 - NÃO contém lógica de negócio
 
 ### Service
 - Anotado com `@Service` e `@Transactional`
 - Contém toda a lógica de negócio
-- Lança exceções de domínio (`ProdutoNaoEncontradoException`)
+- Lança exceções de domínio
 - Usa Repository para persistência
 
 ### Repository

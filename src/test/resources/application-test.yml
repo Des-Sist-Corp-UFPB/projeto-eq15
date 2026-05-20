@@ -16,4 +16,4 @@ spring:
 
 logging:
   level:
-    br.ufpb.dsc.mercado: DEBUG
+    com.materiais.instrucionais: DEBUG

@@ -78,7 +78,5 @@ mvn versions:display-dependency-updates -Pversions
 ## Configuração de Segurança do Spring
 
 Ver `SecurityConfig.java`:
-- CSRF habilitado (desabilitado apenas para endpoints HTMX)
-- Usuário em memória para desenvolvimento (trocar em produção)
 - BCrypt como algoritmo de hash de senhas
 - Toda URL protegida exceto `/login` e recursos estáticos

@@ -34,13 +34,6 @@ chore: atualizar dependências do pom.xml
 | Constante | UPPER_SNAKE | `MAX_NOME_LENGTH` |
 | Variável | camelCase | `produtoForm` |
 
-## Padrão de Fragment HTMX
-
-Templates em `templates/{entidade}/fragments/`:
-- `tabela.html` — fragment do `<tbody>` ou lista completa
-- `linha.html` — fragment de uma linha/item
-- `form.html` — fragment do formulário (modal)
-
 ## Validação
 
 - DTOs usam Bean Validation (`@NotBlank`, `@Size`, etc.)
@@ -49,7 +42,5 @@ Templates em `templates/{entidade}/fragments/`:
 
 ## Segurança — Boas Práticas
 
-- Usar `th:text` (escaping automático) ao invés de `th:utext`
 - Nunca concatenar strings em queries JPA (use parâmetros nomeados)
 - Variáveis sensíveis em `.env` (nunca hardcoded)
-- CSRF: habilitado por padrão, desabilitado apenas para endpoints HTMX específicos

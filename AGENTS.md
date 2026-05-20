@@ -1,18 +1,18 @@
-# AI Agents Context — Mercado DSC/UFPB
+# AI Agents Context
 
 > Este arquivo fornece contexto para ferramentas de IA (Cursor, GitHub Copilot, etc.)
 > Para Claude Code, veja CLAUDE.md (mais completo).
 
 ## Projeto
-Boilerplate Spring Boot para disciplina universitária. Java 21, Spring Boot 3.4.5, PostgreSQL, Thymeleaf+HTMX+Bootstrap.
+Back-end REST API Spring Boot para disciplina universitária. Java 21, Spring Boot 3.4.5, PostgreSQL. Front-end React desacoplado.
 
 ## Pacote base
-`br.ufpb.dsc.mercado`
+`com.materiais.instrucionais`
 
 ## Padrões importantes
 - DTOs são Records Java imutáveis
 - Service layer com `@Transactional`
-- Controllers retornam fragments Thymeleaf para HTMX
+- Controllers são `@RestController` (retornam JSON para front-end React)
 - Migrations de banco via Flyway em `src/main/resources/db/migration/`
 - Variáveis de ambiente para configuração de produção (`.env`)
 - NUNCA commitar `.env` ou senhas

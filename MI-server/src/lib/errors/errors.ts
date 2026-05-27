@@ -41,6 +41,8 @@ export const ERRORS = {
   // ── Auth ──────────────────────────────────────────────────────────────────
   UNAUTHORIZED:         makeError('UNAUTHORIZED', 401),
   FORBIDDEN:            makeError('FORBIDDEN', 403),
+  ACCOUNT_SUSPENDED:    makeError('ACCOUNT_SUSPENDED', 403),
+  EMAIL_NOT_VERIFIED:   makeError('EMAIL_NOT_VERIFIED', 403),
 
   // ── Genéricos ─────────────────────────────────────────────────────────────
   BAD_REQUEST:          makeError('BAD_REQUEST', 400),

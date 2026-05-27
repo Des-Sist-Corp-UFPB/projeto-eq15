@@ -10,6 +10,14 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
       BCRYPT_SALT_ROUNDS: '4',
+      // Vars exigidas pelo env.ts — valores fictícios seguros para testes unitários
+      // (nenhum teste unitário faz chamadas reais a banco ou JWT)
+      DATABASE_URL: 'postgresql://unit-test:unit-test@localhost:5432/unit_test',
+      JWT_SECRET: 'unit-test-secret-key-at-least-32-chars',
+      JWT_ACCESS_EXPIRES_IN: '15m',
+      JWT_REFRESH_EXPIRES_IN: '7d',
+      ADMIN_EMAIL: 'admin@unit-test.com',
+      ADMIN_PASSWORD: 'unit-test-admin-password',
     },
     coverage: {
       provider: 'v8',

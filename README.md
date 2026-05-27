@@ -12,7 +12,9 @@
 4. [Perfis e Permissões](#4-perfis-e-permissões)
 5. [Inteligência Pedagógica e IA](#5-inteligência-pedagógica-e-ia)
 6. [Gestão e Auditoria](#6-gestão-e-auditoria)
-7. [Como Executar](#7-como-executar)
+7. [Como Executar — Desenvolvimento](#7-como-executar--desenvolvimento)
+8. [Como Executar — Produção](#8-como-executar--produção)
+9. [CI/CD](#9-cicd)
 
 ---
 
@@ -29,24 +31,34 @@ Esta plataforma centraliza, gerencia e dissemina **Materiais Instrucionais (MIs)
 
 ## 2. Stack Tecnológica
 
-| Camada              | Tecnologia                  |
-| :------------------ | :-------------------------- |
-| **Frontend**        | React                       |
-| **Backend / API**   | Spring Boot (Java)          |
-| **Armazenamento**   | MinIO (dev) / AWS S3 (prod) |
-| **Busca Semântica** | Qdrant (Vector Database)    |
-| **Filas / Jobs**    | Redis                       |
-| **Conteinerização** | Docker / Docker Compose     |
+| Camada              | Tecnologia                           |
+| :------------------ | :----------------------------------- |
+| **Frontend**        | React 19 + Vite + TypeScript         |
+| **Backend / API**   | Node.js + Fastify + TypeScript       |
+| **ORM**             | Prisma                               |
+| **Banco de dados**  | PostgreSQL 16                        |
+| **Filas / Jobs**    | BullMQ + Redis 7                     |
+| **Busca Semântica** | Qdrant (Vector Database) — planejado |
+| **Armazenamento**   | MinIO (dev) / AWS S3 (prod) — planejado |
+| **Conteinerização** | Docker + Docker Compose              |
+| **CI/CD**           | GitHub Actions + GHCR                |
+| **Proxy (frontend)**| Nginx                                |
 
 ---
 
 ## 3. Arquitetura e Infraestrutura
 
-O projeto adota uma arquitetura moderna e escalável, projetada para alta disponibilidade:
+```
+Internet
+  └── Nginx (porta 80)   ← Serve o React SPA
+  └── API Fastify (porta 3333)
+        ├── PostgreSQL (externo, porta 8115 em produção)
+        └── Redis (interno via Docker)
+```
 
-- **Armazenamento Híbrido:** Persistência de arquivos em **MinIO** no ambiente de desenvolvimento, com transição transparente para **AWS S3** em produção — sem alterações no código da aplicação.
-- **Motor de Busca Semântica:** **Qdrant** realiza indexação vetorial dos documentos, habilitando buscas por significado e contexto, além de leitura profunda de PDFs.
-- **Processamento Assíncrono:** Tarefas pesadas (tradução, vetorização, OCR) são delegadas a **Background Jobs** gerenciados com **Redis**, mantendo a API Spring Boot estável e responsiva.
+- **Processamento Assíncrono:** Tarefas pesadas (tradução, vetorização, OCR) são delegadas a **Background Jobs** gerenciados com **BullMQ + Redis**, mantendo a API responsiva.
+- **Busca Semântica (planejado):** **Qdrant** realizará indexação vetorial dos documentos, habilitando buscas por significado e contexto.
+- **Armazenamento de arquivos (planejado):** **MinIO** no desenvolvimento com transição transparente para **AWS S3** em produção.
 
 ---
 
@@ -63,51 +75,139 @@ O projeto adota uma arquitetura moderna e escalável, projetada para alta dispon
 
 ## 5. Inteligência Pedagógica e IA
 
-A plataforma integra capacidades de IA para suporte pedagógico e operacional:
-
-- **Análise BNCC Computação:** Identificação automática das habilidades da BNCC de Computação contempladas pelo material, a partir da leitura do PDF.
-- **Tradução Multilíngue:** Geração automatizada de resumos dos MIs em **Inglês** e **Espanhol**, preservando a integridade do conteúdo técnico.
-- **Observabilidade de IA:** Rastreio detalhado de consumo de tokens por usuário e por operação, para controle rigoroso de custos.
-- **Modularidade:** Painel administrativo para habilitar ou desabilitar funcionalidades de IA globalmente, sem necessidade de redeploy.
+- **Análise BNCC Computação:** Identificação automática das habilidades da BNCC de Computação contempladas pelo material.
+- **Tradução Multilíngue:** Geração automatizada de resumos em **Inglês** e **Espanhol**, preservando a integridade técnica.
+- **Observabilidade de IA:** Rastreio detalhado de consumo de tokens por usuário e por operação.
+- **Modularidade:** Painel administrativo para habilitar ou desabilitar funcionalidades de IA sem redeploy.
 
 ---
 
 ## 6. Gestão e Auditoria
 
-Foco na integridade e transparência dos processos acadêmicos:
-
-- **Fluxo de Aprovação Docente:** Revisão obrigatória por professores para garantir a qualidade de todo material submetido por perfis institucionalizados.
-- **Auditabilidade Total:** Registro de logs completos — quem enviou, quem aprovou, quando e o que foi alterado — assegurando a rastreabilidade acadêmica.
-- **Métricas de Engajamento:** Dashboard administrativo com estatísticas de consumo, termos de busca mais frequentes e ranking dos MIs mais acessados.
+- **Fluxo de Aprovação Docente:** Revisão obrigatória por professores para todo material submetido por perfis institucionalizados.
+- **Auditabilidade Total:** Logs completos — quem enviou, quem aprovou, quando e o que foi alterado.
+- **Métricas de Engajamento:** Dashboard com estatísticas de consumo, termos mais buscados e ranking de MIs mais acessados.
 
 ---
 
-## 7. Como Executar
+## 7. Como Executar — Desenvolvimento
 
-> Pré-requisitos: **Docker** e **Docker Compose** instalados.
+### Pré-requisitos
+
+- Node.js 20+
+- Docker e Docker Compose
+
+### Backend (MI-server)
 
 ```bash
-# a definir
+cd MI-server
+
+# Instalar dependências
+npm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Edite o .env com seus valores
+
+# Subir PostgreSQL e Redis via Docker
+docker compose up db redis -d
+
+# Executar migrations e seed
+npm run db:migrate
+npm run db:seed
+
+# Iniciar servidor em modo desenvolvimento
+npm run dev
 ```
 
-A documentação detalhada de variáveis de ambiente e configuração de cada serviço será disponibilizada conforme o desenvolvimento avança.
+A API estará disponível em `http://localhost:3333`.
+
+### Frontend (front)
+
+```bash
+cd front
+
+# Instalar dependências
+npm install
+
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Edite VITE_API_URL com o endereço da API
+
+# Iniciar servidor de desenvolvimento
+npm run dev
+```
+
+O frontend estará disponível em `http://localhost:5173`.
 
 ---
 
-1. Visão Geral
-   Sistema de gestão e disseminação de Materiais Instrucionais (MIs) produzidos pelo Campus IV da UFPB, para todos os professores, focado na curadoria acadêmica e no enriquecimento de conteúdos via Inteligência Artificial.
-2. Arquitetura e Infraestrutura
-   Armazenamento Híbrido: Persistência de arquivos em MinIO (Desenvolvimento) com transição transparente para AWS S3 (Produção).
-   Motor de Busca Semântica: Utilização do Qdrant para indexação vetorial, permitindo buscas por significado e contexto, além de leitura profunda de documentos.
-   Orquestração e Deploy: Ambiente totalmente conteinerizado com Docker e roteamento/proxy reverso via Nginx.
-   Processamento Assíncrono: Gerenciamento de tarefas pesadas (tradução, vetorização, OCR) via Background Jobs (BullMQ/Redis) para garantir a estabilidade da API Fastify.
-3. Matriz de Acessos e Perfis
+## 8. Como Executar — Produção
 
-4. Inteligência Pedagógica e IA
-   Motor de Tradução Multilíngue: Tradução de resumos de MIs para Inglês e Espanhol, mantendo a integridade do conteúdo técnico.
-   Observabilidade de IA: Rastreio detalhado de consumo de tokens por usuário e por operação para controle de custos.
-   Modularidade: Capacidade de habilitar ou desabilitar funções globalmente via painel administrativo.
-5. Gestão e Auditoria
-   Fluxo de Aprovação Docente: Garantia de qualidade através da revisão obrigatória de professores para submissões institucionais.
-   Auditabilidade Total: Registro de logs (quem subiu, quem aprovou, quando foi alterado) para assegurar a integridade acadêmica.
-   Métricas de Engajamento: Dashboard administrativo com estatísticas de consumo, buscas mais frequentes e MIs mais acessados.
+O deploy é realizado automaticamente via GitHub Actions (ver seção CI/CD), mas também pode ser executado manualmente.
+
+### Pré-requisitos no servidor
+
+- Docker e Docker Compose instalados
+- PostgreSQL rodando na porta `8115` com banco `eq15`
+
+### Arquivo de ambiente
+
+Crie `/opt/eq15/.env` no servidor com as seguintes variáveis:
+
+```env
+DATABASE_URL=postgresql://usuario:senha@host.docker.internal:8115/eq15
+JWT_SECRET=segredo_forte_aqui
+JWT_ACCESS_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+BCRYPT_SALT_ROUNDS=12
+ADMIN_EMAIL=admin@dcx.ufpb.br
+ADMIN_PASSWORD=senha_segura_aqui
+LOGIN_MAX_ATTEMPTS=5
+LOGIN_BLOCK_DURATION_SECONDS=900
+API_IMAGE=ghcr.io/SEU_ORG/projeto-eq15-api:latest
+WEB_IMAGE=ghcr.io/SEU_ORG/projeto-eq15-web:latest
+```
+
+### Subir os serviços
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
+```
+
+---
+
+## 9. CI/CD
+
+O pipeline é configurado em `.github/workflows/deploy.yml` e dispara automaticamente a cada push na branch `main`.
+
+### Etapas
+
+```
+push → main
+  ├── Job build
+  │     ├── Build imagem da API  → push para GHCR
+  │     └── Build imagem do Web  → push para GHCR
+  └── Job deploy
+        ├── Copia docker-compose.prod.yml para o servidor via SCP
+        ├── SSH: cria .env, pull das imagens, docker compose up -d
+        └── SSH: npx prisma migrate deploy
+```
+
+### Secrets necessários no GitHub
+
+Cadastre em **Settings → Secrets and variables → Actions**:
+
+| Secret            | Descrição                                                                 |
+| :---------------- | :------------------------------------------------------------------------ |
+| `SSH_DEPLOY_KEY`  | Chave SSH privada para acesso ao servidor                                 |
+| `DEPLOY_HOST`     | IP ou hostname do servidor                                                |
+| `DEPLOY_USER`     | Usuário SSH (ex: `ubuntu`)                                                |
+| `DB_URL`          | URL completa do PostgreSQL: `postgresql://user:senha@host.docker.internal:8115/eq15` |
+| `DB_USERNAME`     | Usuário do banco de dados                                                 |
+| `DB_PASSWORD`     | Senha do banco de dados                                                   |
+| `JWT_SECRET`      | Segredo forte para geração de tokens JWT                                  |
+| `ADMIN_EMAIL`     | E-mail do usuário administrador inicial                                   |
+| `ADMIN_PASSWORD`  | Senha do usuário administrador inicial                                    |
+| `VITE_API_URL`    | URL da API acessível pelo browser (ex: `http://IP_DO_SERVIDOR:3333`)     |

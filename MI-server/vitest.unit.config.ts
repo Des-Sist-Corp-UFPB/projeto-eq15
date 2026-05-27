@@ -1,4 +1,5 @@
 // vitest.unit.config.ts — apenas testes unitários (sem DB, sem globalSetup)
+// Variáveis de ambiente carregadas automaticamente de .env.test (ver .env.test.example)
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -7,18 +8,7 @@ export default defineConfig({
     environment: 'node',
     include: ['__tests__/unit/**/*.test.ts'],
     // Sem globalSetup — testes unitários não precisam de banco de dados
-    env: {
-      NODE_ENV: 'test',
-      BCRYPT_SALT_ROUNDS: '4',
-      // Vars exigidas pelo env.ts — valores fictícios seguros para testes unitários
-      // (nenhum teste unitário faz chamadas reais a banco ou JWT)
-      DATABASE_URL: 'postgresql://unit-test:unit-test@localhost:5432/unit_test',
-      JWT_SECRET: 'unit-test-secret-key-at-least-32-chars',
-      JWT_ACCESS_EXPIRES_IN: '15m',
-      JWT_REFRESH_EXPIRES_IN: '7d',
-      ADMIN_EMAIL: 'admin@unit-test.com',
-      ADMIN_PASSWORD: 'unit-test-admin-password',
-    },
+    // Sem env hardcoded — valores carregados de .env.test
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -13,6 +13,19 @@ enum Role {
   ADMIN
 }
 
+enum InspectionLogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+enum InspectionLogDirection {
+  IN
+  OUT
+  ERROR
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String
@@ -49,4 +62,17 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   actor User? @relation("AuditActor", fields: [actorId], references: [id])
+}
+
+// Rastreio de ciclo de vida de requisições HTTP (observabilidade)
+model InspectionLog {
+  id        String                 @id @default(uuid())
+  requestId String                 // correlaciona todos os logs de uma mesma requisição
+  level     InspectionLogLevel     @default(INFO)
+  context   String                 // ex: "createUserController"
+  direction InspectionLogDirection // IN | OUT | ERROR
+  payload   Json?                  // dados de entrada, saída ou detalhes do erro
+  createdAt DateTime               @default(now())
+
+  @@index([requestId])
 }

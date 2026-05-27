@@ -2,35 +2,61 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { type CreateUserInput } from '../../schemas/users/usersSchema'
 import { createUserService } from '../../services/users/usersService'
+import { createInspectionLog } from '../../repositories/inspectionLog/inspectionLogRepository'
+import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
+import { logger } from '../../lib/logger'
 
 export async function createUserController(
   request: FastifyRequest<{ Body: CreateUserInput }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const log = request.log
+  const requestId = request.id
 
-  // ── Início da requisição ──────────────────────────────────────────────────────
-  log.info(
-    { method: request.method, url: request.url, body: { name: request.body.name, email: request.body.email } },
-    'createUserController — requisição recebida',
-  )
+  // ── IN ────────────────────────────────────────────────────────────────────────
+  logger.info('IN - createUserController')
+
+  // Registra os dados que chegaram na requisição (sem senha)
+  await createInspectionLog({
+    requestId,
+    level: 'INFO',
+    context: 'createUserController',
+    direction: 'IN',
+    payload: {
+      method: request.method,
+      url: request.url,
+      body: { name: request.body.name, email: request.body.email },
+    },
+  }).catch((err) => logger.error({ err }, 'inspectionLog IN: write failed'))
 
   try {
-    const user = await createUserService(request.body, log)
+    const user = await createUserService(request.body)
 
-    // ── Fim da requisição com sucesso ─────────────────────────────────────────
-    log.info(
-      { statusCode: 201, userId: user.id, role: user.role },
-      'createUserController — resposta enviada',
-    )
+    // ── OUT ───────────────────────────────────────────────────────────────────
+    logger.info('OUT - createUserController')
+
+    await createInspectionLog({
+      requestId,
+      level: 'INFO',
+      context: 'createUserController',
+      direction: 'OUT',
+      payload: { statusCode: 201, userId: user.id, role: user.role },
+    }).catch((err) => logger.error({ err }, 'inspectionLog OUT: write failed'))
 
     reply.status(201).send(user)
   } catch (error) {
-    // ── Erro durante a requisição — loga e repassa ao errorHandler global ─────
-    log.error(
-      { method: request.method, url: request.url, error },
-      'createUserController — erro durante a requisição',
-    )
+    // ── ERROR — captura, registra e repassa ao errorHandler global ────────────
+    logger.error({ error }, 'ERROR - createUserController')
+
+    await createInspectionLog({
+      requestId,
+      level: 'ERROR',
+      context: 'createUserController',
+      direction: 'ERROR',
+      payload: {
+        error: error instanceof Error ? error.message : String(error),
+        code: error instanceof GeneralErrorResponse ? error.code : 'INTERNAL_ERROR',
+      },
+    }).catch((err) => logger.error({ err }, 'inspectionLog ERROR: write failed'))
 
     throw error
   }

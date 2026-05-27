@@ -1,6 +1,5 @@
 ﻿// src/services/users/usersService.ts
 import { type Role } from '@prisma/client'
-import { type AppLogger } from '../../@types/common'
 import { type CreatedUserDTO } from '../../@types/users'
 import { type CreateUserInput } from '../../schemas/users/usersSchema'
 import {
@@ -10,17 +9,16 @@ import {
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { hashPassword } from '../../utils/hash'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
+import { logger } from '../../lib/logger'
 
 const INSTITUTIONAL_DOMAIN = '@dcx.ufpb.br'
 
 export async function createUserService(
   input: CreateUserInput,
-  log: AppLogger,
 ): Promise<CreatedUserDTO> {
   const { name, email, password } = input
 
-  // Nunca loga a senha — apenas dados não-sensíveis
-  log.info({ name, email }, 'createUserService — iniciado')
+  logger.info('IN - createUserService')
 
   // RF01/RF02 — e-mail único
   const existing = await findUserByEmail(email)
@@ -56,10 +54,7 @@ export async function createUserService(
   // Nunca retorna o hash da senha
   const { passwordHash: _removed, ...safeUser } = user
 
-  log.info(
-    { userId: safeUser.id, role: safeUser.role, emailVerified: safeUser.emailVerified },
-    'createUserService — concluído',
-  )
+  logger.info('OUT - createUserService')
 
   return safeUser
 }

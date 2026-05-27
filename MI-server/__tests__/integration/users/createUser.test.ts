@@ -4,14 +4,16 @@ import { getTestApp, closeTestApp } from '../../helpers/request'
 import { prisma } from '../../../src/database/prisma'
 
 // ── Limpeza entre testes ───────────────────────────────────────────────────────
-// AuditLog tem FK para User sem cascade → deletar na ordem correta
+// Ordem importa: InspectionLog e AuditLog têm FK para User (sem cascade) → deletar primeiro
 beforeEach(async () => {
+  await prisma.inspectionLog.deleteMany()
   await prisma.auditLog.deleteMany()
   await prisma.refreshToken.deleteMany()
   await prisma.user.deleteMany()
 })
 
 afterAll(async () => {
+  await prisma.inspectionLog.deleteMany()
   await prisma.auditLog.deleteMany()
   await prisma.refreshToken.deleteMany()
   await prisma.user.deleteMany()

@@ -1,8 +1,7 @@
 // __tests__/unit/users/usersService.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AppLogger } from '../../../src/@types/common'
 
-// ── Mocks — declarados antes dos imports do módulo testado ─────────────────────
+// ── Mocks ──────────────────────────────────────────────────────────────────────
 vi.mock('../../../src/repositories/users/usersRepository', () => ({
   findUserByEmail: vi.fn(),
   createUser: vi.fn(),
@@ -16,6 +15,16 @@ vi.mock('../../../src/utils/hash', () => ({
   hashPassword: vi.fn(),
 }))
 
+// Logger pino mockado — evita output durante os testes
+vi.mock('../../../src/lib/logger', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}))
+
 import { createUserService } from '../../../src/services/users/usersService'
 import {
   findUserByEmail,
@@ -23,17 +32,10 @@ import {
 } from '../../../src/repositories/users/usersRepository'
 import { createAuditLog } from '../../../src/repositories/audit/auditRepository'
 import { hashPassword } from '../../../src/utils/hash'
+import { logger } from '../../../src/lib/logger'
 import { GeneralErrorResponse } from '../../../src/errors/GeneralErrorResponse'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function makeMockLogger(): AppLogger {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }
-}
 
 function makeMockUser(overrides: Record<string, unknown> = {}) {
   return {
@@ -47,8 +49,6 @@ function makeMockUser(overrides: Record<string, unknown> = {}) {
     suspended: false,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
-    refreshTokens: [],
-    auditLogs: [],
     ...overrides,
   }
 }
@@ -69,12 +69,11 @@ beforeEach(() => {
 describe('createUserService', () => {
   describe('cadastro de usuário COMMON (RF01)', () => {
     it('deve criar usuário com role COMMON para e-mail não-institucional', async () => {
-      const log = makeMockLogger()
-
-      const result = await createUserService(
-        { name: 'João Silva', email: 'joao@example.com', password: 'senha123' },
-        log,
-      )
+      const result = await createUserService({
+        name: 'João Silva',
+        email: 'joao@example.com',
+        password: 'senha123',
+      })
 
       expect(result.role).toBe('COMMON')
       expect(vi.mocked(createUser)).toHaveBeenCalledWith(
@@ -83,12 +82,11 @@ describe('createUserService', () => {
     })
 
     it('deve definir emailVerified como true para usuário COMMON', async () => {
-      const log = makeMockLogger()
-
-      const result = await createUserService(
-        { name: 'João', email: 'joao@gmail.com', password: 'senha123' },
-        log,
-      )
+      const result = await createUserService({
+        name: 'João',
+        email: 'joao@gmail.com',
+        password: 'senha123',
+      })
 
       expect(result.emailVerified).toBe(true)
       expect(vi.mocked(createUser)).toHaveBeenCalledWith(
@@ -99,54 +97,42 @@ describe('createUserService', () => {
 
   describe('cadastro de usuário INSTITUTIONALIZED (RF02)', () => {
     it('deve criar usuário com role INSTITUTIONALIZED para e-mail @dcx.ufpb.br', async () => {
-      const mockInstitutionalUser = makeMockUser({
-        email: 'aluno@dcx.ufpb.br',
-        role: 'INSTITUTIONALIZED',
-        emailVerified: false,
-      })
-      vi.mocked(createUser).mockResolvedValue(mockInstitutionalUser)
-
-      const log = makeMockLogger()
-
-      const result = await createUserService(
-        { name: 'Aluno UFPB', email: 'aluno@dcx.ufpb.br', password: 'senha123' },
-        log,
+      vi.mocked(createUser).mockResolvedValue(
+        makeMockUser({ email: 'aluno@dcx.ufpb.br', role: 'INSTITUTIONALIZED', emailVerified: false }),
       )
+
+      const result = await createUserService({
+        name: 'Aluno UFPB',
+        email: 'aluno@dcx.ufpb.br',
+        password: 'senha123',
+      })
 
       expect(result.role).toBe('INSTITUTIONALIZED')
       expect(vi.mocked(createUser)).toHaveBeenCalledWith(
-        expect.objectContaining({
-          role: 'INSTITUTIONALIZED',
-          emailVerified: false,
-        }),
+        expect.objectContaining({ role: 'INSTITUTIONALIZED', emailVerified: false }),
       )
     })
 
     it('deve definir emailVerified como false para usuário institucional', async () => {
-      const mockInstitutionalUser = makeMockUser({
-        email: 'aluno@dcx.ufpb.br',
-        role: 'INSTITUTIONALIZED',
-        emailVerified: false,
-      })
-      vi.mocked(createUser).mockResolvedValue(mockInstitutionalUser)
-
-      const log = makeMockLogger()
-
-      const result = await createUserService(
-        { name: 'Aluno', email: 'aluno@dcx.ufpb.br', password: 'senha123' },
-        log,
+      vi.mocked(createUser).mockResolvedValue(
+        makeMockUser({ email: 'aluno@dcx.ufpb.br', role: 'INSTITUTIONALIZED', emailVerified: false }),
       )
+
+      const result = await createUserService({
+        name: 'Aluno',
+        email: 'aluno@dcx.ufpb.br',
+        password: 'senha123',
+      })
 
       expect(result.emailVerified).toBe(false)
     })
 
     it('deve detectar domínio institucional case-insensitive', async () => {
-      const log = makeMockLogger()
-
-      await createUserService(
-        { name: 'Aluno', email: 'aluno@DCX.UFPB.BR', password: 'senha123' },
-        log,
-      )
+      await createUserService({
+        name: 'Aluno',
+        email: 'aluno@DCX.UFPB.BR',
+        password: 'senha123',
+      })
 
       expect(vi.mocked(createUser)).toHaveBeenCalledWith(
         expect.objectContaining({ role: 'INSTITUTIONALIZED' }),
@@ -156,23 +142,21 @@ describe('createUserService', () => {
 
   describe('segurança (RNF01)', () => {
     it('nunca deve retornar passwordHash na resposta', async () => {
-      const log = makeMockLogger()
-
-      const result = await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      )
+      const result = await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha123',
+      })
 
       expect(result).not.toHaveProperty('passwordHash')
     })
 
-    it('deve chamar hashPassword antes de criar o usuário (RNF01)', async () => {
-      const log = makeMockLogger()
-
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'minha_senha' },
-        log,
-      )
+    it('deve chamar hashPassword antes de criar o usuário', async () => {
+      await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'minha_senha',
+      })
 
       expect(vi.mocked(hashPassword)).toHaveBeenCalledWith('minha_senha')
       expect(vi.mocked(createUser)).toHaveBeenCalledWith(
@@ -185,25 +169,19 @@ describe('createUserService', () => {
     it('deve lançar GeneralErrorResponse 409 quando e-mail já existe', async () => {
       vi.mocked(findUserByEmail).mockResolvedValue(makeMockUser())
 
-      const log = makeMockLogger()
-
       await expect(
-        createUserService(
-          { name: 'João', email: 'joao@example.com', password: 'senha123' },
-          log,
-        ),
+        createUserService({ name: 'João', email: 'joao@example.com', password: 'senha123' }),
       ).rejects.toThrow(GeneralErrorResponse)
     })
 
     it('deve retornar statusCode 409 e code EMAIL_ALREADY_EXISTS', async () => {
       vi.mocked(findUserByEmail).mockResolvedValue(makeMockUser())
 
-      const log = makeMockLogger()
-
-      const error = await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      ).catch((e: unknown) => e)
+      const error = await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha123',
+      }).catch((e: unknown) => e)
 
       expect(error).toBeInstanceOf(GeneralErrorResponse)
       expect((error as GeneralErrorResponse).statusCode).toBe(409)
@@ -213,12 +191,11 @@ describe('createUserService', () => {
     it('não deve chamar createUser quando e-mail já existe', async () => {
       vi.mocked(findUserByEmail).mockResolvedValue(makeMockUser())
 
-      const log = makeMockLogger()
-
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      ).catch(() => {})
+      await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha123',
+      }).catch(() => {})
 
       expect(vi.mocked(createUser)).not.toHaveBeenCalled()
     })
@@ -226,12 +203,7 @@ describe('createUserService', () => {
 
   describe('auditoria (RNF05)', () => {
     it('deve registrar AuditLog após criar o usuário', async () => {
-      const log = makeMockLogger()
-
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      )
+      await createUserService({ name: 'João', email: 'joao@example.com', password: 'senha123' })
 
       expect(vi.mocked(createAuditLog)).toHaveBeenCalledOnce()
       expect(vi.mocked(createAuditLog)).toHaveBeenCalledWith(
@@ -246,58 +218,65 @@ describe('createUserService', () => {
     it('não deve chamar createAuditLog quando e-mail já existe', async () => {
       vi.mocked(findUserByEmail).mockResolvedValue(makeMockUser())
 
-      const log = makeMockLogger()
-
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      ).catch(() => {})
+      await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha123',
+      }).catch(() => {})
 
       expect(vi.mocked(createAuditLog)).not.toHaveBeenCalled()
     })
   })
 
-  describe('logging do ciclo de vida', () => {
-    it('deve chamar log.info ao iniciar o service', async () => {
-      const log = makeMockLogger()
+  describe('logging de console (pino)', () => {
+    it('deve logar "IN - createUserService" ao iniciar', async () => {
+      await createUserService({ name: 'João', email: 'joao@example.com', password: 'senha123' })
 
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      )
-
-      expect(log.info).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'joao@example.com', name: 'João' }),
-        'createUserService — iniciado',
-      )
+      expect(vi.mocked(logger.info)).toHaveBeenCalledWith('IN - createUserService')
     })
 
-    it('deve chamar log.info ao concluir o service com userId e role', async () => {
-      const log = makeMockLogger()
+    it('deve logar "OUT - createUserService" ao concluir', async () => {
+      await createUserService({ name: 'João', email: 'joao@example.com', password: 'senha123' })
 
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha123' },
-        log,
-      )
-
-      expect(log.info).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 'user-uuid-123', role: 'COMMON' }),
-        'createUserService — concluído',
-      )
+      expect(vi.mocked(logger.info)).toHaveBeenCalledWith('OUT - createUserService')
     })
 
-    it('log.info de início não deve conter a senha', async () => {
-      const log = makeMockLogger()
+    it('deve logar IN antes de OUT', async () => {
+      await createUserService({ name: 'João', email: 'joao@example.com', password: 'senha123' })
 
-      await createUserService(
-        { name: 'João', email: 'joao@example.com', password: 'senha_secreta' },
-        log,
-      )
+      const calls = vi.mocked(logger.info).mock.calls.map((c) => c[0])
+      const inIndex = calls.indexOf('IN - createUserService')
+      const outIndex = calls.indexOf('OUT - createUserService')
 
-      const firstCall = vi.mocked(log.info).mock.calls[0]
-      const loggedObj = firstCall[0] as Record<string, unknown>
-      expect(loggedObj).not.toHaveProperty('password')
-      expect(loggedObj).not.toHaveProperty('passwordHash')
+      expect(inIndex).toBeLessThan(outIndex)
+    })
+
+    it('deve logar IN mesmo quando ocorre erro (e-mail duplicado)', async () => {
+      vi.mocked(findUserByEmail).mockResolvedValue(makeMockUser())
+
+      await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha123',
+      }).catch(() => {})
+
+      expect(vi.mocked(logger.info)).toHaveBeenCalledWith('IN - createUserService')
+    })
+
+    it('não deve logar a senha em nenhum momento', async () => {
+      await createUserService({
+        name: 'João',
+        email: 'joao@example.com',
+        password: 'senha_super_secreta',
+      })
+
+      const allLogCalls = [
+        ...vi.mocked(logger.info).mock.calls,
+        ...vi.mocked(logger.error).mock.calls,
+      ]
+      const allLoggedStrings = JSON.stringify(allLogCalls)
+
+      expect(allLoggedStrings).not.toContain('senha_super_secreta')
     })
   })
 })

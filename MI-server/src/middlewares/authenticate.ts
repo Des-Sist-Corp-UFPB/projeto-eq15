@@ -1,6 +1,6 @@
 // src/middlewares/authenticate.ts
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
+import { ERRORS } from '../lib/errors/errors'
 
 export interface JWTPayload {
   sub: string
@@ -22,6 +22,6 @@ export async function authenticate(
   try {
     await request.jwtVerify<JWTPayload>()
   } catch {
-    throw new GeneralErrorResponse('Token inválido ou expirado.', 401, 'UNAUTHORIZED')
+    throw ERRORS.UNAUTHORIZED.toError()
   }
 }

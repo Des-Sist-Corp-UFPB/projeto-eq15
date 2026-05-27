@@ -6,8 +6,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_API: ghcr.io/${{ github.repository_owner }}/projeto-eq15-api
-  IMAGE_WEB: ghcr.io/${{ github.repository_owner }}/projeto-eq15-web
 
 jobs:
   # ─────────────────────────────────────────────
@@ -23,6 +21,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set lowercase image names
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE_API=ghcr.io/${OWNER}/projeto-eq15-api" >> $GITHUB_ENV
+          echo "IMAGE_WEB=ghcr.io/${OWNER}/projeto-eq15-web" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -71,6 +75,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set lowercase owner
+        run: echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Copiar docker-compose.prod.yml para o servidor
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -93,7 +100,7 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTOR: ${{ github.actor }}
           SHA: ${{ github.sha }}
-          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_OWNER: ${{ env.OWNER_LC }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}

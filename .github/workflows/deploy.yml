@@ -84,6 +84,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
+          port: 8115
           source: docker-compose.prod.yml
           target: ${{ secrets.DEPLOY_PATH || '/opt/eq15' }}
 
@@ -105,6 +106,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
+          port: 8115
           envs: DATABASE_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,ADMIN_EMAIL,ADMIN_PASSWORD,GHCR_TOKEN,ACTOR,SHA,REPO_OWNER
           script: |
             set -e

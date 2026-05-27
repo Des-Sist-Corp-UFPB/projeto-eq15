@@ -1,14 +1,15 @@
-﻿// src/controllers/users/usersController.ts
-import type { FastifyRequest } from 'fastify'
+// src/controllers/users/usersController.ts
+import type { FastifyRequest, FastifyReply } from 'fastify'
 import { type CreateUserInput } from '../../schemas/users/usersSchema'
 import { createUserService } from '../../services/users/usersService'
 import { createInspectionLog } from '../../repositories/inspectionLog/inspectionLogRepository'
 import { httpResponse, httpError } from '../../utils/http'
+import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { logger } from '../../lib/logger'
 
 export async function createUserController(
   request: FastifyRequest<{ Body: CreateUserInput }>,
-  reply: Parameters<typeof httpResponse>[0]['reply'],
+  reply: FastifyReply,
 ): Promise<void> {
   const ctx = { requestId: request.id, context: 'createUserController' }
 
@@ -29,14 +30,27 @@ export async function createUserController(
   try {
     const user = await createUserService(request.body)
 
-    await httpResponse({
-      reply,
-      statusCode: 201,
-      data: user,
+    // ── OUT ────────────────────────────────────────────────────────────────────
+    await createInspectionLog({
       ...ctx,
-      logPayload: { userId: user.id, role: user.role },
-    })
+      level: 'INFO',
+      direction: 'OUT',
+      payload: { statusCode: 201, userId: user.id, role: user.role },
+    }).catch((err) => logger.error({ err }, `${ctx.context}: inspectionLog OUT write failed`))
+
+    httpResponse({ reply, statusCode: 201, data: user, context: ctx.context })
   } catch (error) {
-    await httpError({ error, ...ctx })
+    // ── ERROR ──────────────────────────────────────────────────────────────────
+    await createInspectionLog({
+      ...ctx,
+      level: 'ERROR',
+      direction: 'ERROR',
+      payload: {
+        error: error instanceof Error ? error.message : String(error),
+        code: error instanceof GeneralErrorResponse ? error.code : 'INTERNAL_ERROR',
+      },
+    }).catch((err) => logger.error({ err }, `${ctx.context}: inspectionLog ERROR write failed`))
+
+    httpError({ error, context: ctx.context })
   }
 }

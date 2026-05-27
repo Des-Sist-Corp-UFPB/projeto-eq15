@@ -1,4 +1,4 @@
-// src/routes/auth/auth.routes.ts
+﻿// src/routes/auth/authRoutes.ts
 import type { FastifyInstance } from 'fastify'
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {

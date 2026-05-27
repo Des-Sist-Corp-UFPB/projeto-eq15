@@ -1,7 +1,7 @@
-// src/errors/error-handler.ts
+// src/errors/errorHandler.ts
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ZodError } from 'zod'
-import { AppError } from './app-error'
+import { GeneralErrorResponse } from './GeneralErrorResponse'
 
 export function errorHandler(
   error: Error,
@@ -17,7 +17,7 @@ export function errorHandler(
     return
   }
 
-  if (error instanceof AppError) {
+  if (error instanceof GeneralErrorResponse) {
     reply.status(error.statusCode).send({
       status: 'error',
       message: error.message,

@@ -1,4 +1,4 @@
-// src/repositories/users/users.repository.ts
+﻿// src/repositories/users/usersRepository.ts
 import { type Prisma, type Role, type User } from '@prisma/client'
 import { prisma } from '../../database/prisma'
 

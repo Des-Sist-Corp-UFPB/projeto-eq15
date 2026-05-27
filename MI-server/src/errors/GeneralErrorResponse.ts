@@ -1,5 +1,5 @@
-// src/errors/app-error.ts
-export class AppError extends Error {
+// src/errors/GeneralErrorResponse.ts
+export class GeneralErrorResponse extends Error {
   public readonly statusCode: number
   public readonly code: string
 
@@ -7,7 +7,7 @@ export class AppError extends Error {
     super(message)
     this.statusCode = statusCode
     this.code = code
-    this.name = 'AppError'
+    this.name = 'GeneralErrorResponse'
     Object.setPrototypeOf(this, new.target.prototype)
   }
 }

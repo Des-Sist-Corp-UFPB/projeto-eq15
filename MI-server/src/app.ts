@@ -10,9 +10,9 @@ import {
   type ZodTypeProvider,
 } from '@fastify/type-provider-zod'
 import { env } from './env'
-import { errorHandler } from './errors/error-handler'
-import { authRoutes } from './routes/auth/auth.routes'
-import { usersRoutes } from './routes/users/users.routes'
+import { errorHandler } from './errors/errorHandler'
+import { authRoutes } from './routes/auth/authRoutes'
+import { usersRoutes } from './routes/users/usersRoutes'
 
 export function buildApp() {
   const app = fastify({

@@ -1,4 +1,4 @@
-// src/repositories/auth/auth.repository.ts
+﻿// src/repositories/auth/authRepository.ts
 import { type RefreshToken } from '@prisma/client'
 import { prisma } from '../../database/prisma'
 

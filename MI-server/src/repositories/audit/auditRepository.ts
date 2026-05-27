@@ -1,4 +1,4 @@
-// src/repositories/audit/audit.repository.ts
+﻿// src/repositories/audit/auditRepository.ts
 import { type Prisma, type Role } from '@prisma/client'
 import { prisma } from '../../database/prisma'
 

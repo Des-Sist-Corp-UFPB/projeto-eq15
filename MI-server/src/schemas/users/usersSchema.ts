@@ -1,4 +1,4 @@
-// src/schemas/users/users.schema.ts
+﻿// src/schemas/users/usersSchema.ts
 import { z } from 'zod'
 
 export const CreateUserSchema = z.object({

@@ -4,6 +4,7 @@ import fastifyJwt from '@fastify/jwt'
 import fastifyCookie from '@fastify/cookie'
 import fastifyCors from '@fastify/cors'
 import fastifyRateLimit from '@fastify/rate-limit'
+import fastifyMultipart from '@fastify/multipart'
 import {
   serializerCompiler,
   validatorCompiler,
@@ -13,6 +14,7 @@ import { env } from './env'
 import { errorHandler } from './errors/errorHandler'
 import { authRoutes } from './routes/auth/authRoutes'
 import { usersRoutes } from './routes/users/usersRoutes'
+import { misRoutes } from './routes/mis/misRoutes'
 
 export function buildApp() {
   const app = fastify({
@@ -54,6 +56,17 @@ export function buildApp() {
     // Configuração por rota via { config: { rateLimit: { max, timeWindow } } }
   })
 
+  // Plugin de multipart/form-data (upload de arquivos)
+  // O limite de tamanho por arquivo é definido aqui; rotas específicas podem
+  // sobrescrever o bodyLimit do Fastify via opção de rota.
+  app.register(fastifyMultipart, {
+    limits: {
+      files:    1,                                             // máx. 1 arquivo por request
+      fileSize: env.MI_MAX_FILE_SIZE_MB * 1024 * 1024,        // limite em bytes
+      fields:   5,                                             // máx. 5 campos de texto
+    },
+  })
+
   // ── Rota raiz de health ──────────────────────────────────────────────────────
   app.get('/health', async () => ({
     status: 'ok',
@@ -64,6 +77,7 @@ export function buildApp() {
   // ── Rotas de domínio ─────────────────────────────────────────────────────────
   app.register(authRoutes, { prefix: '/auth' })
   app.register(usersRoutes, { prefix: '/users' })
+  app.register(misRoutes, { prefix: '/mis' })
 
   // ── Handler global de erros ──────────────────────────────────────────────────
   app.setErrorHandler(errorHandler)

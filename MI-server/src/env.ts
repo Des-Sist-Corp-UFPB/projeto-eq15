@@ -18,6 +18,21 @@ const envSchema = z.object({
     .min(8, 'ADMIN_PASSWORD must have at least 8 characters'),
   LOGIN_MAX_ATTEMPTS: z.coerce.number().default(5),
   LOGIN_BLOCK_DURATION_SECONDS: z.coerce.number().default(900),
+
+  // ── MinIO ──────────────────────────────────────────────────────────────────
+  MINIO_ENDPOINT:   z.string().min(1).default('localhost'),
+  MINIO_PORT:       z.coerce.number().default(9000),
+  MINIO_USE_SSL:    z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+  MINIO_ACCESS_KEY: z.string().min(1, 'MINIO_ACCESS_KEY is required'),
+  MINIO_SECRET_KEY: z.string().min(1, 'MINIO_SECRET_KEY is required'),
+  MINIO_BUCKET:     z.string().min(1).default('materiais-instrucionais'),
+
+  // ── Upload ─────────────────────────────────────────────────────────────────
+  MI_MAX_FILE_SIZE_MB: z.coerce.number().default(50),
 })
 
 const _env = envSchema.safeParse(process.env)

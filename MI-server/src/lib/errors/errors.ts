@@ -21,6 +21,12 @@ const ERROR_STATUS_CODES: Record<ErrorMessageKey, number> = {
   FORBIDDEN:            403,
   ACCOUNT_SUSPENDED:    403,
   EMAIL_NOT_VERIFIED:   403,
+  // Upload / MI
+  UPLOAD_NOT_ALLOWED:   403,
+  INVALID_FILE_TYPE:    415,
+  FILE_TOO_LARGE:       413,
+  UPLOAD_FAILED:        500,
+  MI_NOT_FOUND:         404,
   // Genéricos
   BAD_REQUEST:          400,
   INTERNAL_ERROR:       500,
@@ -60,6 +66,13 @@ export const ERRORS = {
     FORBIDDEN:            'FORBIDDEN',
     ACCOUNT_SUSPENDED:    'ACCOUNT_SUSPENDED',
     EMAIL_NOT_VERIFIED:   'EMAIL_NOT_VERIFIED',
+  },
+  MI: {
+    UPLOAD_NOT_ALLOWED:   'UPLOAD_NOT_ALLOWED',
+    INVALID_FILE_TYPE:    'INVALID_FILE_TYPE',
+    FILE_TOO_LARGE:       'FILE_TOO_LARGE',
+    UPLOAD_FAILED:        'UPLOAD_FAILED',
+    MI_NOT_FOUND:         'MI_NOT_FOUND',
   },
   GENERAL: {
     BAD_REQUEST:          'BAD_REQUEST',

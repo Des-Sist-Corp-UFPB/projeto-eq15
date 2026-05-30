@@ -38,8 +38,9 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]     @relation("AuditActor")
+  refreshTokens          RefreshToken[]
+  auditLogs              AuditLog[]              @relation("AuditActor")
+  materiaisInstrucionais MaterialInstrucional[]
 }
 
 model RefreshToken {
@@ -63,6 +64,34 @@ model AuditLog {
 
   actor User? @relation("AuditActor", fields: [actorId], references: [id])
 }
+
+// ── Materiais Instrucionais ────────────────────────────────────────────────────
+
+enum MIStatus {
+  PENDING_REVIEW // aguardando aprovação docente
+  APPROVED       // aprovado e disponível publicamente
+  REJECTED       // rejeitado com justificativa
+}
+
+model MaterialInstrucional {
+  id               String   @id @default(uuid())
+  title            String
+  originalFileName String   // nome original do arquivo enviado pelo usuário
+  storageKey       String   @unique // chave do objeto no MinIO
+  mimeType         String
+  sizeBytes        Int
+  status           MIStatus @default(PENDING_REVIEW)
+  uploadedById     String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@index([uploadedById])
+  @@index([status])
+}
+
+// ── Observabilidade ───────────────────────────────────────────────────────────
 
 // Rastreio de ciclo de vida de requisições HTTP (observabilidade)
 model InspectionLog {

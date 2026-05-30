@@ -16,6 +16,13 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       LOGIN_MAX_ATTEMPTS: ${LOGIN_MAX_ATTEMPTS:-5}
       LOGIN_BLOCK_DURATION_SECONDS: ${LOGIN_BLOCK_DURATION_SECONDS:-900}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET:-materiais-instrucionais}
+      MI_MAX_FILE_SIZE_MB: ${MI_MAX_FILE_SIZE_MB:-50}
     extra_hosts:
       # Permite que o container acesse o PostgreSQL rodando no host (porta 8115)
       - "host.docker.internal:host-gateway"

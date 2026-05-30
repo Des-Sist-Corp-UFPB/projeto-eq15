@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
-import { VerifyEmailPage } from '../pages/VerifyEmailPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -58,7 +57,6 @@ export function Router() {
 
         {/* Verificação de e-mail — acessível sem autenticação */}
         <Route path="/verify-email-sent" element={<VerifyEmailSentPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />

@@ -1,13 +1,64 @@
 // src/pages/VerifyEmailSentPage.tsx
+import { useState, type FormEvent } from 'react'
 import { Link, useLocation, Navigate } from 'react-router-dom'
-import { BookOpen, Mail } from 'lucide-react'
+import { BookOpen, Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { useVerifyEmail } from '../features/auth/hooks/useVerifyEmail'
+import { getApiErrorMessage } from '../lib/apiError'
+
+// ── Estados pós-verificação ───────────────────────────────────────────────────
+
+function SuccessState() {
+  return (
+    <div className="flex flex-col items-center gap-4 text-center">
+      <div className="bg-green-50 rounded-full p-4">
+        <CheckCircle size={32} className="text-green-500" />
+      </div>
+      <div>
+        <p className="font-bold text-gray-900 text-lg">E-mail verificado!</p>
+        <p className="text-gray-500 text-sm mt-1 leading-relaxed">
+          Sua conta institucional foi ativada com sucesso.
+        </p>
+      </div>
+      <Link
+        to="/login"
+        className="w-full flex items-center justify-center py-2.5 px-4 rounded-lg
+                   bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
+                   text-white text-sm font-semibold transition-colors
+                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+      >
+        Ir para o login
+      </Link>
+    </div>
+  )
+}
+
+// ── VerifyEmailSentPage ───────────────────────────────────────────────────────
 
 export function VerifyEmailSentPage() {
   const location = useLocation()
-  const email = (location.state as { email?: string } | null)?.email
+  const email    = (location.state as { email?: string } | null)?.email
 
-  // Se alguém acessar a rota diretamente sem o state, manda para o cadastro
+  const [code, setCode] = useState('')
+
+  const { mutate: verify, isPending, isSuccess, isError, error, reset } = useVerifyEmail()
+
   if (!email) return <Navigate to="/register" replace />
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (code.trim().length !== 6) return
+    reset()
+    verify(code.trim())
+  }
+
+  function handleCodeChange(value: string) {
+    // Aceita apenas dígitos, max 6 caracteres
+    const digits = value.replace(/\D/g, '').slice(0, 6)
+    setCode(digits)
+    if (isError) reset()
+  }
+
+  const errorMessage = isError ? getApiErrorMessage(error) : null
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
@@ -25,42 +76,85 @@ export function VerifyEmailSentPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm flex flex-col items-center gap-5 text-center">
+        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+          {isSuccess ? <SuccessState /> : (
+            <div className="flex flex-col items-center gap-5 text-center">
 
-          <div className="bg-indigo-50 rounded-full p-4">
-            <Mail size={32} className="text-indigo-600" />
-          </div>
+              <div className="bg-indigo-50 rounded-full p-4">
+                <Mail size={28} className="text-indigo-600" />
+              </div>
 
-          <div>
-            <p className="font-bold text-gray-900 text-lg">Verifique seu e-mail</p>
-            <p className="text-gray-500 text-sm mt-2 leading-relaxed">
-              Enviamos um link de confirmação para{' '}
-              <span className="font-medium text-gray-700 break-all">{email}</span>.
-              <br className="hidden sm:block" />
-              <span className="block mt-2">
-                Clique no link para ativar sua conta institucional.
-              </span>
-            </p>
-          </div>
+              <div>
+                <p className="font-bold text-gray-900 text-lg">Verifique seu e-mail</p>
+                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
+                  Enviamos um código de 6 dígitos para{' '}
+                  <span className="font-medium text-gray-700 break-all">{email}</span>.
+                </p>
+              </div>
 
-          <div className="w-full bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-indigo-700 text-xs text-left space-y-1">
-            <p className="font-semibold">Não recebeu o e-mail?</p>
-            <ul className="list-disc list-inside space-y-0.5 text-indigo-600">
-              <li>Verifique a pasta de spam.</li>
-              <li>Certifique-se de que o endereço está correto.</li>
-              <li>O link expira em 24 horas.</li>
-            </ul>
-          </div>
+              {/* Formulário do código */}
+              <form onSubmit={handleSubmit} className="w-full space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 text-left">
+                    Código de verificação
+                  </label>
+                  <input
+                    id="code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    value={code}
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    disabled={isPending}
+                    maxLength={6}
+                    className={`w-full px-4 py-3 rounded-lg border text-center text-2xl font-bold tracking-[0.5em]
+                                text-gray-900 placeholder-gray-300 transition
+                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
+                                disabled:bg-gray-100 disabled:cursor-not-allowed
+                                ${isError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  />
+                  {errorMessage && (
+                    <p role="alert" className="text-xs text-red-600 text-left">
+                      {errorMessage}
+                    </p>
+                  )}
+                </div>
 
-          <Link
-            to="/login"
-            className="w-full flex items-center justify-center py-2.5 px-4 rounded-lg
-                       border border-gray-300 hover:bg-gray-50
-                       text-gray-700 text-sm font-semibold transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Voltar para o login
-          </Link>
+                <button
+                  type="submit"
+                  disabled={isPending || code.length !== 6}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg
+                             bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800
+                             disabled:bg-indigo-300 disabled:cursor-not-allowed
+                             text-white text-sm font-semibold transition-colors
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Verificando…
+                    </>
+                  ) : (
+                    'Confirmar código'
+                  )}
+                </button>
+              </form>
+
+              <div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-700 text-xs text-left space-y-1">
+                <p className="font-semibold">Não recebeu o código?</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-600">
+                  <li>Verifique a pasta de spam.</li>
+                  <li>O código expira em 24 horas.</li>
+                </ul>
+              </div>
+
+              <Link to="/login" className="text-xs text-gray-400 hover:text-indigo-600 transition-colors">
+                Voltar para o login
+              </Link>
+
+            </div>
+          )}
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-400">

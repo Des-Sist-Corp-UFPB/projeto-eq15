@@ -10,8 +10,9 @@ import { logger } from '../../lib/logger'
 const ctx = 'emailVerificationController'
 
 /**
- * GET /auth/verify-email?token=<uuid>
- * Confirma o e-mail institucional do usuário a partir do token enviado por e-mail.
+ * POST /auth/verify-email
+ * Body: { code: string }
+ * Confirma o e-mail institucional do usuário a partir do código de 6 dígitos.
  */
 export async function emailVerificationController(
   request: FastifyRequest,
@@ -20,13 +21,13 @@ export async function emailVerificationController(
   logger.info(`IN - ${ctx}`)
 
   try {
-    const { token } = request.query as { token?: string }
+    const { code } = request.body as { code?: string }
 
-    if (!token) {
+    if (!code || code.trim().length === 0) {
       throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.AUTH.INVALID_VERIFICATION_TOKEN))
     }
 
-    await verifyEmailService(token)
+    await verifyEmailService(code.trim())
 
     httpResponse({ reply, statusCode: StatusCode.OK, data: { message: 'E-mail verificado com sucesso.' }, context: ctx })
   } catch (error) {

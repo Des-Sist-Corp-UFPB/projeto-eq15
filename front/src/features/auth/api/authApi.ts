@@ -11,7 +11,7 @@ export async function logoutRequest(): Promise<void> {
   await api.post('/auth/logout')
 }
 
-export async function verifyEmailRequest(token: string): Promise<{ message: string }> {
-  const { data } = await api.get<{ message: string }>('/auth/verify-email', { params: { token } })
+export async function verifyEmailRequest(code: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>('/auth/verify-email', { code })
   return data
 }

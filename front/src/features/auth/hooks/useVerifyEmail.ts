@@ -1,13 +1,10 @@
 // src/features/auth/hooks/useVerifyEmail.ts
-import { useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { verifyEmailRequest } from '../api/authApi'
 
-export function useVerifyEmail(token: string | null) {
-  return useQuery({
-    queryKey: ['verify-email', token],
-    queryFn:  () => verifyEmailRequest(token!),
-    enabled:  !!token,
-    retry:    false,
-    staleTime: Infinity,
+export function useVerifyEmail() {
+  return useMutation({
+    mutationFn: (code: string) => verifyEmailRequest(code),
+    retry: false,
   })
 }

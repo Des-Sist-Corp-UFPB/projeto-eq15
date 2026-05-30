@@ -14,6 +14,7 @@ export type ErrorMessageKey =
   | 'FORBIDDEN'
   | 'ACCOUNT_SUSPENDED'
   | 'EMAIL_NOT_VERIFIED'
+  | 'INVALID_VERIFICATION_TOKEN'
   // ── Upload / MI ───────────────────────────────────────────────────────────
   | 'UPLOAD_NOT_ALLOWED'
   | 'INVALID_FILE_TYPE'
@@ -33,6 +34,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FORBIDDEN:             'Você não tem permissão para realizar esta ação.',
     ACCOUNT_SUSPENDED:     'Conta suspensa. Entre em contato com o suporte.',
     EMAIL_NOT_VERIFIED:    'E-mail institucional ainda não verificado. Aguarde a confirmação.',
+    INVALID_VERIFICATION_TOKEN: 'Link de verificação inválido ou expirado.',
     UPLOAD_NOT_ALLOWED:    'Seu perfil não possui permissão para realizar uploads.',
     INVALID_FILE_TYPE:     'Apenas arquivos PDF são aceitos.',
     FILE_TOO_LARGE:        'O arquivo excede o tamanho máximo permitido.',
@@ -50,6 +52,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FORBIDDEN:             'You do not have permission to perform this action.',
     ACCOUNT_SUSPENDED:     'Account suspended. Please contact support.',
     EMAIL_NOT_VERIFIED:    'Institutional email not yet verified. Please wait for confirmation.',
+    INVALID_VERIFICATION_TOKEN: 'Invalid or expired verification link.',
     UPLOAD_NOT_ALLOWED:    'Your profile does not have upload permission.',
     INVALID_FILE_TYPE:     'Only PDF files are accepted.',
     FILE_TOO_LARGE:        'The file exceeds the maximum allowed size.',
@@ -67,6 +70,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FORBIDDEN:             'No tienes permiso para realizar esta acción.',
     ACCOUNT_SUSPENDED:     'Cuenta suspendida. Contacta con el soporte.',
     EMAIL_NOT_VERIFIED:    'Correo institucional aún no verificado. Espera la confirmación.',
+    INVALID_VERIFICATION_TOKEN: 'Enlace de verificación inválido o expirado.',
     UPLOAD_NOT_ALLOWED:    'Tu perfil no tiene permiso para subir archivos.',
     INVALID_FILE_TYPE:     'Solo se aceptan archivos PDF.',
     FILE_TOO_LARGE:        'El archivo supera el tamaño máximo permitido.',

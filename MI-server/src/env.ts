@@ -33,6 +33,21 @@ const envSchema = z.object({
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   MI_MAX_FILE_SIZE_MB: z.coerce.number().default(50),
+
+  // ── E-mail (SMTP) ──────────────────────────────────────────────────────────
+  // Quando não configurado, o link de verificação é impresso no console (dev).
+  SMTP_HOST:    z.string().optional(),
+  SMTP_PORT:    z.coerce.number().optional(),
+  SMTP_SECURE:  z.string().optional().default('false').transform((v) => v === 'true'),
+  SMTP_USER:    z.string().optional(),
+  SMTP_PASS:    z.string().optional(),
+  SMTP_FROM:    z.string().optional().default('MI UFPB <noreply@dcx.ufpb.br>'),
+
+  // URL base do frontend (usada no link do e-mail de verificação)
+  APP_URL: z.string().url().optional().default('http://localhost:5173'),
+
+  // Validade do token de verificação de e-mail em horas
+  EMAIL_VERIFICATION_EXPIRES_HOURS: z.coerce.number().optional().default(24),
 })
 
 const _env = envSchema.safeParse(process.env)

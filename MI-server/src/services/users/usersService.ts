@@ -11,6 +11,7 @@ import { hashPassword } from '../../utils/hash'
 import { ERRORS, buildError } from '../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
+import { sendVerificationEmailService } from '../auth/emailVerificationService'
 import { logger } from '../../lib/logger'
 
 const INSTITUTIONAL_DOMAIN = '@dcx.ufpb.br'
@@ -48,6 +49,14 @@ export async function createUserService(
     action: 'USER_REGISTERED',
     metadata: { email, role },
   })
+
+  // Envia e-mail de verificação para usuários institucionalizados
+  if (isInstitutional) {
+    // Fire-and-forget: falha no envio não bloqueia o cadastro
+    sendVerificationEmailService(user.id, user.email, user.name).catch((err) =>
+      logger.error({ err }, 'createUserService: falha ao enviar e-mail de verificação'),
+    )
+  }
 
   // Nunca retorna o hash da senha
   const { passwordHash: _removed, ...safeUser } = user

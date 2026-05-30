@@ -38,9 +38,20 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  refreshTokens          RefreshToken[]
-  auditLogs              AuditLog[]              @relation("AuditActor")
-  materiaisInstrucionais MaterialInstrucional[]
+  refreshTokens               RefreshToken[]
+  auditLogs                   AuditLog[]              @relation("AuditActor")
+  materiaisInstrucionais      MaterialInstrucional[]
+  emailVerificationTokens     EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RefreshToken {

@@ -14,11 +14,14 @@ export function useRegister() {
     onSuccess: (user: CreatedUser) => {
       const isInstitutional = user.email.toLowerCase().endsWith(INSTITUTIONAL_DOMAIN)
 
-      const successMessage = isInstitutional
-        ? 'Cadastro realizado! Seu e-mail institucional precisa ser verificado antes do primeiro acesso.'
-        : 'Cadastro realizado com sucesso! Faça login para continuar.'
-
-      navigate('/login', { state: { successMessage }, replace: true })
+      if (isInstitutional) {
+        navigate('/verify-email-sent', { state: { email: user.email }, replace: true })
+      } else {
+        navigate('/login', {
+          state: { successMessage: 'Cadastro realizado com sucesso! Faça login para continuar.' },
+          replace: true,
+        })
+      }
     },
   })
 }

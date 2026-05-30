@@ -1,6 +1,7 @@
 // src/middlewares/authenticate.ts
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import { ERRORS } from '../lib/errors/errors'
+import { ERRORS, buildError } from '../lib/errors/errors'
+import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
 
 export interface JWTPayload {
   sub: string
@@ -22,6 +23,6 @@ export async function authenticate(
   try {
     await request.jwtVerify<JWTPayload>()
   } catch {
-    throw ERRORS.UNAUTHORIZED.toError()
+    throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
   }
 }

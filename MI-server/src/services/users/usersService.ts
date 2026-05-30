@@ -8,7 +8,8 @@ import {
 } from '../../repositories/users/usersRepository'
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { hashPassword } from '../../utils/hash'
-import { ERRORS } from '../../lib/errors/errors'
+import { ERRORS, buildError } from '../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { logger } from '../../lib/logger'
 
 const INSTITUTIONAL_DOMAIN = '@dcx.ufpb.br'
@@ -23,7 +24,7 @@ export async function createUserService(
   // RF01/RF02 — e-mail único
   const existing = await findUserByEmail(email)
   if (existing) {
-    throw ERRORS.EMAIL_ALREADY_EXISTS.toError()
+    throw new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
   }
 
   // RF02 — detecção de domínio institucional

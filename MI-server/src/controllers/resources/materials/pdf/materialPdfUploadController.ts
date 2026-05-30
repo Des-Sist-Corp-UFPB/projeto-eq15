@@ -80,7 +80,7 @@ export async function materialPdfUploadController(
     const { fileBuffer, originalFileName, mimeType, title } = await parsePdfMultipart(request)
 
     if (!fileBuffer || !originalFileName || !mimeType) {
-      throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
+      throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
     }
 
     const mi = await materialPdfUploadService({

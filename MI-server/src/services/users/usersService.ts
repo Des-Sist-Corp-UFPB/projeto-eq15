@@ -1,4 +1,4 @@
-﻿// src/services/users/usersService.ts
+// src/services/users/usersService.ts
 import { type Role } from '@prisma/client'
 import { type CreatedUserDTO } from '../../@types/users'
 import { type CreateUserInput } from '../../schemas/users/usersSchema'
@@ -10,6 +10,7 @@ import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { hashPassword } from '../../utils/hash'
 import { ERRORS, buildError } from '../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
 
 const INSTITUTIONAL_DOMAIN = '@dcx.ufpb.br'
@@ -24,7 +25,7 @@ export async function createUserService(
   // RF01/RF02 — e-mail único
   const existing = await findUserByEmail(email)
   if (existing) {
-    throw new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
+    throw new GeneralErrorResponse(StatusCode.CONFLICT, buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
   }
 
   // RF02 — detecção de domínio institucional

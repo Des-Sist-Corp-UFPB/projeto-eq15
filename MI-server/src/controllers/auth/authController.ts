@@ -14,6 +14,7 @@ import {
 import { httpResponse, httpError } from "../../utils/http";
 import { ERRORS, buildError } from "../../lib/errors/errors";
 import { GeneralErrorResponse } from "../../errors/GeneralErrorResponse";
+import { StatusCode } from "../../utils/statusCode";
 import { logger } from "../../lib/logger";
 import { env } from "../../env";
 import { parseDurationToDate } from "../../utils/time";
@@ -73,7 +74,7 @@ export async function refreshController(
 
   try {
     const token = request.cookies.refreshToken;
-    if (!token) throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED));
+    if (!token) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED));
 
     const user = await refreshTokenService(token);
 

@@ -2,6 +2,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ERRORS, buildError } from '../lib/errors/errors'
 import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
+import { StatusCode } from '../utils/statusCode'
 
 export interface JWTPayload {
   sub: string
@@ -23,6 +24,6 @@ export async function authenticate(
   try {
     await request.jwtVerify<JWTPayload>()
   } catch {
-    throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
+    throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
   }
 }

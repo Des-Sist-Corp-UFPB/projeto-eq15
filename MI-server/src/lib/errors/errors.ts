@@ -2,53 +2,29 @@
 // Catálogo central de erros da aplicação.
 //
 // Uso:
-//   throw new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
-//   throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED, 'en-US'))
-//   throw new GeneralErrorResponse(buildError(ERRORS.GENERAL.BAD_REQUEST))
+//   throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+//   throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED, 'en-US'))
+//   throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.GENERAL.BAD_REQUEST))
 
 import { type ErrorParams } from '../../errors/GeneralErrorResponse'
 import { errorMessages, type ErrorMessageKey, type Language } from './errorMessages'
 
-// ── Status codes ───────────────────────────────────────────────────────────────
-
-const ERROR_STATUS_CODES: Record<ErrorMessageKey, number> = {
-  // Usuários
-  EMAIL_ALREADY_EXISTS: 409,
-  USER_NOT_FOUND:       404,
-  INVALID_CREDENTIALS:  401,
-  // Auth
-  UNAUTHORIZED:         401,
-  FORBIDDEN:            403,
-  ACCOUNT_SUSPENDED:    403,
-  EMAIL_NOT_VERIFIED:   403,
-  // Upload / Resources
-  UPLOAD_NOT_ALLOWED:   403,
-  INVALID_FILE_TYPE:    415,
-  FILE_TOO_LARGE:       413,
-  UPLOAD_FAILED:        500,
-  MI_NOT_FOUND:         404,
-  // Genéricos
-  BAD_REQUEST:          400,
-  INTERNAL_ERROR:       500,
-}
-
 // ── buildError ─────────────────────────────────────────────────────────────────
 
 /**
- * Constrói os parâmetros para `new GeneralErrorResponse(...)`.
- * Centraliza a resolução de mensagem (i18n) e status HTTP.
+ * Constrói os parâmetros de mensagem e código para `new GeneralErrorResponse(...)`.
+ * O status HTTP é passado explicitamente como primeiro argumento da exceção.
  *
  * @param code   - Chave do erro (use as constantes de `ERRORS`)
  * @param lang   - Idioma da mensagem (padrão: 'pt-BR')
  *
  * @example
- *   throw new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
- *   throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED, 'en-US'))
+ *   throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+ *   throw new GeneralErrorResponse(StatusCode.FORBIDDEN,    buildError(ERRORS.AUTH.UNAUTHORIZED, 'en-US'))
  */
 export function buildError(code: ErrorMessageKey, lang: Language = 'pt-BR'): ErrorParams {
   return {
-    message:    errorMessages[lang][code],
-    statusCode: ERROR_STATUS_CODES[code],
+    message: errorMessages[lang][code],
     code,
   }
 }

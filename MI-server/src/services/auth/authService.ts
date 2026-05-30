@@ -10,6 +10,7 @@ import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { comparePassword } from '../../utils/hash'
 import { ERRORS, buildError } from '../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
 
 // ── loginService ───────────────────────────────────────────────────────────────
@@ -25,14 +26,14 @@ export async function loginService(input: LoginInput): Promise<AuthUserDTO> {
   const { email, password } = input
 
   const user = await findUserByEmail(email)
-  if (!user) throw new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
+  if (!user) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
 
   const passwordMatch = await comparePassword(password, user.passwordHash)
-  if (!passwordMatch) throw new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
+  if (!passwordMatch) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
 
-  if (user.suspended) throw new GeneralErrorResponse(buildError(ERRORS.AUTH.ACCOUNT_SUSPENDED))
+  if (user.suspended) throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.ACCOUNT_SUSPENDED))
 
-  if (!user.emailVerified) throw new GeneralErrorResponse(buildError(ERRORS.AUTH.EMAIL_NOT_VERIFIED))
+  if (!user.emailVerified) throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.EMAIL_NOT_VERIFIED))
 
   await createAuditLog({
     actorId: user.id,
@@ -63,15 +64,15 @@ export async function refreshTokenService(token: string): Promise<AuthUserDTO> {
   logger.info('IN - refreshTokenService')
 
   const stored = await findRefreshToken(token)
-  if (!stored) throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
+  if (!stored) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
 
   if (stored.expiresAt < new Date()) {
     await deleteRefreshToken(token)
-    throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
+    throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
   }
 
   const user = await findUserById(stored.userId)
-  if (!user || user.suspended) throw new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
+  if (!user || user.suspended) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
 
   logger.info('OUT - refreshTokenService')
 

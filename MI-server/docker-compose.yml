@@ -1,14 +1,11 @@
-# docker-compose.yml — ambiente de desenvolvimento local
+# docker-compose.yml — dependências de infraestrutura para desenvolvimento local
 #
-# Pré-requisito: crie o arquivo .env na raiz de MI-server/ com:
-#   JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, LOGIN_MAX_ATTEMPTS etc.
-#   (copie de .env.test.example e ajuste os valores)
+# Pré-requisito: crie o arquivo .env na raiz de MI-server/ com as variáveis da aplicação.
 #
-# Subir tudo:        docker compose up --build
-# Apenas infra:      docker compose up db minio redis
-# Ver logs da API:   docker compose logs -f api
-# Rodar seed:        docker compose exec api npx prisma db seed
+# Subir infra:       docker compose up -d
+# Parar infra:       docker compose down
 # Console MinIO:     http://localhost:9001  (minioadmin / minioadmin)
+# Rodar migrations:  npx prisma migrate dev
 
 services:
 
@@ -53,7 +50,7 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  # ── Redis (jobs assíncronos / BullMQ — futuro) ──────────────────────────────
+  # ── Redis (jobs assíncronos / BullMQ) ───────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: mi-redis
@@ -65,51 +62,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    restart: unless-stopped
-
-  # ── Migrations (one-shot) ───────────────────────────────────────────────────
-  # Roda `prisma migrate deploy` e sai.
-  # A API só sobe após este serviço concluir com sucesso.
-  migrate:
-    build:
-      context: .
-      target: migrate        # usa o stage builder (tem a CLI do Prisma)
-    container_name: mi-migrate
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/mi_db
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: "no"
-
-  # ── API ─────────────────────────────────────────────────────────────────────
-  api:
-    build:
-      context: .
-      target: production
-    container_name: mi-server
-    # Carrega segredos do .env local (JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD…)
-    env_file:
-      - .env
-    environment:
-      # Sobrescreve as variáveis de infraestrutura do .env com os hostnames
-      # internos do Docker Compose.
-      DATABASE_URL:    postgresql://postgres:postgres@db:5432/mi_db
-      MINIO_ENDPOINT:  minio
-      MINIO_PORT:      "9000"
-      MINIO_USE_SSL:   "false"
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      MINIO_BUCKET:    materiais-instrucionais
-    ports:
-      - "3333:3333"
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      minio:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:

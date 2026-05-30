@@ -5,6 +5,7 @@ import { findUserById } from '../../../../repositories/users/usersRepository'
 import { createMaterialPdf } from '../../../../repositories/resources/materials/pdf/materialPdfUploadRepository'
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../../../utils/statusCode'
 import { env } from '../../../../env'
 import type { UploadMIInput, UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
 
@@ -42,12 +43,12 @@ function sanitizeForStorageKey(name: string): string {
  */
 function validatePDFBuffer(buffer: Buffer): void {
   if (buffer.length > maxFileSizeBytes()) {
-    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.FILE_TOO_LARGE))
+    throw new GeneralErrorResponse(StatusCode.PAYLOAD_TOO_LARGE, buildError(ERRORS.ERRORS_RESOURCES.FILE_TOO_LARGE))
   }
 
   const magic = buffer.subarray(0, 4)
   if (!magic.equals(PDF_MAGIC)) {
-    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
+    throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
   }
 }
 
@@ -66,12 +67,12 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<Up
   const { title, buffer, originalFileName, mimeType, uploadedById } = input
 
   if (mimeType !== ALLOWED_MIME_TYPE) {
-    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
+    throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
   }
 
   const uploader = await findUserById(uploadedById)
   if (!uploader) {
-    throw new GeneralErrorResponse(buildError(ERRORS.GENERAL.INTERNAL_ERROR))
+    throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.GENERAL.INTERNAL_ERROR))
   }
 
   validatePDFBuffer(buffer)
@@ -88,7 +89,7 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<Up
       { 'Content-Type': ALLOWED_MIME_TYPE },
     )
   } catch (cause) {
-    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_FAILED))
+    throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_FAILED))
   }
 
   return createMaterialPdf({

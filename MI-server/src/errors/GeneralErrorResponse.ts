@@ -1,17 +1,17 @@
 // src/errors/GeneralErrorResponse.ts
+import type { StatusCodeValue } from '../utils/statusCode'
 
-/** Parâmetros aceitos pelo construtor — produzidos por buildError() */
+/** Parâmetros de mensagem e código — produzidos por buildError() */
 export interface ErrorParams {
   message: string
-  statusCode: number
   code: string
 }
 
 export class GeneralErrorResponse extends Error {
-  public readonly statusCode: number
+  public readonly statusCode: StatusCodeValue
   public readonly code: string
 
-  constructor({ message, statusCode = 400, code = 'BAD_REQUEST' }: ErrorParams) {
+  constructor(statusCode: StatusCodeValue, { message, code }: ErrorParams) {
     super(message)
     this.statusCode = statusCode
     this.code = code

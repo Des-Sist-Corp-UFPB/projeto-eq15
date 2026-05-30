@@ -2,6 +2,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ERRORS, buildError } from '../lib/errors/errors'
 import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
+import { StatusCode } from '../utils/statusCode'
 
 /**
  * Garante que o usuário autenticado possua a flag `canUpload = true`.
@@ -14,6 +15,6 @@ export async function requireUploadPermission(
   _reply: FastifyReply,
 ): Promise<void> {
   if (!request.user.canUpload) {
-    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_NOT_ALLOWED))
+    throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_NOT_ALLOWED))
   }
 }

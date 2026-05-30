@@ -1,6 +1,8 @@
 // src/pages/LoginPage.tsx
 import { useState, type FormEvent } from 'react'
-import { Eye, EyeOff, Loader2, BookOpen, GraduationCap, Users, Search } from 'lucide-react'
+import { Eye, EyeOff, Loader2, BookOpen } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { BrandingPanel } from '../components/auth/BrandingPanel'
 import { useLogin } from '../features/auth/hooks/useLogin'
 import { getApiErrorMessage, getApiErrorCode } from '../lib/apiError'
 
@@ -19,66 +21,15 @@ function resolveErrorMessage(error: unknown): string {
   return getApiErrorMessage(error)
 }
 
-// ── Componentes internos ───────────────────────────────────────────────────────
-
-function BrandingPanel() {
-  return (
-    <div className="hidden lg:flex lg:w-[52%] bg-indigo-700 flex-col justify-between p-12 text-white select-none">
-      {/* Topo — logotipo */}
-      <div className="flex items-center gap-3">
-        <div className="bg-white/10 rounded-xl p-2.5">
-          <BookOpen size={24} className="text-white" />
-        </div>
-        <div>
-          <p className="font-bold text-lg leading-tight">MI</p>
-          <p className="text-indigo-200 text-xs">Materiais Instrucionais</p>
-        </div>
-      </div>
-
-      {/* Centro — headline */}
-      <div className="space-y-6">
-        <h1 className="text-4xl font-extrabold leading-tight">
-          Acervo acadêmico
-          <br />
-          ao alcance de todos.
-        </h1>
-        <p className="text-indigo-200 text-base leading-relaxed max-w-sm">
-          Plataforma de gestão e disseminação de materiais instrucionais do
-          Campus IV da UFPB, com curadoria docente e busca semântica por IA.
-        </p>
-
-        {/* Destaques */}
-        <ul className="space-y-3 pt-2">
-          {[
-            { icon: GraduationCap, label: 'Aprovação e curadoria por professores' },
-            { icon: Search,        label: 'Busca semântica por conteúdo' },
-            { icon: Users,         label: 'Acesso para toda a comunidade acadêmica' },
-          ].map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-3 text-sm text-indigo-100">
-              <div className="shrink-0 bg-white/10 rounded-lg p-1.5">
-                <Icon size={14} />
-              </div>
-              {label}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Rodapé */}
-      <p className="text-indigo-300 text-xs">
-        Campus IV · UFPB — Rio Tinto / Mamanguape
-      </p>
-    </div>
-  )
-}
-
 // ── LoginPage ──────────────────────────────────────────────────────────────────
 
 export function LoginPage() {
   const { mutate: login, isPending, error, reset } = useLogin()
+  const location = useLocation()
+  const successMessage = (location.state as { successMessage?: string } | null)?.successMessage
 
-  const [email, setEmail]             = useState('')
-  const [password, setPassword]       = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -115,6 +66,17 @@ export function LoginPage() {
               Entre com sua conta institucional ou pessoal
             </p>
           </div>
+
+          {/* Alerta de sucesso (vindo do cadastro) */}
+          {successMessage && (
+            <div
+              role="status"
+              className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm"
+            >
+              <span className="shrink-0 mt-px">✓</span>
+              <span>{successMessage}</span>
+            </div>
+          )}
 
           {/* Alerta de erro */}
           {errorMessage && (
@@ -210,12 +172,9 @@ export function LoginPage() {
           {/* Rodapé do painel */}
           <p className="mt-8 text-center text-xs text-gray-400">
             Não tem conta?{' '}
-            <a
-              href="/register"
-              className="text-indigo-600 hover:underline font-medium"
-            >
+            <Link to="/register" className="text-indigo-600 hover:underline font-medium">
               Cadastre-se
-            </a>
+            </Link>
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
-// src/repositories/mis/misRepository.ts
-import { prisma } from '../../database/prisma'
-import type { UploadedMIDTO } from '../../@types/mis'
+// src/repositories/resources/materials/pdf/materialPdfUploadRepository.ts
+import { prisma } from '../../../../database/prisma'
+import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
 
 // Campos retornados em todas as queries — nunca expõe campos internos
 const MI_SELECT = {
@@ -16,7 +16,7 @@ const MI_SELECT = {
   updatedAt:        true,
 } as const
 
-interface CreateMIInput {
+interface CreateMaterialPdfInput {
   title:            string
   originalFileName: string
   storageKey:       string
@@ -25,7 +25,7 @@ interface CreateMIInput {
   uploadedById:     string
 }
 
-export async function createMI(input: CreateMIInput): Promise<UploadedMIDTO> {
+export async function createMaterialPdf(input: CreateMaterialPdfInput): Promise<UploadedMIDTO> {
   return prisma.materialInstrucional.create({
     data: {
       title:            input.title,

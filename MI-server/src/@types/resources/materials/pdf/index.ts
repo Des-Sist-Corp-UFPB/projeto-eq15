@@ -1,4 +1,4 @@
-// src/@types/mis/index.ts
+// src/@types/resources/materials/pdf/index.ts
 import type { MIStatus } from '@prisma/client'
 
 /** Payload interno passado do controller para o service */

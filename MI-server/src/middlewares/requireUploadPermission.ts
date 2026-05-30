@@ -14,6 +14,6 @@ export async function requireUploadPermission(
   _reply: FastifyReply,
 ): Promise<void> {
   if (!request.user.canUpload) {
-    throw new GeneralErrorResponse(buildError(ERRORS.MI.UPLOAD_NOT_ALLOWED))
+    throw new GeneralErrorResponse(buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_NOT_ALLOWED))
   }
 }

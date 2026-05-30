@@ -14,7 +14,7 @@ import { env } from './env'
 import { errorHandler } from './errors/errorHandler'
 import { authRoutes } from './routes/auth/authRoutes'
 import { usersRoutes } from './routes/users/usersRoutes'
-import { misRoutes } from './routes/mis/misRoutes'
+import { materialPdfUploadRoutes } from './routes/resources/materials/pdf/materialPdfUploadRoutes'
 
 export function buildApp() {
   const app = fastify({
@@ -77,7 +77,7 @@ export function buildApp() {
   // ── Rotas de domínio ─────────────────────────────────────────────────────────
   app.register(authRoutes, { prefix: '/auth' })
   app.register(usersRoutes, { prefix: '/users' })
-  app.register(misRoutes, { prefix: '/mis' })
+  app.register(materialPdfUploadRoutes, { prefix: '/mis' })
 
   // ── Handler global de erros ──────────────────────────────────────────────────
   app.setErrorHandler(errorHandler)

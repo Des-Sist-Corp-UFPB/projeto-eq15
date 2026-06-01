@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
+import { UploadPage } from '../pages/UploadPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -51,6 +52,14 @@ export function Router() {
           element={
             <PrivateRoute>
               <HomePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <PrivateRoute>
+              <UploadPage />
             </PrivateRoute>
           }
         />

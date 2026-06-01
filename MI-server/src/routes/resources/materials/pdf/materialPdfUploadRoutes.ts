@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { authenticate } from '../../../../middlewares/authenticate'
 import { requireUploadPermission } from '../../../../middlewares/requireUploadPermission'
 import { materialPdfUploadController } from '../../../../controllers/resources/materials/pdf/materialPdfUploadController'
+import { materialPdfListController } from '../../../../controllers/resources/materials/pdf/materialPdfListController'
 import { env } from '../../../../env'
 
 export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<void> {
@@ -27,5 +28,18 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
       preHandler: [authenticate, requireUploadPermission],
     },
     materialPdfUploadController,
+  )
+
+  /**
+   * RF-MI02 — GET /mis/me
+   * Lista todos os materiais instrucionais enviados pelo usuário autenticado.
+   *
+   * Permissão: qualquer usuário autenticado.
+   * Resposta : 200 + UploadedMIDTO[]  (ordem: mais recente primeiro)
+   */
+  app.get(
+    '/me',
+    { preHandler: [authenticate] },
+    materialPdfListController,
   )
 }

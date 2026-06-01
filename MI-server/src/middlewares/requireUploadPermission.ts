@@ -4,8 +4,12 @@ import { ERRORS, buildError } from '../lib/errors/errors'
 import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
 import { StatusCode } from '../utils/statusCode'
 
+const ROLES_WITH_UPLOAD = new Set(['INSTITUTIONALIZED', 'PROFESSOR', 'ADMIN'])
+
 /**
- * Garante que o usuário autenticado possua a flag `canUpload = true`.
+ * Garante que o usuário autenticado possa fazer upload.
+ * Permitido se o role já concede acesso (INSTITUTIONALIZED, PROFESSOR, ADMIN)
+ * ou se a flag canUpload foi explicitamente concedida (para COMMON).
  * Deve ser usado APÓS o middleware `authenticate`.
  *
  * Lança 403 UPLOAD_NOT_ALLOWED se a permissão não for concedida.
@@ -14,7 +18,8 @@ export async function requireUploadPermission(
   request: FastifyRequest,
   _reply: FastifyReply,
 ): Promise<void> {
-  if (!request.user.canUpload) {
+  const { role, canUpload } = request.user
+  if (!ROLES_WITH_UPLOAD.has(role) && !canUpload) {
     throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_NOT_ALLOWED))
   }
 }

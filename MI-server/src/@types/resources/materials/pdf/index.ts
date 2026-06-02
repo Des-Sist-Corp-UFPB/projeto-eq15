@@ -10,6 +10,12 @@ export interface UploadMIInput {
   uploadedById: string
 }
 
+/** DTO de resposta da URL pré-assinada para visualização temporária */
+export interface MaterialPresignedUrlDTO {
+  url: string
+  expiresInSeconds: number
+}
+
 /** DTO de resposta — nunca expõe campos internos desnecessários */
 export interface UploadedMIDTO {
   id: string

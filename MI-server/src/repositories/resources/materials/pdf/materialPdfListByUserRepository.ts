@@ -1,4 +1,4 @@
-// src/repositories/resources/materials/pdf/materialPdfListRepository.ts
+// src/repositories/resources/materials/pdf/materialPdfListByUserRepository.ts
 import { prisma } from '../../../../database/prisma'
 import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
 

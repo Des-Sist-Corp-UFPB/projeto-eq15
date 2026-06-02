@@ -3,8 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ERRORS, buildError } from '../lib/errors/errors'
 import { GeneralErrorResponse } from '../errors/GeneralErrorResponse'
 import { StatusCode } from '../utils/statusCode'
-
-const ROLES_WITH_UPLOAD = new Set(['INSTITUTIONALIZED', 'PROFESSOR', 'ADMIN'])
+import { INSTITUTIONALIZED, PROFESSOR, ADMIN } from '../constants/roles'
 
 /**
  * Garante que o usuário autenticado possa fazer upload.
@@ -19,7 +18,7 @@ export async function requireUploadPermission(
   _reply: FastifyReply,
 ): Promise<void> {
   const { role, canUpload } = request.user
-  if (!ROLES_WITH_UPLOAD.has(role) && !canUpload) {
+  if (!([INSTITUTIONALIZED, PROFESSOR, ADMIN] as string[]).includes(role) && !canUpload) {
     throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_NOT_ALLOWED))
   }
 }

@@ -21,9 +21,12 @@ export type ErrorMessageKey =
   | 'FILE_TOO_LARGE'
   | 'UPLOAD_FAILED'
   | 'MI_NOT_FOUND'
+  | 'MI_NOT_OWNED_BY_USER'
   // ── Genéricos ─────────────────────────────────────────────────────────────
   | 'BAD_REQUEST'
   | 'INTERNAL_ERROR'
+  | 'MISSING_ID'
+  | 'INVALID_ID_FORMAT'
 
 export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = {
   'pt-BR': {
@@ -40,8 +43,11 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FILE_TOO_LARGE:        'O arquivo excede o tamanho máximo permitido.',
     UPLOAD_FAILED:         'Falha ao armazenar o arquivo. Tente novamente.',
     MI_NOT_FOUND:          'Material instrucional não encontrado.',
+    MI_NOT_OWNED_BY_USER:  'Este material não pertence ao usuário solicitante.',
     BAD_REQUEST:           'Requisição inválida.',
     INTERNAL_ERROR:        'Erro interno do servidor.',
+    MISSING_ID:            'O identificador é obrigatório.',
+    INVALID_ID_FORMAT:     'O identificador informado está em formato inválido. Esperado: UUID v4.',
   },
 
   'en-US': {
@@ -58,8 +64,11 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FILE_TOO_LARGE:        'The file exceeds the maximum allowed size.',
     UPLOAD_FAILED:         'Failed to store the file. Please try again.',
     MI_NOT_FOUND:          'Instructional material not found.',
+    MI_NOT_OWNED_BY_USER:  'This material does not belong to the requesting user.',
     BAD_REQUEST:           'Bad request.',
     INTERNAL_ERROR:        'Internal server error.',
+    MISSING_ID:            'The identifier is required.',
+    INVALID_ID_FORMAT:     'The provided identifier has an invalid format. Expected: UUID v4.',
   },
 
   es: {
@@ -76,7 +85,10 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     FILE_TOO_LARGE:        'El archivo supera el tamaño máximo permitido.',
     UPLOAD_FAILED:         'Error al almacenar el archivo. Inténtalo de nuevo.',
     MI_NOT_FOUND:          'Material instruccional no encontrado.',
+    MI_NOT_OWNED_BY_USER:  'Este material no pertenece al usuario solicitante.',
     BAD_REQUEST:           'Solicitud no válida.',
     INTERNAL_ERROR:        'Error interno del servidor.',
+    MISSING_ID:            'El identificador es obligatorio.',
+    INVALID_ID_FORMAT:     'El identificador proporcionado tiene un formato inválido. Se esperaba: UUID v4.',
   },
 }

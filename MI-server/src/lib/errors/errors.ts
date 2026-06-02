@@ -50,9 +50,12 @@ export const ERRORS = {
     FILE_TOO_LARGE:       'FILE_TOO_LARGE',
     UPLOAD_FAILED:        'UPLOAD_FAILED',
     MI_NOT_FOUND:         'MI_NOT_FOUND',
+    MI_NOT_OWNED_BY_USER: 'MI_NOT_OWNED_BY_USER',
   },
   GENERAL: {
     BAD_REQUEST:          'BAD_REQUEST',
     INTERNAL_ERROR:       'INTERNAL_ERROR',
+    MISSING_ID:           'MISSING_ID',
+    INVALID_ID_FORMAT:    'INVALID_ID_FORMAT',
   },
 } as const satisfies Record<string, Record<string, ErrorMessageKey>>

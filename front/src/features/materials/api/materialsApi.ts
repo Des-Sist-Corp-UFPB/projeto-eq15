@@ -33,3 +33,13 @@ export async function uploadMaterialRequest(payload: UploadMaterialPayload): Pro
   })
   return data
 }
+
+export async function listMyMaterialsRequest(): Promise<UploadedMI[]> {
+  const { data } = await api.get<UploadedMI[]>('/mis/me')
+  return data
+}
+
+export async function getMaterialPresignedUrlRequest(materialId: string): Promise<{ url: string; expiresInSeconds: number }> {
+  const { data } = await api.get<{ url: string; expiresInSeconds: number }>(`/mis/${materialId}/presigned-url`)
+  return data
+}

@@ -5,6 +5,7 @@ import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
 import { UploadPage } from '../pages/UploadPage'
+import { MaterialsPage } from '../pages/MaterialsPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -60,6 +61,14 @@ export function Router() {
           element={
             <PrivateRoute>
               <UploadPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/materials"
+          element={
+            <PrivateRoute>
+              <MaterialsPage />
             </PrivateRoute>
           }
         />

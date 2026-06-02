@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, Navigate } from 'react-router-dom'
 import { BookOpen, Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useVerifyEmail } from '../features/auth/hooks/useVerifyEmail'
 import { getApiErrorMessage } from '../lib/apiError'
 
@@ -10,12 +11,12 @@ import { getApiErrorMessage } from '../lib/apiError'
 function SuccessState() {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="bg-green-50 rounded-full p-4">
-        <CheckCircle size={32} className="text-green-500" />
+      <div className="bg-green-50 dark:bg-green-950 rounded-full p-4">
+        <CheckCircle size={32} className="text-green-500 dark:text-green-400" />
       </div>
       <div>
-        <p className="font-bold text-gray-900 text-lg">E-mail verificado!</p>
-        <p className="text-gray-500 text-sm mt-1 leading-relaxed">
+        <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">E-mail verificado!</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 leading-relaxed">
           Sua conta institucional foi ativada com sucesso.
         </p>
       </div>
@@ -52,7 +53,6 @@ export function VerifyEmailSentPage() {
   }
 
   function handleCodeChange(value: string) {
-    // Aceita apenas dígitos, max 6 caracteres
     const digits = value.replace(/\D/g, '').slice(0, 6)
     setCode(digits)
     if (isError) reset()
@@ -61,7 +61,15 @@ export function VerifyEmailSentPage() {
   const errorMessage = isError ? getApiErrorMessage(error) : null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-6">
+
+      {/* Toggle flutuante — canto superior direito */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                                text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700
+                                shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+      </div>
+
       <div className="w-full max-w-sm">
 
         {/* Logo */}
@@ -70,32 +78,32 @@ export function VerifyEmailSentPage() {
             <BookOpen size={20} className="text-white" />
           </div>
           <div>
-            <p className="font-bold text-gray-900">MI</p>
-            <p className="text-gray-400 text-xs">Materiais Instrucionais · UFPB</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
+            <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
           </div>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
           {isSuccess ? <SuccessState /> : (
             <div className="flex flex-col items-center gap-5 text-center">
 
-              <div className="bg-indigo-50 rounded-full p-4">
-                <Mail size={28} className="text-indigo-600" />
+              <div className="bg-indigo-50 dark:bg-indigo-950 rounded-full p-4">
+                <Mail size={28} className="text-indigo-600 dark:text-indigo-400" />
               </div>
 
               <div>
-                <p className="font-bold text-gray-900 text-lg">Verifique seu e-mail</p>
-                <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-lg">Verifique seu e-mail</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5 leading-relaxed">
                   Enviamos um código de 6 dígitos para{' '}
-                  <span className="font-medium text-gray-700 break-all">{email}</span>.
+                  <span className="font-medium text-gray-700 dark:text-gray-300 break-all">{email}</span>.
                 </p>
               </div>
 
               {/* Formulário do código */}
               <form onSubmit={handleSubmit} className="w-full space-y-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 text-left">
+                  <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300 text-left">
                     Código de verificação
                   </label>
                   <input
@@ -108,14 +116,17 @@ export function VerifyEmailSentPage() {
                     onChange={(e) => handleCodeChange(e.target.value)}
                     disabled={isPending}
                     maxLength={6}
-                    className={`w-full px-4 py-3 rounded-lg border text-center text-2xl font-bold tracking-[0.5em]
-                                text-gray-900 placeholder-gray-300 transition
+                    className={`w-full px-4 py-3 rounded-lg border text-center text-2xl font-bold tracking-[0.5em] transition
+                                bg-white dark:bg-gray-800
+                                text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-600
                                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                                disabled:bg-gray-100 disabled:cursor-not-allowed
-                                ${isError ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                                disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+                                ${isError
+                                  ? 'border-red-400 bg-red-50 dark:bg-red-950 dark:border-red-700'
+                                  : 'border-gray-300 dark:border-gray-600'}`}
                   />
                   {errorMessage && (
-                    <p role="alert" className="text-xs text-red-600 text-left">
+                    <p role="alert" className="text-xs text-red-600 dark:text-red-400 text-left">
                       {errorMessage}
                     </p>
                   )}
@@ -141,15 +152,15 @@ export function VerifyEmailSentPage() {
                 </button>
               </form>
 
-              <div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-3 text-amber-700 text-xs text-left space-y-1">
+              <div className="w-full bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-amber-700 dark:text-amber-400 text-xs text-left space-y-1">
                 <p className="font-semibold">Não recebeu o código?</p>
-                <ul className="list-disc list-inside space-y-0.5 text-amber-600">
+                <ul className="list-disc list-inside space-y-0.5 text-amber-600 dark:text-amber-500">
                   <li>Verifique a pasta de spam.</li>
                   <li>O código expira em 24 horas.</li>
                 </ul>
               </div>
 
-              <Link to="/login" className="text-xs text-gray-400 hover:text-indigo-600 transition-colors">
+              <Link to="/login" className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
                 Voltar para o login
               </Link>
 
@@ -157,7 +168,7 @@ export function VerifyEmailSentPage() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-gray-400">
+        <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
           Campus IV · UFPB — Rio Tinto / Mamanguape
         </p>
       </div>

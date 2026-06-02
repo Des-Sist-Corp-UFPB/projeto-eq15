@@ -3,6 +3,7 @@ import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, BookOpen, Info } from 'lucide-react'
 import { BrandingPanel } from '../components/auth/BrandingPanel'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useRegister } from '../features/users/hooks/useRegister'
 import { getApiErrorMessage, getApiErrorCode, getValidationIssues } from '../lib/apiError'
 
@@ -88,7 +89,7 @@ const strengthStyles: Record<StrengthLevel, { bar: string; text: string }> = {
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
-  return <p className="mt-1 text-xs text-red-600">{message}</p>
+  return <p className="mt-1 text-xs text-red-600 dark:text-red-400">{message}</p>
 }
 
 function PasswordInput({
@@ -111,7 +112,7 @@ function PasswordInput({
   const [show, setShow] = useState(false)
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
       </label>
       <div className="relative">
@@ -123,17 +124,21 @@ function PasswordInput({
           onChange={onChange}
           disabled={disabled}
           placeholder="••••••••"
-          className={`w-full px-3.5 py-2.5 pr-10 rounded-lg border text-gray-900 placeholder-gray-400 text-sm
+          className={`w-full px-3.5 py-2.5 pr-10 rounded-lg border text-sm transition
+            bg-white dark:bg-gray-800
+            text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-            disabled:bg-gray-100 disabled:cursor-not-allowed transition
-            ${error ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+            disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+            ${error
+              ? 'border-red-400 bg-red-50 dark:bg-red-950 dark:border-red-700'
+              : 'border-gray-300 dark:border-gray-600'}`}
         />
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
           tabIndex={-1}
           aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           {show ? <EyeOff size={17} /> : <Eye size={17} />}
         </button>
@@ -192,8 +197,15 @@ export function RegisterPage() {
     <div className="min-h-screen flex">
       <BrandingPanel />
 
+      {/* Toggle flutuante — canto superior direito */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                                text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700
+                                shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+      </div>
+
       {/* ── Painel do formulário ───────────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-950">
         <div className="w-full max-w-sm">
 
           {/* Logo mobile */}
@@ -202,22 +214,22 @@ export function RegisterPage() {
               <BookOpen size={20} className="text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900">MI</p>
-              <p className="text-gray-400 text-xs">Materiais Instrucionais · UFPB</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
+              <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
             </div>
           </div>
 
           {/* Cabeçalho */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Criar conta</h2>
-            <p className="text-gray-500 text-sm mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Criar conta</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
               Preencha os dados abaixo para se cadastrar
             </p>
           </div>
 
           {/* Alerta de erro da API */}
           {apiErrorMessage && (
-            <div role="alert" className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+            <div role="alert" className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
               <span className="shrink-0 mt-px">⚠</span>
               <span>{apiErrorMessage}</span>
             </div>
@@ -228,7 +240,7 @@ export function RegisterPage() {
 
             {/* Nome */}
             <div className="space-y-1.5">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Nome completo
               </label>
               <input
@@ -240,17 +252,21 @@ export function RegisterPage() {
                 onBlur={blur('name')}
                 disabled={isPending}
                 placeholder="Seu nome"
-                className={`w-full px-3.5 py-2.5 rounded-lg border text-gray-900 placeholder-gray-400 text-sm
+                className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition
+                  bg-white dark:bg-gray-800
+                  text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                  disabled:bg-gray-100 disabled:cursor-not-allowed transition
-                  ${fieldError('name') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+                  ${fieldError('name')
+                    ? 'border-red-400 bg-red-50 dark:bg-red-950 dark:border-red-700'
+                    : 'border-gray-300 dark:border-gray-600'}`}
               />
               <FieldError message={fieldError('name')} />
             </div>
 
             {/* E-mail */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 E-mail
               </label>
               <input
@@ -262,16 +278,20 @@ export function RegisterPage() {
                 onBlur={blur('email')}
                 disabled={isPending}
                 placeholder="seu@email.com"
-                className={`w-full px-3.5 py-2.5 rounded-lg border text-gray-900 placeholder-gray-400 text-sm
+                className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition
+                  bg-white dark:bg-gray-800
+                  text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                  disabled:bg-gray-100 disabled:cursor-not-allowed transition
-                  ${fieldError('email') ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                  disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+                  ${fieldError('email')
+                    ? 'border-red-400 bg-red-50 dark:bg-red-950 dark:border-red-700'
+                    : 'border-gray-300 dark:border-gray-600'}`}
               />
               <FieldError message={fieldError('email')} />
 
               {/* Aviso de e-mail institucional */}
               {isInstitutional && !fieldError('email') && (
-                <div className="flex gap-2 mt-1.5 p-2.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs">
+                <div className="flex gap-2 mt-1.5 p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs">
                   <Info size={14} className="shrink-0 mt-px" />
                   <span>
                     E-mail institucional detectado. Sua conta precisará ser
@@ -296,7 +316,7 @@ export function RegisterPage() {
               {/* Indicador de força */}
               {strength && !fieldError('password') && (
                 <div className="mt-2 space-y-1">
-                  <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full transition-all duration-300 ${strengthStyles[strength.level].bar}`} />
                   </div>
                   <p className={`text-xs font-medium ${strengthStyles[strength.level].text}`}>
@@ -339,9 +359,9 @@ export function RegisterPage() {
           </form>
 
           {/* Link para login */}
-          <p className="mt-6 text-center text-xs text-gray-400">
+          <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
             Já tem uma conta?{' '}
-            <Link to="/login" className="text-indigo-600 hover:underline font-medium">
+            <Link to="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
               Fazer login
             </Link>
           </p>

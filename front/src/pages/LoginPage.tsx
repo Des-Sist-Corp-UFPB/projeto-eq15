@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, Loader2, BookOpen } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { BrandingPanel } from '../components/auth/BrandingPanel'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useLogin } from '../features/auth/hooks/useLogin'
 import { getApiErrorMessage, getApiErrorCode } from '../lib/apiError'
 
@@ -34,7 +35,7 @@ export function LoginPage() {
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    reset() // limpa erro anterior antes de nova tentativa
+    reset()
     login({ email: email.trim(), password })
   }
 
@@ -44,8 +45,15 @@ export function LoginPage() {
     <div className="min-h-screen flex">
       <BrandingPanel />
 
+      {/* Toggle flutuante — canto superior direito */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                                text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700
+                                shadow-sm focus:ring-indigo-500 focus:ring-offset-0" />
+      </div>
+
       {/* ── Painel do formulário ───────────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-950">
         <div className="w-full max-w-sm">
 
           {/* Logo mobile (visível apenas em telas pequenas) */}
@@ -54,15 +62,15 @@ export function LoginPage() {
               <BookOpen size={20} className="text-white" />
             </div>
             <div>
-              <p className="font-bold text-gray-900">MI</p>
-              <p className="text-gray-400 text-xs">Materiais Instrucionais · UFPB</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
+              <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
             </div>
           </div>
 
           {/* Cabeçalho do formulário */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900">Bem-vindo de volta</h2>
-            <p className="text-gray-500 text-sm mt-1">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bem-vindo de volta</h2>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
               Entre com sua conta institucional ou pessoal
             </p>
           </div>
@@ -71,7 +79,7 @@ export function LoginPage() {
           {successMessage && (
             <div
               role="status"
-              className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm"
+              className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm"
             >
               <span className="shrink-0 mt-px">✓</span>
               <span>{successMessage}</span>
@@ -82,7 +90,7 @@ export function LoginPage() {
           {errorMessage && (
             <div
               role="alert"
-              className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
+              className="mb-5 flex gap-2.5 p-3.5 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm"
             >
               <span className="shrink-0 mt-px">⚠</span>
               <span>{errorMessage}</span>
@@ -93,10 +101,7 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {/* E-mail */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 E-mail
               </label>
               <input
@@ -108,18 +113,17 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 disabled={isPending}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 text-sm
+                className="w-full px-3.5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600
+                           bg-white dark:bg-gray-800
+                           text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm
                            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                           disabled:bg-gray-100 disabled:cursor-not-allowed transition"
+                           disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition"
               />
             </div>
 
             {/* Senha */}
             <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Senha
               </label>
               <div className="relative">
@@ -132,16 +136,18 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={isPending}
-                  className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-gray-300 text-gray-900 placeholder-gray-400 text-sm
+                  className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-gray-300 dark:border-gray-600
+                             bg-white dark:bg-gray-800
+                             text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 text-sm
                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
-                             disabled:bg-gray-100 disabled:cursor-not-allowed transition"
+                             disabled:bg-gray-100 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   tabIndex={-1}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                 >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
@@ -170,9 +176,9 @@ export function LoginPage() {
           </form>
 
           {/* Rodapé do painel */}
-          <p className="mt-8 text-center text-xs text-gray-400">
+          <p className="mt-8 text-center text-xs text-gray-400 dark:text-gray-500">
             Não tem conta?{' '}
-            <Link to="/register" className="text-indigo-600 hover:underline font-medium">
+            <Link to="/register" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
               Cadastre-se
             </Link>
           </p>

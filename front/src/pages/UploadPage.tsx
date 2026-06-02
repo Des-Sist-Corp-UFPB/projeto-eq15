@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useUploadMaterial } from '../features/materials/hooks/useUploadMaterial'
 import { getApiErrorCode, getApiErrorMessage } from '../lib/apiError'
 import type { Role } from '../types/auth'
@@ -77,11 +78,12 @@ function Topbar({ userName, userRole, onBack, onLogout }: TopbarProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <p className="text-sm font-medium leading-tight">{userName}</p>
             <p className="text-indigo-200 text-xs">{ROLE_LABELS[userRole]}</p>
           </div>
+          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
           <button
             onClick={onLogout}
             aria-label="Sair da conta"
@@ -136,14 +138,14 @@ function Dropzone({ file, onFileSelect, onFileRemove, disabled = false }: Dropzo
 
   if (file) {
     return (
-      <div className="flex items-center justify-between gap-4 rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-4">
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 px-5 py-4">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="shrink-0 bg-indigo-100 rounded-lg p-2">
-            <FileText size={20} className="text-indigo-600" />
+          <div className="shrink-0 bg-indigo-100 dark:bg-indigo-900 rounded-lg p-2">
+            <FileText size={20} className="text-indigo-600 dark:text-indigo-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{formatBytes(file.size)}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{file.name}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{formatBytes(file.size)}</p>
           </div>
         </div>
         {!disabled && (
@@ -151,7 +153,7 @@ function Dropzone({ file, onFileSelect, onFileRemove, disabled = false }: Dropzo
             type="button"
             onClick={onFileRemove}
             aria-label="Remover arquivo"
-            className="shrink-0 text-gray-400 hover:text-red-500 transition-colors
+            className="shrink-0 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors
                        focus:outline-none focus:ring-2 focus:ring-red-300 rounded-lg p-1"
           >
             <X size={18} />
@@ -174,20 +176,20 @@ function Dropzone({ file, onFileSelect, onFileRemove, disabled = false }: Dropzo
       className={[
         'flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition-colors',
         disabled
-          ? 'cursor-not-allowed border-gray-200 bg-gray-50'
+          ? 'cursor-not-allowed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
           : isDragging
-            ? 'cursor-copy border-indigo-400 bg-indigo-50'
-            : 'cursor-pointer border-gray-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/40',
+            ? 'cursor-copy border-indigo-400 bg-indigo-50 dark:bg-indigo-950'
+            : 'cursor-pointer border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-indigo-400 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/40',
       ].join(' ')}
     >
-      <div className={`rounded-full p-4 ${isDragging ? 'bg-indigo-100' : 'bg-gray-100'}`}>
-        <UploadCloud size={28} className={isDragging ? 'text-indigo-500' : 'text-gray-400'} />
+      <div className={`rounded-full p-4 ${isDragging ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+        <UploadCloud size={28} className={isDragging ? 'text-indigo-500' : 'text-gray-400 dark:text-gray-500'} />
       </div>
       <div>
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {isDragging ? 'Solte o arquivo aqui' : 'Arraste um PDF ou clique para selecionar'}
         </p>
-        <p className="text-xs text-gray-400 mt-1">Somente PDF · máximo 50 MB</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Somente PDF · máximo 50 MB</p>
       </div>
       <input
         ref={inputRef}
@@ -213,30 +215,30 @@ interface SuccessStateProps {
 function SuccessState({ material, onUploadAnother, onGoHome }: SuccessStateProps) {
   return (
     <div className="flex flex-col items-center gap-6 py-8 text-center">
-      <div className="rounded-full bg-green-100 p-5">
-        <CheckCircle2 size={40} className="text-green-600" />
+      <div className="rounded-full bg-green-100 dark:bg-green-950 p-5">
+        <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
       </div>
       <div className="space-y-1">
-        <h2 className="text-xl font-bold text-gray-900">Material enviado com sucesso!</h2>
-        <p className="text-sm text-gray-500 max-w-sm">
-          <span className="font-medium text-gray-700">{material.title}</span> foi enviado e aguarda
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Material enviado com sucesso!</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+          <span className="font-medium text-gray-700 dark:text-gray-300">{material.title}</span> foi enviado e aguarda
           revisão de um professor antes de ser publicado.
         </p>
       </div>
-      <div className="rounded-xl bg-gray-50 border border-gray-200 px-5 py-4 w-full text-left space-y-2">
+      <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-4 w-full text-left space-y-2">
         <div className="flex justify-between text-xs">
-          <span className="text-gray-500">Arquivo</span>
-          <span className="text-gray-700 font-medium truncate ml-4 max-w-[60%] text-right">
+          <span className="text-gray-500 dark:text-gray-400">Arquivo</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium truncate ml-4 max-w-[60%] text-right">
             {material.originalFileName}
           </span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-gray-500">Tamanho</span>
-          <span className="text-gray-700 font-medium">{formatBytes(material.sizeBytes)}</span>
+          <span className="text-gray-500 dark:text-gray-400">Tamanho</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium">{formatBytes(material.sizeBytes)}</span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-gray-500">Status</span>
-          <span className="inline-flex items-center gap-1 text-amber-700 font-medium">
+          <span className="text-gray-500 dark:text-gray-400">Status</span>
+          <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             Aguardando revisão
           </span>
@@ -245,9 +247,9 @@ function SuccessState({ material, onUploadAnother, onGoHome }: SuccessStateProps
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <button
           onClick={onUploadAnother}
-          className="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium
-                     text-gray-700 hover:bg-gray-50 transition-colors
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium
+                     text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
         >
           Enviar outro material
         </button>
@@ -255,7 +257,7 @@ function SuccessState({ material, onUploadAnother, onGoHome }: SuccessStateProps
           onClick={onGoHome}
           className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white
                      hover:bg-indigo-700 transition-colors
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
         >
           Ir para o início
         </button>
@@ -308,7 +310,7 @@ export function UploadPage() {
   const isUploading = isPending
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
       <Topbar
         userName={user?.name ?? ''}
         userRole={user?.role ?? 'COMMON'}
@@ -321,21 +323,21 @@ export function UploadPage() {
 
           {/* Cabeçalho da página */}
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-900">Upload de Material</h1>
-            <p className="text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Upload de Material</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Envie um material instrucional em PDF para análise e publicação.
             </p>
           </div>
 
           {/* Sem permissão de upload */}
           {!canUpload && (
-            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
-              <AlertCircle size={18} className="shrink-0 text-amber-600 mt-0.5" />
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 px-5 py-4">
+              <AlertCircle size={18} className="shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
               <div className="space-y-0.5">
-                <p className="text-sm font-medium text-amber-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                   Permissão de upload não habilitada
                 </p>
-                <p className="text-xs text-amber-700">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
                   Sua conta ainda não tem permissão para enviar materiais. Entre em contato com um
                   administrador ou professor para solicitar acesso.
                 </p>
@@ -344,7 +346,7 @@ export function UploadPage() {
           )}
 
           {/* Card principal */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
 
             {/* Estado de sucesso */}
             {isSuccess && uploadedMaterial && (
@@ -361,7 +363,7 @@ export function UploadPage() {
 
                 {/* Dropzone */}
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Arquivo PDF <span className="text-red-500">*</span>
                   </label>
                   <Dropzone
@@ -374,9 +376,9 @@ export function UploadPage() {
 
                 {/* Título */}
                 <div className="space-y-1.5">
-                  <label htmlFor="mi-title" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="mi-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Título
-                    <span className="ml-1 text-xs text-gray-400 font-normal">(opcional)</span>
+                    <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
                   </label>
                   <input
                     id="mi-title"
@@ -386,22 +388,23 @@ export function UploadPage() {
                     placeholder="Nome do material instrucional"
                     maxLength={255}
                     disabled={isUploading || !canUpload}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-900
-                               placeholder:text-gray-400
+                    className="w-full rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm
+                               text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500
+                               bg-white dark:bg-gray-800
                                focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-                               disabled:bg-gray-50 disabled:cursor-not-allowed
+                               disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
                                transition-colors"
                   />
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
                     Se não preenchido, o nome do arquivo será usado como título.
                   </p>
                 </div>
 
                 {/* Mensagem de erro */}
                 {error && (
-                  <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                    <AlertCircle size={16} className="shrink-0 text-red-500 mt-0.5" />
-                    <p className="text-sm text-red-700">{friendlyError(error)}</p>
+                  <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3">
+                    <AlertCircle size={16} className="shrink-0 text-red-500 dark:text-red-400 mt-0.5" />
+                    <p className="text-sm text-red-700 dark:text-red-400">{friendlyError(error)}</p>
                   </div>
                 )}
 
@@ -413,7 +416,7 @@ export function UploadPage() {
                              text-sm font-semibold text-white
                              hover:bg-indigo-700 active:bg-indigo-800
                              disabled:opacity-50 disabled:cursor-not-allowed
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900
                              transition-colors"
                 >
                   {isUploading ? (
@@ -435,7 +438,7 @@ export function UploadPage() {
             )}
           </div>
 
-          <p className="text-center text-xs text-gray-400">
+          <p className="text-center text-xs text-gray-400 dark:text-gray-500">
             Campus IV · UFPB — Rio Tinto / Mamanguape
           </p>
         </div>

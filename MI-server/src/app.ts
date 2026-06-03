@@ -15,6 +15,7 @@ import { errorHandler } from './errors/errorHandler'
 import { authRoutes } from './routes/auth/authRoutes'
 import { usersRoutes } from './routes/users/usersRoutes'
 import { materialPdfUploadRoutes } from './routes/resources/materials/pdf/materialPdfUploadRoutes'
+import { logsRoutes } from './routes/logs/logsRoutes'
 
 export function buildApp() {
   const app = fastify({
@@ -37,8 +38,10 @@ export function buildApp() {
 
   // ── Plugins globais ──────────────────────────────────────────────────────────
   app.register(fastifyCors, {
-    origin: env.NODE_ENV === 'production' ? false : true,
-    credentials: true,
+    origin:         env.NODE_ENV === 'production' ? false : true,
+    credentials:    true,
+    methods:        ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Accept', 'Content-Type', 'Authorization'],
   })
 
   app.register(fastifyCookie)
@@ -78,6 +81,7 @@ export function buildApp() {
   app.register(authRoutes, { prefix: '/auth' })
   app.register(usersRoutes, { prefix: '/users' })
   app.register(materialPdfUploadRoutes, { prefix: '/mis' })
+  app.register(logsRoutes, { prefix: '/logs' })
 
   // ── Handler global de erros ──────────────────────────────────────────────────
   app.setErrorHandler(errorHandler)

@@ -5,6 +5,12 @@ import { requireUploadPermission } from '../../../../middlewares/requireUploadPe
 import { materialPdfUploadController } from '../../../../controllers/resources/materials/pdf/materialPdfUploadController'
 import { materialPdfListByUserController } from '../../../../controllers/resources/materials/pdf/materialPdfListByUserController'
 import { materialPdfPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfPresignedUrlController'
+import { materialPdfPendingListController } from '../../../../controllers/resources/materials/pdf/materialPdfPendingListController'
+import { materialPdfAllListController } from '../../../../controllers/resources/materials/pdf/materialPdfAllListController'
+import { materialPdfPublicListController } from '../../../../controllers/resources/materials/pdf/materialPdfPublicListController'
+import { materialPdfPublicPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfPublicPresignedUrlController'
+import { materialPdfReviewPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewPresignedUrlController'
+import { materialPdfReviewController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewController'
 import { env } from '../../../../env'
 
 export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<void> {
@@ -32,6 +38,46 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
   )
 
   /**
+   * GET /mis/public
+   * Lista materiais APPROVED — todos os usuários autenticados.
+   */
+  app.get(
+    '/public',
+    { preHandler: [authenticate] },
+    materialPdfPublicListController,
+  )
+
+  /**
+   * GET /mis/:id/public-presigned-url
+   * URL pré-assinada para material APPROVED — todos os usuários autenticados.
+   */
+  app.get(
+    '/:id/public-presigned-url',
+    { preHandler: [authenticate] },
+    materialPdfPublicPresignedUrlController,
+  )
+
+  /**
+   * GET /mis/all
+   * Lista todos os materiais da plataforma (PROFESSOR, ADMIN). Filtro por status.
+   */
+  app.get(
+    '/all',
+    { preHandler: [authenticate] },
+    materialPdfAllListController,
+  )
+
+  /**
+   * RF-MI03 — GET /mis/pending
+   * Lista materiais pendentes de revisão (PROFESSOR, ADMIN).
+   */
+  app.get(
+    '/pending',
+    { preHandler: [authenticate] },
+    materialPdfPendingListController,
+  )
+
+  /**
    * RF-MI02 — GET /mis/me
    * Lista todos os materiais instrucionais enviados pelo usuário autenticado.
    *
@@ -45,7 +91,27 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
   )
 
   /**
-   * RF-MI03 — GET /mis/:id/presigned-url
+   * RF-MI05 — GET /mis/:id/review-presigned-url
+   * URL pré-assinada para professor visualizar qualquer PDF (sem verificação de dono).
+   */
+  app.get(
+    '/:id/review-presigned-url',
+    { preHandler: [authenticate] },
+    materialPdfReviewPresignedUrlController,
+  )
+
+  /**
+   * RF-MI06 — PATCH /mis/:id/review
+   * Aprova ou rejeita um material pendente. Body: { decision: 'APPROVED' | 'REJECTED' }
+   */
+  app.patch(
+    '/:id/review',
+    { preHandler: [authenticate] },
+    materialPdfReviewController,
+  )
+
+  /**
+   * RF-MI04 — GET /mis/:id/presigned-url
    * Gera URL temporária (1h) para visualização direta do PDF no MinIO.
    *
    * Permissão: INSTITUTIONALIZED, PROFESSOR, ADMIN — apenas dono do material.

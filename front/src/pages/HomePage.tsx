@@ -8,6 +8,10 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  ShieldCheck,
+  ClipboardCheck,
+  ScrollText,
+  Library,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -158,6 +162,34 @@ export function HomePage() {
       description: 'Ajuste preferências de notificações e privacidade da sua conta.',
       onClick:     () => navigate('/settings'),
     },
+    ...(user?.role === 'PROFESSOR' || user?.role === 'ADMIN' ? [
+      {
+        icon:        ClipboardCheck,
+        title:       'Revisar Materiais',
+        description: 'Aprove ou rejeite submissões de materiais instrucionais pendentes.',
+        onClick:     () => navigate('/professor/review'),
+      },
+      {
+        icon:        Library,
+        title:       'Todos os Materiais',
+        description: 'Visualize todos os materiais enviados à plataforma, por status.',
+        onClick:     () => navigate('/professor/materials'),
+      },
+    ] : []),
+    ...(user?.role === 'ADMIN' ? [
+      {
+        icon:        ShieldCheck,
+        title:       'Gerenciar Usuários',
+        description: 'Promova usuários para Professor e gerencie permissões de acesso.',
+        onClick:     () => navigate('/admin/users'),
+      },
+      {
+        icon:        ScrollText,
+        title:       'Logs de Inspeção',
+        description: 'Visualize o rastreio de ciclo de vida das requisições HTTP.',
+        onClick:     () => navigate('/admin/logs'),
+      },
+    ] : []),
   ]
 
   return (

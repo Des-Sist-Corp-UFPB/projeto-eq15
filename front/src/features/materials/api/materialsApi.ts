@@ -43,3 +43,79 @@ export async function getMaterialPresignedUrlRequest(materialId: string): Promis
   const { data } = await api.get<{ url: string; expiresInSeconds: number }>(`/mis/${materialId}/presigned-url`)
   return data
 }
+
+// ── Fluxo de revisão docente ──────────────────────────────────────────────────
+
+export interface PendingMaterial {
+  id: string
+  title: string
+  originalFileName: string
+  storageKey: string
+  mimeType: string
+  sizeBytes: number
+  status: MIStatus
+  uploadedById: string
+  uploadedBy: { name: string; email: string }
+  createdAt: string
+  updatedAt: string
+}
+
+export type ReviewDecision = 'APPROVED' | 'REJECTED'
+
+export interface AllMaterialsResponse {
+  materials: PendingMaterial[]
+  total:     number
+  page:      number
+  perPage:   number
+}
+
+export async function listPublicMaterialsRequest(params?: {
+  page?:    number
+  perPage?: number
+}): Promise<AllMaterialsResponse> {
+  const query = new URLSearchParams()
+  if (params?.page)    query.append('page',    String(params.page))
+  if (params?.perPage) query.append('perPage', String(params.perPage))
+  const { data } = await api.get<AllMaterialsResponse>(`/mis/public?${query}`)
+  return data
+}
+
+export async function getPublicPresignedUrlRequest(
+  materialId: string,
+): Promise<{ url: string; expiresInSeconds: number }> {
+  const { data } = await api.get<{ url: string; expiresInSeconds: number }>(
+    `/mis/${materialId}/public-presigned-url`,
+  )
+  return data
+}
+
+export async function listAllMaterialsRequest(params?: {
+  status?:  MIStatus
+  page?:    number
+  perPage?: number
+}): Promise<AllMaterialsResponse> {
+  const query = new URLSearchParams()
+  if (params?.status)  query.append('status',  params.status)
+  if (params?.page)    query.append('page',    String(params.page))
+  if (params?.perPage) query.append('perPage', String(params.perPage))
+  const { data } = await api.get<AllMaterialsResponse>(`/mis/all?${query}`)
+  return data
+}
+
+export async function listPendingMaterialsRequest(): Promise<PendingMaterial[]> {
+  const { data } = await api.get<PendingMaterial[]>('/mis/pending')
+  return data
+}
+
+export async function getReviewPresignedUrlRequest(materialId: string): Promise<{ url: string; expiresInSeconds: number }> {
+  const { data } = await api.get<{ url: string; expiresInSeconds: number }>(`/mis/${materialId}/review-presigned-url`)
+  return data
+}
+
+export async function reviewMaterialRequest(
+  materialId: string,
+  decision: ReviewDecision,
+): Promise<UploadedMI> {
+  const { data } = await api.patch<UploadedMI>(`/mis/${materialId}/review`, { decision })
+  return data
+}

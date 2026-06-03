@@ -43,7 +43,9 @@ COPY --from=api-builder /api/dist ./dist
 
 # Frontend estático servido pelo Nginx na porta 80
 COPY --from=web-builder /web/dist /usr/share/nginx/html
-COPY front/nginx.conf /etc/nginx/conf.d/default.conf
+# Alpine nginx usa http.d/, não conf.d/
+RUN mkdir -p /etc/nginx/http.d
+COPY front/nginx.conf /etc/nginx/http.d/default.conf
 
 # Script de inicialização dos dois processos
 COPY start.sh /start.sh

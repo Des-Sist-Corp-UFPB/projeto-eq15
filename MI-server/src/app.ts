@@ -38,7 +38,7 @@ export function buildApp() {
 
   // ── Plugins globais ──────────────────────────────────────────────────────────
   app.register(fastifyCors, {
-    origin:         env.NODE_ENV === 'production' ? false : true,
+    origin:         env.NODE_ENV === 'production' ? env.APP_URL : true,
     credentials:    true,
     methods:        ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Accept', 'Content-Type', 'Authorization'],

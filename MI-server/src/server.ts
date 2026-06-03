@@ -5,18 +5,21 @@ import { env } from './env'
 
 const app = buildApp()
 
-// Garante que o bucket MinIO existe antes de aceitar requisições
-ensureBucket()
-  .then(() => {
-    app.listen({ port: env.PORT, host: '0.0.0.0' }, (err) => {
-      if (err) {
-        app.log.error(err)
-        process.exit(1)
-      }
-      console.log(`🚀 MI-server running on http://0.0.0.0:${env.PORT}`)
-    })
+async function main() {
+  try {
+    await ensureBucket()
+    console.log('✅ MinIO bucket pronto')
+  } catch (err) {
+    console.warn('⚠️  MinIO não acessível na inicialização — subindo sem armazenamento:', (err as Error).message)
+  }
+
+  app.listen({ port: env.PORT, host: '0.0.0.0' }, (err) => {
+    if (err) {
+      app.log.error(err)
+      process.exit(1)
+    }
+    console.log(`🚀 MI-server running on http://0.0.0.0:${env.PORT}`)
   })
-  .catch((err) => {
-    console.error('❌ Falha ao conectar ao MinIO na inicialização:', err)
-    process.exit(1)
-  })
+}
+
+main()

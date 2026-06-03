@@ -28,6 +28,20 @@ RUN npm run build
 FROM node:22-alpine AS production
 ENV NODE_ENV=production
 
+# ── MinIO — credenciais fornecidas pelo professor para o projeto eq15 ──────────
+ENV MINIO_ENDPOINT=minio
+ENV MINIO_PORT=9000
+ENV MINIO_USE_SSL=false
+ENV MINIO_ACCESS_KEY=eq15
+ENV MINIO_SECRET_KEY=jnR1KLVogOewyJis2oU0Yrg4
+ENV MINIO_BUCKET=eq15
+
+# ── Defaults mínimos — sobrescrever no servidor com valores reais ──────────────
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/eq15
+ENV JWT_SECRET=placeholder-configure-no-servidor-com-valor-real
+ENV ADMIN_EMAIL=admin@dcx.ufpb.br
+ENV ADMIN_PASSWORD=placeholder123456
+
 RUN apk add --no-cache nginx
 
 WORKDIR /api

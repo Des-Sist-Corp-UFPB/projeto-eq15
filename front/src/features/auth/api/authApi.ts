@@ -10,3 +10,8 @@ export async function loginRequest(payload: LoginPayload): Promise<LoginResponse
 export async function logoutRequest(): Promise<void> {
   await api.post('/auth/logout')
 }
+
+export async function verifyEmailRequest(code: string): Promise<{ message: string }> {
+  const { data } = await api.post<{ message: string }>('/auth/verify-email', { code })
+  return data
+}

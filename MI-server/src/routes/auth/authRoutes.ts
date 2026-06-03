@@ -6,6 +6,7 @@ import {
   refreshController,
   logoutController,
 } from '../../controllers/auth/authController'
+import { emailVerificationController } from '../../controllers/auth/emailVerificationController'
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
   app.get('/health', async () => ({
@@ -28,4 +29,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   // POST /auth/logout — Encerramento de sessão (invalida o refresh token no servidor)
   app.post('/logout', logoutController)
+
+  // POST /auth/verify-email — Confirmação de e-mail institucional via código de 6 dígitos
+  app.post('/verify-email', emailVerificationController)
 }

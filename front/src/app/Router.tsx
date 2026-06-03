@@ -2,7 +2,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LoginPage } from '../pages/LoginPage'
+import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
+import { UploadPage } from '../pages/UploadPage'
+import { MaterialsPage } from '../pages/MaterialsPage'
+import { AdminUsersPage } from '../pages/AdminUsersPage'
+import { AdminLogsPage } from '../pages/AdminLogsPage'
+import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
+import { AllMaterialsPage } from '../pages/AllMaterialsPage'
+import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
 // ── Guards ─────────────────────────────────────────────────────────────────────
@@ -17,6 +25,22 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+/** Redireciona para "/" se o usuário não for ADMIN */
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'ADMIN') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+/** Redireciona para "/" se o usuário não for PROFESSOR ou ADMIN */
+function ProfessorRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'PROFESSOR' && user?.role !== 'ADMIN') return <Navigate to="/" replace />
+  return <>{children}</>
 }
 
 // ── Rotas ──────────────────────────────────────────────────────────────────────
@@ -34,6 +58,14 @@ export function Router() {
             </PublicRoute>
           }
         />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
 
         {/* Protegidas */}
         <Route
@@ -44,6 +76,61 @@ export function Router() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/upload"
+          element={
+            <PrivateRoute>
+              <UploadPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/materials"
+          element={
+            <PrivateRoute>
+              <MaterialsPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Exclusivas de PROFESSOR e ADMIN */}
+        <Route
+          path="/professor/review"
+          element={
+            <ProfessorRoute>
+              <ProfessorReviewPage />
+            </ProfessorRoute>
+          }
+        />
+        <Route
+          path="/professor/materials"
+          element={
+            <ProfessorRoute>
+              <AllMaterialsPage />
+            </ProfessorRoute>
+          }
+        />
+
+        {/* Exclusivas de ADMIN */}
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminUsersPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/logs"
+          element={
+            <AdminRoute>
+              <AdminLogsPage />
+            </AdminRoute>
+          }
+        />
+
+        {/* Verificação de e-mail — acessível sem autenticação */}
+        <Route path="/verify-email-sent" element={<VerifyEmailSentPage />} />
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />

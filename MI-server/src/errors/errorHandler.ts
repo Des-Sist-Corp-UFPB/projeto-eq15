@@ -3,8 +3,11 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { ZodError } from 'zod'
 import { GeneralErrorResponse } from './GeneralErrorResponse'
 
+// Códigos de erro injetados por @fastify/multipart
+const MULTIPART_FILE_TOO_LARGE = 'FST_REQ_FILE_TOO_LARGE'
+
 export function errorHandler(
-  error: Error,
+  error: Error & { code?: string; statusCode?: number },
   _request: FastifyRequest,
   reply: FastifyReply,
 ): void {
@@ -22,6 +25,16 @@ export function errorHandler(
       status: 'error',
       message: error.message,
       code: error.code,
+    })
+    return
+  }
+
+  // Arquivo maior que o limite configurado no plugin @fastify/multipart
+  if (error.code === MULTIPART_FILE_TOO_LARGE) {
+    reply.status(413).send({
+      status: 'error',
+      message: 'O arquivo excede o tamanho máximo permitido.',
+      code: 'FILE_TOO_LARGE',
     })
     return
   }

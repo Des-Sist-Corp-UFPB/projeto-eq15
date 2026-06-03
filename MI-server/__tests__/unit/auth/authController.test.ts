@@ -48,6 +48,7 @@ import {
 } from '../../../src/repositories/auth/authRepository'
 import { logger } from '../../../src/lib/logger'
 import { GeneralErrorResponse } from '../../../src/errors/GeneralErrorResponse'
+import { ERRORS, buildError } from '../../../src/lib/errors/errors'
 import type { AuthUserDTO } from '../../../src/@types/auth'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -157,7 +158,7 @@ describe('loginController', () => {
 
   describe('fluxo de erro', () => {
     it('deve re-lançar o erro quando loginService falha', async () => {
-      const thrownError = new GeneralErrorResponse('Credenciais inválidas.', 401, 'INVALID_CREDENTIALS')
+      const thrownError = new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
       vi.mocked(loginService).mockRejectedValue(thrownError)
 
       await expect(
@@ -283,7 +284,7 @@ describe('refreshController', () => {
 
   describe('fluxo de erro', () => {
     it('deve re-lançar o erro quando refreshTokenService falha', async () => {
-      const thrownError = new GeneralErrorResponse('Token inválido ou expirado.', 401, 'UNAUTHORIZED')
+      const thrownError = new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
       vi.mocked(refreshTokenService).mockRejectedValue(thrownError)
 
       await expect(

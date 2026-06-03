@@ -9,6 +9,9 @@ dotenv.config()
 export default defineConfig({
   earlyAccess: true,
   schema: 'prisma/schema.prisma',
+  datasource: {
+    url: process.env['DATABASE_URL'] as string,
+  },
   migrate: {
     async adapter(env) {
       const pool = new pg.Pool({

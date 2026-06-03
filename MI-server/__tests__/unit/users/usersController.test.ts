@@ -27,6 +27,7 @@ import { createUserService } from '../../../src/services/users/usersService'
 import { createInspectionLog } from '../../../src/repositories/inspectionLog/inspectionLogRepository'
 import { logger } from '../../../src/lib/logger'
 import { GeneralErrorResponse } from '../../../src/errors/GeneralErrorResponse'
+import { ERRORS, buildError } from '../../../src/lib/errors/errors'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,7 @@ describe('createUserController', () => {
 
     it('deve logar "ERROR - createUserController" quando o service lança erro', async () => {
       vi.mocked(createUserService).mockRejectedValue(
-        new GeneralErrorResponse('E-mail já cadastrado.', 409, 'EMAIL_ALREADY_EXISTS'),
+        new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
       )
 
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
@@ -179,7 +180,7 @@ describe('createUserController', () => {
 
     it('deve criar InspectionLog ERROR com mensagem e code em caso de falha', async () => {
       vi.mocked(createUserService).mockRejectedValue(
-        new GeneralErrorResponse('E-mail já cadastrado.', 409, 'EMAIL_ALREADY_EXISTS'),
+        new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
       )
 
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
@@ -199,7 +200,7 @@ describe('createUserController', () => {
     })
 
     it('deve re-lançar o erro após registrar o InspectionLog ERROR', async () => {
-      const thrownError = new GeneralErrorResponse('E-mail já cadastrado.', 409, 'EMAIL_ALREADY_EXISTS')
+      const thrownError = new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
       vi.mocked(createUserService).mockRejectedValue(thrownError)
 
       await expect(

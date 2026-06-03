@@ -1,43 +1,69 @@
-version: '3.9'
+# docker-compose.yml — dependências de infraestrutura para desenvolvimento local
+#
+# Pré-requisito: crie o arquivo .env na raiz de MI-server/ com as variáveis da aplicação.
+#
+# Subir infra:       docker compose up -d
+# Parar infra:       docker compose down
+# Console MinIO:     http://localhost:9001  (minioadmin / minioadmin)
+# Rodar migrations:  npx prisma migrate dev
 
 services:
-  api:
-    build: .
-    container_name: mi-server
-    ports:
-      - '3333:3333'
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    restart: unless-stopped
 
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     container_name: mi-postgres
     environment:
-      POSTGRES_DB: mi_db
-      POSTGRES_USER: postgres
+      POSTGRES_DB:       mi_db
+      POSTGRES_USER:     postgres
       POSTGRES_PASSWORD: postgres
     volumes:
       - pg_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "5432:5432"
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mi_db"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
+  # ── MinIO (armazenamento de PDFs) ───────────────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    container_name: mi-minio
+    environment:
+      MINIO_ROOT_USER:     minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # S3 API  →  usado pela aplicação
+      - "9001:9001"   # Console web  →  http://localhost:9001
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── Redis (jobs assíncronos / BullMQ) ───────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: mi-redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
     restart: unless-stopped
 
 volumes:
   pg_data:
+  minio_data:

@@ -18,6 +18,36 @@ const envSchema = z.object({
     .min(8, 'ADMIN_PASSWORD must have at least 8 characters'),
   LOGIN_MAX_ATTEMPTS: z.coerce.number().default(5),
   LOGIN_BLOCK_DURATION_SECONDS: z.coerce.number().default(900),
+
+  // ── MinIO ──────────────────────────────────────────────────────────────────
+  MINIO_ENDPOINT:   z.string().min(1).default('localhost'),
+  MINIO_PORT:       z.coerce.number().default(9000),
+  MINIO_USE_SSL:    z
+    .string()
+    .optional()
+    .default('false')
+    .transform((v) => v === 'true'),
+  MINIO_ACCESS_KEY: z.string().min(1, 'MINIO_ACCESS_KEY is required'),
+  MINIO_SECRET_KEY: z.string().min(1, 'MINIO_SECRET_KEY is required'),
+  MINIO_BUCKET:     z.string().min(1).default('materiais-instrucionais'),
+
+  // ── Upload ─────────────────────────────────────────────────────────────────
+  MI_MAX_FILE_SIZE_MB: z.coerce.number().default(50),
+
+  // ── E-mail (SMTP) ──────────────────────────────────────────────────────────
+  // Quando não configurado, o link de verificação é impresso no console (dev).
+  SMTP_HOST:    z.string().optional(),
+  SMTP_PORT:    z.coerce.number().optional(),
+  SMTP_SECURE:  z.string().optional().default('false').transform((v) => v === 'true'),
+  SMTP_USER:    z.string().optional(),
+  SMTP_PASS:    z.string().optional(),
+  SMTP_FROM:    z.string().optional().default('MI UFPB <noreply@dcx.ufpb.br>'),
+
+  // URL base do frontend (usada no link do e-mail de verificação)
+  APP_URL: z.string().url().optional().default('http://localhost:5173'),
+
+  // Validade do token de verificação de e-mail em horas
+  EMAIL_VERIFICATION_EXPIRES_HOURS: z.coerce.number().optional().default(24),
 })
 
 const _env = envSchema.safeParse(process.env)

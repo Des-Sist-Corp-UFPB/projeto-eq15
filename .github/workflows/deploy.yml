@@ -92,22 +92,38 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           # Secrets repassados como variáveis de ambiente para o script remoto
-          DATABASE_URL: ${{ secrets.DB_URL }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACTOR: ${{ github.actor }}
-          SHA: ${{ github.sha }}
-          REPO_OWNER: ${{ env.OWNER_LC }}
+          DATABASE_URL:     ${{ secrets.DB_URL }}
+          DB_USERNAME:      ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD:      ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET:       ${{ secrets.JWT_SECRET }}
+          ADMIN_EMAIL:      ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD:   ${{ secrets.ADMIN_PASSWORD }}
+          # MinIO (armazenamento de PDFs)
+          MINIO_ENDPOINT:   ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_PORT:       ${{ secrets.MINIO_PORT }}
+          MINIO_USE_SSL:    ${{ secrets.MINIO_USE_SSL }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_BUCKET:     ${{ secrets.MINIO_BUCKET }}
+          # Frontend URL (CORS + link do e-mail de verificação)
+          APP_URL:          ${{ secrets.APP_URL }}
+          # SMTP (opcional — sem config, link é impresso no console)
+          SMTP_HOST:        ${{ secrets.SMTP_HOST }}
+          SMTP_PORT:        ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE:      ${{ secrets.SMTP_SECURE }}
+          SMTP_USER:        ${{ secrets.SMTP_USER }}
+          SMTP_PASS:        ${{ secrets.SMTP_PASS }}
+          SMTP_FROM:        ${{ secrets.SMTP_FROM }}
+          GHCR_TOKEN:       ${{ secrets.GITHUB_TOKEN }}
+          ACTOR:            ${{ github.actor }}
+          SHA:              ${{ github.sha }}
+          REPO_OWNER:       ${{ env.OWNER_LC }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.SSH_DEPLOY_KEY }}
           port: 22
-          envs: DATABASE_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,ADMIN_EMAIL,ADMIN_PASSWORD,GHCR_TOKEN,ACTOR,SHA,REPO_OWNER
+          envs: DATABASE_URL,DB_USERNAME,DB_PASSWORD,JWT_SECRET,ADMIN_EMAIL,ADMIN_PASSWORD,MINIO_ENDPOINT,MINIO_PORT,MINIO_USE_SSL,MINIO_ACCESS_KEY,MINIO_SECRET_KEY,MINIO_BUCKET,APP_URL,SMTP_HOST,SMTP_PORT,SMTP_SECURE,SMTP_USER,SMTP_PASS,SMTP_FROM,GHCR_TOKEN,ACTOR,SHA,REPO_OWNER
           script: |
             set -e
 
@@ -115,7 +131,6 @@ jobs:
             mkdir -p "$DEPLOY_PATH"
             cd "$DEPLOY_PATH"
 
-            # Monta DATABASE_URL no formato Prisma caso DB_URL não esteja configurada
             # DB_URL esperado: postgresql://usuario:senha@host.docker.internal:8115/eq15
             FINAL_DB_URL="${DATABASE_URL}"
 
@@ -130,6 +145,19 @@ jobs:
             ADMIN_PASSWORD=${ADMIN_PASSWORD}
             LOGIN_MAX_ATTEMPTS=5
             LOGIN_BLOCK_DURATION_SECONDS=900
+            MINIO_ENDPOINT=${MINIO_ENDPOINT}
+            MINIO_PORT=${MINIO_PORT:-9000}
+            MINIO_USE_SSL=${MINIO_USE_SSL:-false}
+            MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+            MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+            MINIO_BUCKET=${MINIO_BUCKET:-materiais-instrucionais}
+            APP_URL=${APP_URL}
+            SMTP_HOST=${SMTP_HOST}
+            SMTP_PORT=${SMTP_PORT}
+            SMTP_SECURE=${SMTP_SECURE:-false}
+            SMTP_USER=${SMTP_USER}
+            SMTP_PASS=${SMTP_PASS}
+            SMTP_FROM=${SMTP_FROM}
             API_IMAGE=ghcr.io/${REPO_OWNER}/projeto-eq15-api:${SHA}
             WEB_IMAGE=ghcr.io/${REPO_OWNER}/projeto-eq15-web:${SHA}
             EOF

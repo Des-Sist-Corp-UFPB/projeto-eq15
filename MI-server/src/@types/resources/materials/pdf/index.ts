@@ -16,6 +16,21 @@ export interface MaterialPresignedUrlDTO {
   expiresInSeconds: number
 }
 
+/** DTO de material pendente — inclui dados do autor para exibição no painel do professor */
+export interface PendingMaterialDTO {
+  id: string
+  title: string
+  originalFileName: string
+  storageKey: string
+  mimeType: string
+  sizeBytes: number
+  status: MIStatus
+  uploadedById: string
+  uploadedBy: { name: string; email: string }
+  createdAt: Date
+  updatedAt: Date
+}
+
 /** DTO de resposta — nunca expõe campos internos desnecessários */
 export interface UploadedMIDTO {
   id: string

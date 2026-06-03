@@ -22,6 +22,7 @@ export type ErrorMessageKey =
   | 'UPLOAD_FAILED'
   | 'MI_NOT_FOUND'
   | 'MI_NOT_OWNED_BY_USER'
+  | 'MI_NOT_PENDING'
   // ── Genéricos ─────────────────────────────────────────────────────────────
   | 'BAD_REQUEST'
   | 'INTERNAL_ERROR'
@@ -44,6 +45,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     UPLOAD_FAILED:         'Falha ao armazenar o arquivo. Tente novamente.',
     MI_NOT_FOUND:          'Material instrucional não encontrado.',
     MI_NOT_OWNED_BY_USER:  'Este material não pertence ao usuário solicitante.',
+    MI_NOT_PENDING:        'Este material não está pendente de revisão.',
     BAD_REQUEST:           'Requisição inválida.',
     INTERNAL_ERROR:        'Erro interno do servidor.',
     MISSING_ID:            'O identificador é obrigatório.',
@@ -65,6 +67,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     UPLOAD_FAILED:         'Failed to store the file. Please try again.',
     MI_NOT_FOUND:          'Instructional material not found.',
     MI_NOT_OWNED_BY_USER:  'This material does not belong to the requesting user.',
+    MI_NOT_PENDING:        'This material is not pending review.',
     BAD_REQUEST:           'Bad request.',
     INTERNAL_ERROR:        'Internal server error.',
     MISSING_ID:            'The identifier is required.',
@@ -86,6 +89,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     UPLOAD_FAILED:         'Error al almacenar el archivo. Inténtalo de nuevo.',
     MI_NOT_FOUND:          'Material instruccional no encontrado.',
     MI_NOT_OWNED_BY_USER:  'Este material no pertenece al usuario solicitante.',
+    MI_NOT_PENDING:        'Este material no está pendiente de revisión.',
     BAD_REQUEST:           'Solicitud no válida.',
     INTERNAL_ERROR:        'Error interno del servidor.',
     MISSING_ID:            'El identificador es obligatorio.',

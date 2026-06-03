@@ -51,6 +51,7 @@ export const ERRORS = {
     UPLOAD_FAILED:        'UPLOAD_FAILED',
     MI_NOT_FOUND:         'MI_NOT_FOUND',
     MI_NOT_OWNED_BY_USER: 'MI_NOT_OWNED_BY_USER',
+    MI_NOT_PENDING:       'MI_NOT_PENDING',
   },
   GENERAL: {
     BAD_REQUEST:          'BAD_REQUEST',

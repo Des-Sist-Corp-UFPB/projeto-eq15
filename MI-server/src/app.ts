@@ -70,10 +70,16 @@ export function buildApp() {
     },
   })
 
-  // ── Rota raiz de health ──────────────────────────────────────────────────────
+  // ── Rotas de health ──────────────────────────────────────────────────────────
   app.get('/health', async () => ({
     status: 'ok',
     service: 'MI-server',
+    timestamp: new Date().toISOString(),
+  }))
+
+  app.get('/ping', async () => ({
+    status:    'ok',
+    service:   'eq15',
     timestamp: new Date().toISOString(),
   }))
 

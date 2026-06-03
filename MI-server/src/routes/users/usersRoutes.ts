@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { CreateUserSchema } from '../../schemas/users/usersSchema'
 import { createUserController } from '../../controllers/users/usersController'
 import { setUserAsProfessorController } from '../../controllers/users/setUserAsProfessorController'
+import { listUsersController } from '../../controllers/users/listUsersController'
 import { authenticate } from '../../middlewares/authenticate'
 
 export async function usersRoutes(app: FastifyInstance): Promise<void> {
@@ -21,6 +22,16 @@ export async function usersRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     createUserController,
+  )
+
+  /**
+   * GET /users
+   * Lista usuários com filtros opcionais. Exclusivo para ADMIN.
+   */
+  app.get(
+    '/',
+    { preHandler: [authenticate] },
+    listUsersController,
   )
 
   /**

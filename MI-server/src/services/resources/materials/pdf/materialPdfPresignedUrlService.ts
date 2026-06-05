@@ -1,7 +1,7 @@
 // src/services/resources/materials/pdf/materialPdfPresignedUrlService.ts
 import type { MaterialPresignedUrlDTO, UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
 import { findMaterialById } from '../../../../repositories/resources/materials/pdf/materialPdfViewRepository'
-import { minioClient, MINIO_BUCKET } from '../../../../lib/minio'
+import { minioPublicClient, MINIO_BUCKET } from '../../../../lib/minio'
 import { validateRequest } from '../../../../utils/validateRequest'
 import { materialPdfPresignedUrlSchema } from '../../../../schemas/resources/materials/pdf/materialPdfPresignedUrlSchema'
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
@@ -56,7 +56,7 @@ export async function materialPdfPresignedUrlService(
 
   accessPolicy?.(material)
 
-  const url = await minioClient.presignedGetObject(
+  const url = await minioPublicClient.presignedGetObject(
     MINIO_BUCKET,
     material.storageKey,
     PRESIGNED_URL_EXPIRY_SECONDS,

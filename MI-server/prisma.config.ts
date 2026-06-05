@@ -16,6 +16,7 @@ export default defineConfig({
     async adapter(env) {
       const pool = new pg.Pool({
         connectionString: env['DATABASE_URL'] as string,
+        max: 5,
       })
       return new PrismaPg(pool)
     },

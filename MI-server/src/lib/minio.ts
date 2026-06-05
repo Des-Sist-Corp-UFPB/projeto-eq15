@@ -9,7 +9,21 @@ export const minioClient = new Client({
   useSSL:    env.MINIO_USE_SSL,
   accessKey: env.MINIO_ACCESS_KEY,
   secretKey: env.MINIO_SECRET_KEY,
+  region:    env.MINIO_REGION,
 })
+
+// Usado somente para gerar URLs pré-assinadas: aponta para o endpoint público
+// para que os links sejam acessíveis pelo browser fora da rede interna Docker.
+export const minioPublicClient: Client = env.MINIO_PUBLIC_ENDPOINT
+  ? new Client({
+      endPoint:  env.MINIO_PUBLIC_ENDPOINT,
+      port:      env.MINIO_PUBLIC_PORT,
+      useSSL:    env.MINIO_PUBLIC_USE_SSL,
+      accessKey: env.MINIO_ACCESS_KEY,
+      secretKey: env.MINIO_SECRET_KEY,
+      region:    env.MINIO_REGION,
+    })
+  : minioClient
 
 export const MINIO_BUCKET = env.MINIO_BUCKET
 

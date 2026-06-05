@@ -28,19 +28,24 @@ RUN npm run build
 FROM node:22-alpine AS production
 ENV NODE_ENV=production
 
-# ── MinIO — credenciais fornecidas pelo professor para o projeto eq15 ──────────
+# ── MinIO — credenciais do servidor do professor para o projeto eq15 ───────────
 ENV MINIO_ENDPOINT=minio
 ENV MINIO_PORT=9000
 ENV MINIO_USE_SSL=false
 ENV MINIO_ACCESS_KEY=eq15
 ENV MINIO_SECRET_KEY=jnR1KLVogOewyJis2oU0Yrg4
 ENV MINIO_BUCKET=eq15
+ENV MINIO_REGION=us-east-1
+# Endpoint público: usado apenas para gerar URLs pré-assinadas acessíveis pelo browser
+ENV MINIO_PUBLIC_ENDPOINT=s3.dsc.rodrigor.com
+ENV MINIO_PUBLIC_USE_SSL=true
 
 # ── Defaults mínimos — sobrescrever no servidor com valores reais ──────────────
-ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/eq15
+ENV DATABASE_URL=postgresql://eq15:63by1XpT9qZliNdQiB3Z@postgres:5432/eq15
 ENV JWT_SECRET=placeholder-configure-no-servidor-com-valor-real
 ENV ADMIN_EMAIL=admin@dcx.ufpb.br
 ENV ADMIN_PASSWORD=placeholder123456
+ENV APP_URL=https://eq15.dsc.rodrigor.com
 
 RUN apk add --no-cache nginx
 
@@ -65,5 +70,5 @@ COPY front/nginx.conf /etc/nginx/http.d/default.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 80 3333
+EXPOSE 8080
 CMD ["/start.sh"]

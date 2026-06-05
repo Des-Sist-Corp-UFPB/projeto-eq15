@@ -20,16 +20,18 @@ const envSchema = z.object({
   LOGIN_BLOCK_DURATION_SECONDS: z.coerce.number().default(900),
 
   // ── MinIO ──────────────────────────────────────────────────────────────────
-  MINIO_ENDPOINT:   z.string().min(1).default('localhost'),
-  MINIO_PORT:       z.coerce.number().default(9000),
-  MINIO_USE_SSL:    z
-    .string()
-    .optional()
-    .default('false')
-    .transform((v) => v === 'true'),
-  MINIO_ACCESS_KEY: z.string().min(1, 'MINIO_ACCESS_KEY is required'),
-  MINIO_SECRET_KEY: z.string().min(1, 'MINIO_SECRET_KEY is required'),
-  MINIO_BUCKET:     z.string().min(1).default('materiais-instrucionais'),
+  MINIO_ENDPOINT:         z.string().min(1).default('localhost'),
+  MINIO_PORT:             z.coerce.number().default(9000),
+  MINIO_USE_SSL:          z.string().optional().default('false').transform((v) => v === 'true'),
+  MINIO_ACCESS_KEY:       z.string().min(1, 'MINIO_ACCESS_KEY is required'),
+  MINIO_SECRET_KEY:       z.string().min(1, 'MINIO_SECRET_KEY is required'),
+  MINIO_BUCKET:           z.string().min(1).default('materiais-instrucionais'),
+  MINIO_REGION:           z.string().default('us-east-1'),
+  // Endpoint público (ex: s3.dsc.rodrigor.com) para URLs pré-assinadas acessíveis pelo browser.
+  // Se não definido, cai de volta para o endpoint interno.
+  MINIO_PUBLIC_ENDPOINT:  z.string().optional(),
+  MINIO_PUBLIC_PORT:      z.coerce.number().optional(),
+  MINIO_PUBLIC_USE_SSL:   z.string().optional().default('false').transform((v) => v === 'true'),
 
   // ── Upload ─────────────────────────────────────────────────────────────────
   MI_MAX_FILE_SIZE_MB: z.coerce.number().default(50),

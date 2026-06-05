@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/des-sist-corp-ufpb/eq15:latest
+    image: ghcr.io/des-sist-corp-ufpb/projeto-eq15:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8115:8080"

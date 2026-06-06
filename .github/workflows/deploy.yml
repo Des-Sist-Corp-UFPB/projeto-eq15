@@ -70,19 +70,17 @@ jobs:
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # Copia o compose e o .env (como .env) para o servidor
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            docker-compose.prod.yml \
-            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com:~/app/docker-compose.prod.yml"
+          SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o BatchMode=yes ${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com"
 
-          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            .env.prod \
-            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com:~/app/.env"
+          # Garante que o diretório existe no servidor
+          $SSH "mkdir -p ~/app"
+
+          # Copia os arquivos via stdin (evita problema de output no shell remoto que quebra o SCP)
+          $SSH "cat > ~/app/docker-compose.prod.yml" < docker-compose.prod.yml
+          $SSH "cat > ~/app/.env"                   < .env.prod
 
           # Faz login no GHCR, puxa a nova imagem e reinicia o container
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com" \
-            "cd ~/app && \
-             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
-             docker compose -f docker-compose.prod.yml pull && \
-             docker compose -f docker-compose.prod.yml up -d"
+          $SSH "cd ~/app && \
+            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
+            docker compose -f docker-compose.prod.yml pull && \
+            docker compose -f docker-compose.prod.yml up -d"

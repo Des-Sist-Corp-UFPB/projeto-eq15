@@ -7,26 +7,26 @@ services:
     environment:
       NODE_ENV: production
 
-      # ── Auth / Admin ──────────────────────────────────────────────────────────
+      # ── Auth / Admin — obrigatório: definir em ~/app/.env no servidor ─────────
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
 
       # ── Database ──────────────────────────────────────────────────────────────
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://eq15:63by1XpT9qZliNdQiB3Z@postgres:5432/eq15}
 
       # ── MinIO (interno — operações de leitura/escrita no bucket) ─────────────
-      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
-      MINIO_PORT: ${MINIO_PORT}
-      MINIO_USE_SSL: ${MINIO_USE_SSL}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
-      MINIO_BUCKET: ${MINIO_BUCKET}
-      MINIO_REGION: ${MINIO_REGION}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-eq15}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-jnR1KLVogOewyJis2oU0Yrg4}
+      MINIO_BUCKET: ${MINIO_BUCKET:-eq15}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
 
       # ── MinIO (público — URLs pré-assinadas acessíveis pelo browser) ──────────
-      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
-      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-s3.dsc.rodrigor.com}
+      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-true}
 
       # ── Frontend URL (links de e-mail) ────────────────────────────────────────
-      APP_URL: ${APP_URL}
+      APP_URL: ${APP_URL:-https://eq15.dsc.rodrigor.com}

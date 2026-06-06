@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepara nome da imagem (lowercase)
+        run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> $GITHUB_ENV
+
       - name: Login no GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -24,63 +27,21 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build e push da imagem
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ghcr.io/des-sist-corp-ufpb/projeto-eq15:latest
+          tags: ${{ env.IMAGE }}
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
-
-      - name: Cria .env de produção na runner
-        env:
-          JWT_SECRET:            ${{ secrets.JWT_SECRET }}
-          ADMIN_EMAIL:           ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD:        ${{ secrets.ADMIN_PASSWORD }}
-          DATABASE_URL:          ${{ secrets.DATABASE_URL }}
-          MINIO_ENDPOINT:        ${{ secrets.MINIO_ENDPOINT }}
-          MINIO_PORT:            ${{ secrets.MINIO_PORT }}
-          MINIO_USE_SSL:         ${{ secrets.MINIO_USE_SSL }}
-          MINIO_ACCESS_KEY:      ${{ secrets.MINIO_ACCESS_KEY }}
-          MINIO_SECRET_KEY:      ${{ secrets.MINIO_SECRET_KEY }}
-          MINIO_BUCKET:          ${{ secrets.MINIO_BUCKET }}
-          MINIO_REGION:          ${{ secrets.MINIO_REGION }}
-          MINIO_PUBLIC_ENDPOINT: ${{ secrets.MINIO_PUBLIC_ENDPOINT }}
-          MINIO_PUBLIC_USE_SSL:  ${{ secrets.MINIO_PUBLIC_USE_SSL }}
-          APP_URL:               ${{ secrets.APP_URL }}
-        run: |
-          printf 'JWT_SECRET=%s\n'            "$JWT_SECRET"            >  .env.prod
-          printf 'ADMIN_EMAIL=%s\n'           "$ADMIN_EMAIL"           >> .env.prod
-          printf 'ADMIN_PASSWORD=%s\n'        "$ADMIN_PASSWORD"        >> .env.prod
-          printf 'DATABASE_URL=%s\n'          "$DATABASE_URL"          >> .env.prod
-          printf 'MINIO_ENDPOINT=%s\n'        "$MINIO_ENDPOINT"        >> .env.prod
-          printf 'MINIO_PORT=%s\n'            "$MINIO_PORT"            >> .env.prod
-          printf 'MINIO_USE_SSL=%s\n'         "$MINIO_USE_SSL"         >> .env.prod
-          printf 'MINIO_ACCESS_KEY=%s\n'      "$MINIO_ACCESS_KEY"      >> .env.prod
-          printf 'MINIO_SECRET_KEY=%s\n'      "$MINIO_SECRET_KEY"      >> .env.prod
-          printf 'MINIO_BUCKET=%s\n'          "$MINIO_BUCKET"          >> .env.prod
-          printf 'MINIO_REGION=%s\n'          "$MINIO_REGION"          >> .env.prod
-          printf 'MINIO_PUBLIC_ENDPOINT=%s\n' "$MINIO_PUBLIC_ENDPOINT" >> .env.prod
-          printf 'MINIO_PUBLIC_USE_SSL=%s\n'  "$MINIO_PUBLIC_USE_SSL"  >> .env.prod
-          printf 'APP_URL=%s\n'               "$APP_URL"               >> .env.prod
 
       - name: Deploy no servidor
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-
-          SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o BatchMode=yes ${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com"
-
-          # Garante que o diretório existe no servidor
-          $SSH "mkdir -p ~/app"
-
-          # Copia os arquivos via stdin (evita problema de output no shell remoto que quebra o SCP)
-          $SSH "cat > ~/app/docker-compose.prod.yml" < docker-compose.prod.yml
-          $SSH "cat > ~/app/.env"                   < .env.prod
-
-          # Faz login no GHCR, puxa a nova imagem e reinicia o container
-          $SSH "cd ~/app && \
-            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
-            docker compose -f docker-compose.prod.yml pull && \
-            docker compose -f docker-compose.prod.yml up -d"
+          # Envia "actor:token" ao servidor. A chave é travada (command=),
+          # então o servidor usa esse token efêmero só para puxar a imagem do GHCR.
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com" \
+            "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"

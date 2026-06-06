@@ -6,6 +6,27 @@ services:
       - "127.0.0.1:8115:8080"
     environment:
       NODE_ENV: production
+
+      # ── Auth / Admin ──────────────────────────────────────────────────────────
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      # ── Database ──────────────────────────────────────────────────────────────
+      DATABASE_URL: ${DATABASE_URL}
+
+      # ── MinIO (interno — operações de leitura/escrita no bucket) ─────────────
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_PORT: ${MINIO_PORT}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_REGION: ${MINIO_REGION}
+
+      # ── MinIO (público — URLs pré-assinadas acessíveis pelo browser) ──────────
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
+      MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL}
+
+      # ── Frontend URL (links de e-mail) ────────────────────────────────────────
+      APP_URL: ${APP_URL}

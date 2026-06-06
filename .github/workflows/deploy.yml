@@ -32,11 +32,57 @@ jobs:
           build-args: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
 
+      - name: Cria .env de produção na runner
+        env:
+          JWT_SECRET:            ${{ secrets.JWT_SECRET }}
+          ADMIN_EMAIL:           ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD:        ${{ secrets.ADMIN_PASSWORD }}
+          DATABASE_URL:          ${{ secrets.DATABASE_URL }}
+          MINIO_ENDPOINT:        ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_PORT:            ${{ secrets.MINIO_PORT }}
+          MINIO_USE_SSL:         ${{ secrets.MINIO_USE_SSL }}
+          MINIO_ACCESS_KEY:      ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY:      ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_BUCKET:          ${{ secrets.MINIO_BUCKET }}
+          MINIO_REGION:          ${{ secrets.MINIO_REGION }}
+          MINIO_PUBLIC_ENDPOINT: ${{ secrets.MINIO_PUBLIC_ENDPOINT }}
+          MINIO_PUBLIC_USE_SSL:  ${{ secrets.MINIO_PUBLIC_USE_SSL }}
+          APP_URL:               ${{ secrets.APP_URL }}
+        run: |
+          printf 'JWT_SECRET=%s\n'            "$JWT_SECRET"            >  .env.prod
+          printf 'ADMIN_EMAIL=%s\n'           "$ADMIN_EMAIL"           >> .env.prod
+          printf 'ADMIN_PASSWORD=%s\n'        "$ADMIN_PASSWORD"        >> .env.prod
+          printf 'DATABASE_URL=%s\n'          "$DATABASE_URL"          >> .env.prod
+          printf 'MINIO_ENDPOINT=%s\n'        "$MINIO_ENDPOINT"        >> .env.prod
+          printf 'MINIO_PORT=%s\n'            "$MINIO_PORT"            >> .env.prod
+          printf 'MINIO_USE_SSL=%s\n'         "$MINIO_USE_SSL"         >> .env.prod
+          printf 'MINIO_ACCESS_KEY=%s\n'      "$MINIO_ACCESS_KEY"      >> .env.prod
+          printf 'MINIO_SECRET_KEY=%s\n'      "$MINIO_SECRET_KEY"      >> .env.prod
+          printf 'MINIO_BUCKET=%s\n'          "$MINIO_BUCKET"          >> .env.prod
+          printf 'MINIO_REGION=%s\n'          "$MINIO_REGION"          >> .env.prod
+          printf 'MINIO_PUBLIC_ENDPOINT=%s\n' "$MINIO_PUBLIC_ENDPOINT" >> .env.prod
+          printf 'MINIO_PUBLIC_USE_SSL=%s\n'  "$MINIO_PUBLIC_USE_SSL"  >> .env.prod
+          printf 'APP_URL=%s\n'               "$APP_URL"               >> .env.prod
+
       - name: Deploy no servidor
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_DEPLOY_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
+
+          # Copia o compose e o .env (como .env) para o servidor
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            docker-compose.prod.yml \
+            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com:~/app/docker-compose.prod.yml"
+
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            .env.prod \
+            "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com:~/app/.env"
+
+          # Faz login no GHCR, puxa a nova imagem e reinicia o container
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             "${{ secrets.SSH_USERNAME }}@dsc.rodrigor.com" \
-            "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}"
+            "cd ~/app && \
+             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin && \
+             docker compose -f docker-compose.prod.yml pull && \
+             docker compose -f docker-compose.prod.yml up -d"

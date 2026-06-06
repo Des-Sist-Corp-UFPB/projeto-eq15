@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Aplica migrations pendentes (idempotente — seguro rodar a cada inicialização)
+npx prisma migrate deploy
+
 # Inicia Nginx em background (frontend na porta 80)
 nginx &
 

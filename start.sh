@@ -30,6 +30,9 @@ printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > /api/.env
 # Aplica migrations pendentes (idempotente — seguro rodar a cada inicialização)
 npx prisma migrate deploy
 
+# Cria o admin inicial se ainda não existir (idempotente)
+node /api/dist/seed.js
+
 rm -f /api/.env
 
 # Inicia Nginx em background (frontend na porta 80)

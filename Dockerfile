@@ -10,6 +10,7 @@ RUN npx prisma generate
 
 COPY MI-server/ .
 RUN npm run build
+RUN npx tsup prisma/seed.ts --format cjs --out-dir dist --no-splitting
 
 # ── Stage 2: Build do frontend ────────────────────────────────────────────────
 FROM node:20-alpine AS web-builder

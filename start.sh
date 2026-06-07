@@ -17,8 +17,8 @@ set -e
 
 # ATENÇÃO: defina estes três em ~/app/.env no servidor com valores reais e seguros
 [ -z "$JWT_SECRET"      ] && JWT_SECRET="default-insecure-jwt-secret-troque-no-servidor"
-[ -z "$ADMIN_EMAIL"     ] && ADMIN_EMAIL="admin@dcx.ufpb.br"
-[ -z "$ADMIN_PASSWORD"  ] && ADMIN_PASSWORD="admin@dcx2025"
+[ -z "$ADMIN_EMAIL"     ] && ADMIN_EMAIL="e976c9b666e640a28e59495904f6a24b@dcx.ufpb.br"
+[ -z "$ADMIN_PASSWORD"  ] && ADMIN_PASSWORD="56c57894-9f5d-48e1-ab40-734efeb0e7af"
 
 export DATABASE_URL MINIO_ACCESS_KEY MINIO_SECRET_KEY MINIO_ENDPOINT MINIO_PORT \
        MINIO_USE_SSL MINIO_BUCKET MINIO_REGION MINIO_PUBLIC_ENDPOINT MINIO_PUBLIC_USE_SSL \

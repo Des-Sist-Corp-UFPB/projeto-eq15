@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   ScrollText,
   Library,
+  FolderPlus,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -174,6 +175,12 @@ export function HomePage() {
         title:       'Todos os Materiais',
         description: 'Visualize todos os materiais enviados à plataforma, por status.',
         onClick:     () => navigate('/professor/materials'),
+      },
+      {
+        icon:        FolderPlus,
+        title:       'Nova Organização',
+        description: 'Crie um projeto para agrupar materiais e convidar alunos.',
+        onClick:     () => navigate('/organizations/create'),
       },
     ] : []),
     ...(user?.role === 'ADMIN' ? [

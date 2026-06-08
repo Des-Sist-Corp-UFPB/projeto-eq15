@@ -10,6 +10,7 @@ import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { AdminLogsPage } from '../pages/AdminLogsPage'
 import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
 import { AllMaterialsPage } from '../pages/AllMaterialsPage'
+import { CreateOrganizationPage } from '../pages/CreateOrganizationPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -107,6 +108,16 @@ export function Router() {
           element={
             <ProfessorRoute>
               <AllMaterialsPage />
+            </ProfessorRoute>
+          }
+        />
+
+        {/* Exclusivas de PROFESSOR e ADMIN */}
+        <Route
+          path="/organizations/create"
+          element={
+            <ProfessorRoute>
+              <CreateOrganizationPage />
             </ProfessorRoute>
           }
         />

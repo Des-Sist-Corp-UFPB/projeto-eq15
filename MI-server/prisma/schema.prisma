@@ -34,6 +34,7 @@ model User {
   auditLogs                   AuditLog[]              @relation("AuditActor")
   materiaisInstrucionais      MaterialInstrucional[]
   emailVerificationTokens     EmailVerificationToken[]
+  organizations               Organization[]
 }
 
 model EmailVerificationToken {
@@ -92,6 +93,21 @@ model MaterialInstrucional {
 
   @@index([uploadedById])
   @@index([status])
+}
+
+// ── Organizações ─────────────────────────────────────────────────────────────
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([createdById])
 }
 
 // ── Observabilidade ───────────────────────────────────────────────────────────

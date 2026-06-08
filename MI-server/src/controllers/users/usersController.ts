@@ -11,50 +11,65 @@ export async function createUserController(
   request: FastifyRequest<{ Body: CreateUserInput }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const ctx = { requestId: request.id, context: "createUserController" };
+  const ctx = "createUserController";
 
   logger.info("IN - createUserController");
 
   await createInspectionLog({
-    ...ctx,
-    level: "INFO",
-    direction: "IN",
-    payload: {
-      method: request.method,
-      url: request.url,
-      body: { name: request.body.name, email: request.body.email },
-    },
+    context:   ctx,
+    direction: "CLIENT_TO_SERVER",
+    payload: [
+      {
+        title:   "Request Payload",
+        content: {
+          method: request.method,
+          url:    request.url,
+          body:   { name: request.body.name, email: request.body.email },
+        },
+      },
+    ],
   }).catch((err) =>
-    logger.error({ err }, `${ctx.context}: inspectionLog IN write failed`),
+    logger.error({ err }, `${ctx}: inspectionLog CLIENT_TO_SERVER write failed`),
   );
 
   try {
     const user = await createUserService(request.body);
 
     await createInspectionLog({
-      ...ctx,
-      level: "INFO",
-      direction: "OUT",
-      payload: { statusCode: 201, userId: user.id, role: user.role },
+      context:   ctx,
+      direction: "SERVER_TO_CLIENT",
+      payload: [
+        {
+          title:   "DB - Novo usuário criado",
+          content: { id: user.id, email: user.email, role: user.role },
+        },
+        {
+          title:   "Resposta",
+          content: { statusCode: 201 },
+        },
+      ],
     }).catch((err) =>
-      logger.error({ err }, `${ctx.context}: inspectionLog OUT write failed`),
+      logger.error({ err }, `${ctx}: inspectionLog SERVER_TO_CLIENT write failed`),
     );
 
-    httpResponse({ reply, statusCode: 201, data: user, context: ctx.context });
+    httpResponse({ reply, statusCode: 201, data: user, context: ctx });
   } catch (error) {
     await createInspectionLog({
-      ...ctx,
-      level: "ERROR",
-      direction: "ERROR",
-      payload: {
-        error: error instanceof Error ? error.message : String(error),
-        code:
-          error instanceof GeneralErrorResponse ? error.code : "INTERNAL_ERROR",
-      },
+      context:   ctx,
+      direction: "SERVER_TO_CLIENT",
+      payload: [
+        {
+          title:   "Erro - Criação de usuário",
+          content: {
+            message: error instanceof Error ? error.message : String(error),
+            code:    error instanceof GeneralErrorResponse ? error.code : "INTERNAL_ERROR",
+          },
+        },
+      ],
     }).catch((err) =>
-      logger.error({ err }, `${ctx.context}: inspectionLog ERROR write failed`),
+      logger.error({ err }, `${ctx}: inspectionLog ERROR write failed`),
     );
 
-    httpError({ error, context: ctx.context });
+    httpError({ error, context: ctx });
   }
 }

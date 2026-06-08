@@ -13,17 +13,9 @@ enum Role {
   ADMIN
 }
 
-enum InspectionLogLevel {
-  DEBUG
-  INFO
-  WARN
-  ERROR
-}
-
 enum InspectionLogDirection {
-  IN
-  OUT
-  ERROR
+  CLIENT_TO_SERVER
+  SERVER_TO_CLIENT
 }
 
 model User {
@@ -106,13 +98,12 @@ model MaterialInstrucional {
 
 // Rastreio de ciclo de vida de requisições HTTP (observabilidade)
 model InspectionLog {
-  id        String                 @id @default(uuid())
-  requestId String                 // correlaciona todos os logs de uma mesma requisição
-  level     InspectionLogLevel     @default(INFO)
-  context   String                 // ex: "createUserController"
-  direction InspectionLogDirection // IN | OUT | ERROR
-  payload   Json?                  // dados de entrada, saída ou detalhes do erro
-  createdAt DateTime               @default(now())
+  id            String                 @id @default(uuid())
+  correlationId String?                // user ID de requests autenticadas
+  context       String                 // ex: "createUserController"
+  direction     InspectionLogDirection // CLIENT_TO_SERVER | SERVER_TO_CLIENT
+  payload       Json?                  // array de { title: string, content?: any }
+  createdAt     DateTime               @default(now())
 
-  @@index([requestId])
+  @@index([correlationId])
 }

@@ -5,6 +5,7 @@ import { type CreateUserRequest } from '../../schemas/users/usersSchema'
 import {
   findUserByEmail,
   createUser,
+  updateUser,
 } from '../../repositories/users/usersRepository'
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { hashPassword } from '../../utils/hash'
@@ -26,6 +27,19 @@ export async function createUserService(
   // RF01/RF02 — e-mail único
   const existing = await findUserByEmail(email)
   if (existing) {
+    // Conta não verificada: permite nova tentativa atualizando dados e reenviando o e-mail
+    if (!existing.emailVerified) {
+      const passwordHash = await hashPassword(password)
+      const updated = await updateUser(existing.id, { name, passwordHash })
+
+      sendVerificationEmailService(updated.id, updated.email, updated.name).catch((err) =>
+        logger.error({ err }, 'createUserService: falha ao reenviar e-mail de verificação'),
+      )
+
+      const { passwordHash: _removed, ...safeUser } = updated
+      return safeUser
+    }
+
     throw new GeneralErrorResponse(StatusCode.CONFLICT, buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
   }
 

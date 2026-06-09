@@ -9,4 +9,4 @@ export const listInspectionLogsSchema = z.object({
   perPage:       z.coerce.number().min(1).max(100).default(50),
 })
 
-export type ListInspectionLogsQuery = z.infer<typeof listInspectionLogsSchema>
+export type ListInspectionLogsRequest = z.infer<typeof listInspectionLogsSchema>

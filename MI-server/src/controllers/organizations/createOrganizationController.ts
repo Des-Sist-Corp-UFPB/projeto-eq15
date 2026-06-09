@@ -8,6 +8,7 @@ import { httpResponse, httpError } from '../../utils/http'
 import { StatusCode } from '../../utils/statusCode'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { logger } from '../../lib/logger'
+import type { CreateOrganizationRequest } from '../../schemas/organizations/createOrganizationSchema'
 const ctx = 'createOrganizationController'
 
 /**
@@ -23,7 +24,7 @@ export async function createOrganizationController(
 ): Promise<void> {
   logger.info(`IN - ${ctx}`)
 
-  const body = request.body as { name?: unknown; description?: unknown }
+  const body = request.body as CreateOrganizationRequest
 
   await createInspectionLog({
     correlationId: request.user.sub,
@@ -47,7 +48,7 @@ export async function createOrganizationController(
     const org = await createOrganizationService({
       name:        body.name,
       description: body.description,
-      createdById: request.user.sub,
+      createdById: request.user.sub, // ID do usuário autenticado que está criando a organização
     })
 
     await createInspectionLog({

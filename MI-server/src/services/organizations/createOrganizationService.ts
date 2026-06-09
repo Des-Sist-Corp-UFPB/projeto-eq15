@@ -3,10 +3,10 @@ import type { OrganizationDTO } from '../../@types/organizations'
 import { prisma } from '../../database/prisma'
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { validateRequest } from '../../utils/validateRequest'
-import { createOrganizationSchema } from '../../schemas/organizations/createOrganizationSchema'
+import { createOrganizationSchema, type CreateOrganizationServiceInput } from '../../schemas/organizations/createOrganizationSchema'
 import { logger } from '../../lib/logger'
 
-export async function createOrganizationService(input: unknown): Promise<OrganizationDTO> {
+export async function createOrganizationService(input: CreateOrganizationServiceInput): Promise<OrganizationDTO> {
   logger.info('IN - createOrganizationService')
 
   const { name, description, createdById } = validateRequest(input, createOrganizationSchema)

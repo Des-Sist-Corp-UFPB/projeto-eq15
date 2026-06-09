@@ -1,6 +1,6 @@
 // src/services/auth/authService.ts
 import { type AuthUserDTO } from '../../@types/auth'
-import { type LoginInput } from '../../schemas/auth/authSchema'
+import { type LoginRequest } from '../../schemas/auth/authSchema'
 import { findUserByEmail, findUserById } from '../../repositories/users/usersRepository'
 import {
   findRefreshToken,
@@ -20,7 +20,7 @@ import { logger } from '../../lib/logger'
  * Intencionalmente usa a mesma mensagem para "usuário não encontrado"
  * e "senha incorreta" para não revelar quais e-mails existem no sistema.
  */
-export async function loginService(input: LoginInput): Promise<AuthUserDTO> {
+export async function loginService(input: LoginRequest): Promise<AuthUserDTO> {
   logger.info('IN - loginService')
 
   const { email, password } = input

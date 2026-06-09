@@ -8,4 +8,4 @@ export const updateOrganizationSchema = z.object({
   description:      z.string().max(500).optional().nullable(),
 })
 
-export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>
+export type UpdateOrganizationRequest = z.infer<typeof updateOrganizationSchema>

@@ -7,4 +7,4 @@ export const inviteUserSchema = z.object({
   invitedById:  z.string().uuid(),
 })
 
-export type InviteUserInput = z.infer<typeof inviteUserSchema>
+export type InviteUserRequest = z.infer<typeof inviteUserSchema>

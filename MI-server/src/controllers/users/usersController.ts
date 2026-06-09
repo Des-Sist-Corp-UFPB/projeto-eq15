@@ -1,6 +1,6 @@
 // src/controllers/users/usersController.ts
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { type CreateUserInput } from "../../schemas/users/usersSchema";
+import { type CreateUserRequest } from "../../schemas/users/usersSchema";
 import { createUserService } from "../../services/users/usersService";
 import { createInspectionLog } from "../../repositories/inspectionLog/inspectionLogRepository";
 import { httpResponse, httpError } from "../../utils/http";
@@ -8,7 +8,7 @@ import { GeneralErrorResponse } from "../../errors/GeneralErrorResponse";
 import { logger } from "../../lib/logger";
 
 export async function createUserController(
-  request: FastifyRequest<{ Body: CreateUserInput }>,
+  request: FastifyRequest<{ Body: CreateUserRequest }>,
   reply: FastifyReply,
 ): Promise<void> {
   const ctx = "createUserController";

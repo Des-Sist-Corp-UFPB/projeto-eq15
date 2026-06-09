@@ -7,4 +7,4 @@ export const respondInviteSchema = z.object({
   action:   z.enum(['ACCEPT', 'REJECT']),
 })
 
-export type RespondInviteInput = z.infer<typeof respondInviteSchema>
+export type RespondInviteRequest = z.infer<typeof respondInviteSchema>

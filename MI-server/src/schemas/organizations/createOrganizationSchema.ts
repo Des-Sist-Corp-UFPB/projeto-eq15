@@ -7,7 +7,7 @@ export const CreateOrganizationBodySchema = z.object({
   description: z.string().max(500).optional(),
 })
 
-export type CreateOrganizationBodyInput = z.infer<typeof CreateOrganizationBodySchema>
+export type CreateOrganizationRequest = z.infer<typeof CreateOrganizationBodySchema>
 
 // Usado internamente pelo service (inclui createdById vindo do auth context)
 export const createOrganizationSchema = z.object({
@@ -16,4 +16,4 @@ export const createOrganizationSchema = z.object({
   createdById: z.string().uuid(),
 })
 
-export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>
+export type CreateOrganizationServiceInput = z.infer<typeof createOrganizationSchema>

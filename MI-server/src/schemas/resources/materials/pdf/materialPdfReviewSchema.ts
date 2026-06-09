@@ -13,4 +13,4 @@ export const materialPdfReviewSchema = z.object({
     .uuid('O reviewerId deve ser um UUID v4 válido.'),
 })
 
-export type MaterialPdfReviewInput = z.infer<typeof materialPdfReviewSchema>
+export type MaterialPdfReviewRequest = z.infer<typeof materialPdfReviewSchema>

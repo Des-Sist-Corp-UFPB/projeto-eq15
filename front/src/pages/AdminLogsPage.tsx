@@ -9,21 +9,24 @@ import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useInspectionLogs } from '../features/logs/hooks/useInspectionLogs'
 import { getApiErrorMessage } from '../lib/apiError'
-import type { LogLevel, LogDirection, InspectionLog } from '../features/logs/api/logsApi'
+import type { LogDirection, InspectionLog, PayloadEntry } from '../features/logs/api/logsApi'
 
-// ── Estilos por nível e direção ───────────────────────────────────────────────
-
-const LEVEL_STYLE: Record<LogLevel, string> = {
-  DEBUG: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
-  INFO:  'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-  WARN:  'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-  ERROR: 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
-}
+// ── Estilos e rótulos de direção ──────────────────────────────────────────────
 
 const DIRECTION_STYLE: Record<LogDirection, string> = {
-  IN:    'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
-  OUT:   'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
-  ERROR: 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+  CLIENT_TO_SERVER: 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800',
+  SERVER_TO_CLIENT: 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+}
+
+const DIRECTION_LABEL: Record<LogDirection, string> = {
+  CLIENT_TO_SERVER: 'Cliente → API',
+  SERVER_TO_CLIENT: 'API → Cliente',
+}
+
+const DIRECTION_SELECT_LABEL: Record<string, string> = {
+  '':               'Todas',
+  CLIENT_TO_SERVER: 'Cliente → API',
+  SERVER_TO_CLIENT: 'API → Cliente',
 }
 
 function formatDate(iso: string): string {
@@ -70,32 +73,53 @@ function Topbar({ userName, onBack, onLogout }: TopbarProps) {
   )
 }
 
+// ── PayloadEntryView ──────────────────────────────────────────────────────────
+
+function PayloadEntryView({ entry }: { entry: PayloadEntry }) {
+  const isError = entry.title.toLowerCase().startsWith('erro')
+  return (
+    <div className="px-4 py-3">
+      <p className={`text-xs font-semibold mb-1.5 ${
+        isError
+          ? 'text-red-600 dark:text-red-400'
+          : 'text-gray-700 dark:text-gray-300'
+      }`}>
+        {entry.title}
+      </p>
+      {entry.content !== undefined && (
+        <pre className="text-xs font-mono text-gray-700 dark:text-gray-300
+                        bg-gray-50 dark:bg-gray-950 rounded-lg p-3
+                        overflow-x-auto max-h-48 whitespace-pre-wrap break-all">
+          {JSON.stringify(entry.content, null, 2)}
+        </pre>
+      )}
+    </div>
+  )
+}
+
 // ── LogRow ────────────────────────────────────────────────────────────────────
 
 function LogRow({ log }: { log: InspectionLog }) {
   const [expanded, setExpanded] = useState(false)
-  const hasPayload = log.payload !== null && log.payload !== undefined
+  const entries = Array.isArray(log.payload) ? (log.payload as PayloadEntry[]) : []
+  const hasPayload = entries.length > 0
+  const hasError   = entries.some(e => e.title.toLowerCase().startsWith('erro'))
 
   return (
     <div className={[
       'rounded-xl border transition-colors',
-      log.level === 'ERROR'
+      hasError
         ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/30'
-        : log.level === 'WARN'
-          ? 'border-amber-200 dark:border-amber-800 bg-amber-50/30 dark:bg-amber-950/20'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900',
+        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900',
     ].join(' ')}>
 
       {/* Linha principal */}
       <div className="flex items-start gap-3 px-4 py-3">
 
-        {/* Badges */}
-        <div className="flex items-center gap-1.5 shrink-0 mt-0.5 flex-wrap">
-          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono font-bold ${LEVEL_STYLE[log.level]}`}>
-            {log.level}
-          </span>
-          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono ${DIRECTION_STYLE[log.direction]}`}>
-            {log.direction}
+        {/* Badge de direção */}
+        <div className="shrink-0 mt-0.5">
+          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono whitespace-nowrap ${DIRECTION_STYLE[log.direction]}`}>
+            {DIRECTION_LABEL[log.direction]}
           </span>
         </div>
 
@@ -104,9 +128,11 @@ function LogRow({ log }: { log: InspectionLog }) {
           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
             {log.context}
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-            req: {log.requestId}
-          </p>
+          {log.correlationId && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">
+              user: {log.correlationId}
+            </p>
+          )}
           <p className="text-xs text-gray-400 dark:text-gray-500">
             {formatDate(log.createdAt)}
           </p>
@@ -121,19 +147,17 @@ function LogRow({ log }: { log: InspectionLog }) {
                        focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-1.5 py-1"
           >
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            payload
+            {entries.length} {entries.length === 1 ? 'entrada' : 'entradas'}
           </button>
         )}
       </div>
 
-      {/* Payload JSON expandido */}
+      {/* Payload expandido — entradas estruturadas */}
       {expanded && hasPayload && (
-        <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
-          <pre className="text-xs font-mono text-gray-700 dark:text-gray-300
-                          bg-gray-50 dark:bg-gray-950 rounded-lg p-3
-                          overflow-x-auto max-h-64 whitespace-pre-wrap break-all">
-            {JSON.stringify(log.payload, null, 2)}
-          </pre>
+        <div className="border-t border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+          {entries.map((entry, i) => (
+            <PayloadEntryView key={i} entry={entry} />
+          ))}
         </div>
       )}
     </div>
@@ -142,24 +166,21 @@ function LogRow({ log }: { log: InspectionLog }) {
 
 // ── AdminLogsPage ─────────────────────────────────────────────────────────────
 
-const LEVELS:     (LogLevel | '')[]     = ['', 'DEBUG', 'INFO', 'WARN', 'ERROR']
-const DIRECTIONS: (LogDirection | '')[] = ['', 'IN', 'OUT', 'ERROR']
+const DIRECTIONS: (LogDirection | '')[] = ['', 'CLIENT_TO_SERVER', 'SERVER_TO_CLIENT']
 
 export function AdminLogsPage() {
   const { user, clearSession } = useAuth()
   const navigate = useNavigate()
 
-  const [level,     setLevel]     = useState<LogLevel | ''>('')
-  const [direction, setDirection] = useState<LogDirection | ''>('')
-  const [context,   setContext]   = useState('')
-  const [requestId, setRequestId] = useState('')
-  const [page,      setPage]      = useState(1)
+  const [direction,     setDirection]     = useState<LogDirection | ''>('')
+  const [context,       setContext]       = useState('')
+  const [correlationId, setCorrelationId] = useState('')
+  const [page,          setPage]          = useState(1)
 
   const params = {
-    level:     level     || undefined,
-    direction: direction || undefined,
-    context:   context   || undefined,
-    requestId: requestId || undefined,
+    direction:     direction     || undefined,
+    context:       context       || undefined,
+    correlationId: correlationId || undefined,
     page,
     perPage: 50,
   }
@@ -176,17 +197,16 @@ export function AdminLogsPage() {
   }
 
   function handleClear() {
-    setLevel('')
     setDirection('')
     setContext('')
-    setRequestId('')
+    setCorrelationId('')
     setPage(1)
   }
 
-  const logs  = data?.logs  ?? []
-  const total = data?.total ?? 0
+  const logs       = data?.logs  ?? []
+  const total      = data?.total ?? 0
   const totalPages = Math.ceil(total / 50)
-  const hasFilters = level || direction || context || requestId
+  const hasFilters = direction || context || correlationId
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
@@ -212,22 +232,6 @@ export function AdminLogsPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
             <div className="flex flex-wrap gap-3">
 
-              {/* Nível */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Nível</label>
-                <select
-                  value={level}
-                  onChange={e => setLevel(e.target.value as LogLevel | '')}
-                  className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
-                             text-sm text-gray-900 dark:text-gray-100 px-3 py-1.5
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {LEVELS.map(l => (
-                    <option key={l} value={l}>{l || 'Todos'}</option>
-                  ))}
-                </select>
-              </div>
-
               {/* Direção */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Direção</label>
@@ -239,7 +243,7 @@ export function AdminLogsPage() {
                              focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {DIRECTIONS.map(d => (
-                    <option key={d} value={d}>{d || 'Todas'}</option>
+                    <option key={d} value={d}>{DIRECTION_SELECT_LABEL[d]}</option>
                   ))}
                 </select>
               </div>
@@ -258,14 +262,14 @@ export function AdminLogsPage() {
                 />
               </div>
 
-              {/* Request ID */}
+              {/* Correlation ID */}
               <div className="flex flex-col gap-1 flex-1 min-w-[220px]">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Request ID</label>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Correlation ID (usuário)</label>
                 <input
                   type="text"
-                  value={requestId}
-                  onChange={e => setRequestId(e.target.value)}
-                  placeholder="ex: req-1"
+                  value={correlationId}
+                  onChange={e => setCorrelationId(e.target.value)}
+                  placeholder="ex: uuid do usuário autenticado"
                   className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
                              text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                              px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"

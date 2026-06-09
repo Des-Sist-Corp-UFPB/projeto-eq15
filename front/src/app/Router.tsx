@@ -10,6 +10,10 @@ import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { AdminLogsPage } from '../pages/AdminLogsPage'
 import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
 import { AllMaterialsPage } from '../pages/AllMaterialsPage'
+import { CreateOrganizationPage }    from '../pages/CreateOrganizationPage'
+import { OrganizationsListPage }     from '../pages/OrganizationsListPage'
+import { OrganizationDetailPage }    from '../pages/OrganizationDetailPage'
+import { InvitesPage }               from '../pages/InvitesPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -107,6 +111,42 @@ export function Router() {
           element={
             <ProfessorRoute>
               <AllMaterialsPage />
+            </ProfessorRoute>
+          }
+        />
+
+        {/* Organizações — acessível para qualquer usuário autenticado */}
+        <Route
+          path="/organizations"
+          element={
+            <PrivateRoute>
+              <OrganizationsListPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/:orgId"
+          element={
+            <PrivateRoute>
+              <OrganizationDetailPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invites"
+          element={
+            <PrivateRoute>
+              <InvitesPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Exclusivas de PROFESSOR e ADMIN */}
+        <Route
+          path="/organizations/create"
+          element={
+            <ProfessorRoute>
+              <CreateOrganizationPage />
             </ProfessorRoute>
           }
         />

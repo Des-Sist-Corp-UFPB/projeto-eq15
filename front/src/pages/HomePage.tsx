@@ -12,9 +12,13 @@ import {
   ClipboardCheck,
   ScrollText,
   Library,
+  FolderPlus,
+  Bell,
+  Users,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { usePendingInviteCount } from '../features/organizations/hooks/usePendingInviteCount'
 import type { Role } from '../types/auth'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -43,9 +47,11 @@ interface TopbarProps {
   userName: string
   userRole: Role
   onLogout: () => void
+  onBell:   () => void
+  pendingInvites: number
 }
 
-function Topbar({ userName, userRole, onLogout }: TopbarProps) {
+function Topbar({ userName, userRole, onLogout, onBell, pendingInvites }: TopbarProps) {
   return (
     <header className="bg-indigo-700 text-white px-6 py-4">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
@@ -60,13 +66,27 @@ function Topbar({ userName, userRole, onLogout }: TopbarProps) {
           </div>
         </div>
 
-        {/* Usuário + toggle + logout */}
+        {/* Usuário + toggle + bell + logout */}
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <p className="text-sm font-medium leading-tight">{userName}</p>
             <p className="text-indigo-200 text-xs">{getRoleLabel(userRole)}</p>
           </div>
           <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
+          {/* Bell de convites */}
+          <button
+            onClick={onBell}
+            aria-label="Convites pendentes"
+            className="relative flex items-center justify-center text-indigo-200 hover:text-white transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1.5"
+          >
+            <Bell size={18} />
+            {pendingInvites > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                {pendingInvites > 9 ? '9+' : pendingInvites}
+              </span>
+            )}
+          </button>
           <button
             onClick={onLogout}
             aria-label="Sair da conta"
@@ -131,6 +151,8 @@ function DashboardCard({ icon: Icon, title, description, onClick, disabled = fal
 export function HomePage() {
   const { user, clearSession } = useAuth()
   const navigate = useNavigate()
+  const { data: inviteCountData } = usePendingInviteCount()
+  const pendingInvites = inviteCountData?.count ?? 0
 
   function handleLogout() {
     clearSession()
@@ -175,6 +197,18 @@ export function HomePage() {
         description: 'Visualize todos os materiais enviados à plataforma, por status.',
         onClick:     () => navigate('/professor/materials'),
       },
+      {
+        icon:        FolderPlus,
+        title:       'Nova Organização',
+        description: 'Crie um projeto para agrupar materiais e convidar alunos.',
+        onClick:     () => navigate('/organizations/create'),
+      },
+      {
+        icon:        Users,
+        title:       'Minhas Organizações',
+        description: 'Veja as organizações das quais você faz parte e gerencie membros.',
+        onClick:     () => navigate('/organizations'),
+      },
     ] : []),
     ...(user?.role === 'ADMIN' ? [
       {
@@ -198,6 +232,8 @@ export function HomePage() {
         userName={user?.name ?? ''}
         userRole={user?.role ?? 'COMMON'}
         onLogout={handleLogout}
+        onBell={() => navigate('/invites')}
+        pendingInvites={pendingInvites}
       />
 
       <main className="flex-1 px-6 py-10">

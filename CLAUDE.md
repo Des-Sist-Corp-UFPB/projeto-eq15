@@ -19,3 +19,9 @@ Institucionalizado|Submissão de MIs para fluxo de aprovação por um docente.|P
    Fluxo de Aprovação Docente: Garantia de qualidade através da revisão obrigatória de professores para submissões institucionais.
    Auditabilidade Total: Registro de logs (quem subiu, quem aprovou, quando foi alterado) para assegurar a integridade acadêmica.
    Métricas de Engajamento: Dashboard administrativo com estatísticas de consumo, buscas mais frequentes e MIs mais acessados.
+
+---
+
+Convenções de código (back-end)
+
+- Os dados de requisições devem ser todos definidos seguindo o formato --> nomeFluxoRequest

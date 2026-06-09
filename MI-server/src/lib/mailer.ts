@@ -27,19 +27,21 @@ interface SendMailOptions {
   to:      string
   subject: string
   html:    string
+  text:    string
 }
 
-export async function sendMail({ to, subject, html }: SendMailOptions): Promise<void> {
+export async function sendMail({ to, subject, html, text }: SendMailOptions): Promise<void> {
   if (!transporter) {
-    // Em desenvolvimento sem SMTP configurado: imprime o e-mail no console
-    logger.info({ to, subject, html }, '📧 [DEV] E-mail não enviado — SMTP não configurado. Conteúdo abaixo:')
+    logger.info({ to, subject, text }, '[DEV] E-mail não enviado — SMTP não configurado. Conteúdo abaixo:')
     return
   }
 
   await transporter.sendMail({
-    from:    env.SMTP_FROM,
+    from:     env.SMTP_FROM,
+    replyTo:  env.SMTP_USER,
     to,
     subject,
+    text,
     html,
   })
 }

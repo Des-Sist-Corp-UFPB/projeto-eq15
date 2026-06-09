@@ -39,6 +39,7 @@ export async function sendVerificationEmailService(
   await sendMail({
     to:      userEmail,
     subject: 'Seu código de verificação — MI UFPB',
+    text:    buildVerificationEmailText(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
     html:    buildVerificationEmailHtml(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
   })
 }
@@ -63,7 +64,22 @@ export async function verifyEmailService(code: string): Promise<void> {
   await deleteEmailVerificationToken(code)
 }
 
-// ── Template de e-mail ────────────────────────────────────────────────────────
+// ── Templates de e-mail ───────────────────────────────────────────────────────
+
+function buildVerificationEmailText(name: string, code: string, expiresHours: number): string {
+  return [
+    `Olá, ${name}!`,
+    '',
+    'Use o código abaixo para confirmar seu e-mail institucional no sistema MI UFPB:',
+    '',
+    `    ${code}`,
+    '',
+    `Este código expira em ${expiresHours} horas.`,
+    'Se você não criou esta conta, ignore este e-mail.',
+    '',
+    'Campus IV · UFPB — Rio Tinto / Mamanguape',
+  ].join('\n')
+}
 
 function buildVerificationEmailHtml(name: string, code: string, expiresHours: number): string {
   return `

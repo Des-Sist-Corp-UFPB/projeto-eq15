@@ -1,6 +1,7 @@
 // src/routes/organizations/organizationsRoutes.ts
 import type { FastifyInstance } from 'fastify'
 import { authenticate } from '../../middlewares/authenticate'
+import { requireUploadPermission } from '../../middlewares/requireUploadPermission'
 import { createOrganizationController }     from '../../controllers/organizations/createOrganizationController'
 import { updateOrganizationController }     from '../../controllers/organizations/updateOrganizationController'
 import { archiveOrganizationController }    from '../../controllers/organizations/archiveOrganizationController'
@@ -14,6 +15,7 @@ import { listMyInvitesController }          from '../../controllers/organization
 import { respondInviteController }          from '../../controllers/organizations/respondInviteController'
 import { pendingInviteCountController }     from '../../controllers/organizations/pendingInviteCountController'
 import { listOrgMaterialsController }       from '../../controllers/organizations/listOrgMaterialsController'
+import { uploadOrgMaterialController }      from '../../controllers/organizations/uploadOrgMaterialController'
 
 export async function organizationsRoutes(app: FastifyInstance): Promise<void> {
   app.get('/health', async () => ({
@@ -68,4 +70,7 @@ export async function organizationsRoutes(app: FastifyInstance): Promise<void> {
 
   /** GET /organizations/:orgId/materials — lista MIs aprovados da organização (membros) */
   app.get('/:orgId/materials', { preHandler: [authenticate] }, listOrgMaterialsController)
+
+  /** POST /organizations/:orgId/mis — faz upload de MI vinculado à organização */
+  app.post('/:orgId/mis', { preHandler: [authenticate, requireUploadPermission] }, uploadOrgMaterialController)
 }

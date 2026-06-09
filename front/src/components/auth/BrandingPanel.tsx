@@ -1,5 +1,5 @@
 // src/components/auth/BrandingPanel.tsx
-import { BookOpen, GraduationCap, Users, Search } from 'lucide-react'
+import { Library, GraduationCap, Users, Search } from 'lucide-react'
 
 export function BrandingPanel() {
   return (
@@ -7,11 +7,11 @@ export function BrandingPanel() {
       {/* Topo — logotipo */}
       <div className="flex items-center gap-3">
         <div className="bg-white/10 rounded-xl p-2.5">
-          <BookOpen size={24} className="text-white" />
+          <Library size={24} className="text-white" />
         </div>
         <div>
-          <p className="font-bold text-lg leading-tight">MI</p>
-          <p className="text-indigo-200 text-xs">Materiais Instrucionais</p>
+          <p className="font-bold text-lg leading-tight">Computeca</p>
+          <p className="text-indigo-200 text-xs">Acervo de Materiais Instrucionais</p>
         </div>
       </div>
 
@@ -23,7 +23,7 @@ export function BrandingPanel() {
           ao alcance de todos.
         </h1>
         <p className="text-indigo-200 text-base leading-relaxed max-w-sm">
-          Plataforma de gestão e disseminação de materiais instrucionais do
+          A Computeca reúne e dissemina os materiais instrucionais do
           Campus IV da UFPB, com curadoria docente e busca semântica por IA.
         </p>
 

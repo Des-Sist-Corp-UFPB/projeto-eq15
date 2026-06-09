@@ -1,8 +1,9 @@
 // src/pages/RegisterPage.tsx
 import { useState, type FormEvent, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, BookOpen, Info } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Info } from 'lucide-react'
 import { BrandingPanel } from '../components/auth/BrandingPanel'
+import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useRegister } from '../features/users/hooks/useRegister'
 import { getApiErrorMessage, getApiErrorCode, getValidationIssues } from '../lib/apiError'
@@ -209,14 +210,8 @@ export function RegisterPage() {
         <div className="w-full max-w-sm">
 
           {/* Logo mobile */}
-          <div className="flex lg:hidden items-center gap-2 mb-10 justify-center">
-            <div className="bg-indigo-700 rounded-xl p-2">
-              <BookOpen size={20} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
-              <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
-            </div>
+          <div className="flex lg:hidden justify-center mb-10">
+            <Logo />
           </div>
 
           {/* Cabeçalho */}

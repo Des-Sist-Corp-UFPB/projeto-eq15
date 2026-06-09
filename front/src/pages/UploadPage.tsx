@@ -2,9 +2,6 @@
 import { useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen,
-  LogOut,
-  ArrowLeft,
   UploadCloud,
   FileText,
   X,
@@ -12,20 +9,13 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { AppShell } from '../components/AppShell'
+import { canUploadMaterials } from '../lib/permissions'
 import { useUploadMaterial } from '../features/materials/hooks/useUploadMaterial'
 import { getApiErrorCode, getApiErrorMessage } from '../lib/apiError'
-import type { Role } from '../types/auth'
 import type { UploadedMI } from '../features/materials/api/materialsApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const ROLE_LABELS: Record<Role, string> = {
-  COMMON:            'Usuário',
-  INSTITUTIONALIZED: 'Institucionalizado',
-  PROFESSOR:         'Professor',
-  ADMIN:             'Administrador',
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -39,64 +29,6 @@ function friendlyError(error: unknown): string {
   if (code === 'INVALID_FILE_TYPE')  return 'O arquivo enviado não é um PDF válido.'
   if (code === 'FILE_TOO_LARGE')     return 'O arquivo excede o tamanho máximo permitido (50 MB).'
   return getApiErrorMessage(error)
-}
-
-// ── Topbar ────────────────────────────────────────────────────────────────────
-
-interface TopbarProps {
-  userName: string
-  userRole: Role
-  onBack: () => void
-  onLogout: () => void
-}
-
-function Topbar({ userName, userRole, onBack, onLogout }: TopbarProps) {
-  return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-3xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            aria-label="Voltar"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Voltar</span>
-          </button>
-
-          <div className="w-px h-5 bg-white/20" />
-
-          <div className="flex items-center gap-2">
-            <div className="bg-white/10 rounded-xl p-2">
-              <BookOpen size={18} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight">MI</p>
-              <p className="text-indigo-200 text-xs">Materiais Instrucionais · UFPB</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium leading-tight">{userName}</p>
-            <p className="text-indigo-200 text-xs">{ROLE_LABELS[userRole]}</p>
-          </div>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          <button
-            onClick={onLogout}
-            aria-label="Sair da conta"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1"
-          >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
-  )
 }
 
 // ── Dropzone ──────────────────────────────────────────────────────────────────
@@ -269,18 +201,13 @@ function SuccessState({ material, onUploadAnother, onGoHome }: SuccessStateProps
 // ── UploadPage ────────────────────────────────────────────────────────────────
 
 export function UploadPage() {
-  const { user, clearSession } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
 
   const { mutate, isPending, isSuccess, data: uploadedMaterial, error, reset } = useUploadMaterial()
-
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
 
   function handleFileSelect(selected: File) {
     setFile(selected)
@@ -305,20 +232,11 @@ export function UploadPage() {
     reset()
   }
 
-  const ROLES_WITH_UPLOAD = new Set(['INSTITUTIONALIZED', 'PROFESSOR', 'ADMIN'])
-  const canUpload = (user?.role && ROLES_WITH_UPLOAD.has(user.role)) || (user?.canUpload ?? false)
+  const canUpload = canUploadMaterials(user)
   const isUploading = isPending
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar
-        userName={user?.name ?? ''}
-        userRole={user?.role ?? 'COMMON'}
-        onBack={() => navigate('/')}
-        onLogout={handleLogout}
-      />
-
-      <main className="flex-1 px-6 py-10">
+    <AppShell>
         <div className="max-w-3xl mx-auto space-y-6">
 
           {/* Cabeçalho da página */}
@@ -442,7 +360,6 @@ export function UploadPage() {
             Campus IV · UFPB — Rio Tinto / Mamanguape
           </p>
         </div>
-      </main>
-    </div>
+    </AppShell>
   )
 }

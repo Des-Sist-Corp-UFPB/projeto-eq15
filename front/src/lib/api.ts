@@ -28,6 +28,13 @@ api.interceptors.response.use(
     const status = error.response?.status
     const originalRequest = error.config as typeof error.config & { _retry?: boolean }
 
+    // Usuário anônimo (sem token): não tenta refresh nem redireciona para o login —
+    // a página principal é pública, então apenas propaga o erro para a UI tratar.
+    const hadToken = !!localStorage.getItem('accessToken')
+    if (status === 401 && !hadToken) {
+      return Promise.reject(error)
+    }
+
     // Tenta refresh apenas uma vez para evitar loop infinito
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true

@@ -2,7 +2,7 @@
 import { type InspectionLogDirection, type Prisma } from '@prisma/client'
 import { prisma } from '../../database/prisma'
 
-export interface InspectionLogDTO {
+export interface IInspectionLog {
   id:            string
   correlationId: string | null
   context:       string
@@ -20,7 +20,7 @@ export interface ListInspectionLogsParams {
 }
 
 export interface ListInspectionLogsResult {
-  logs:    InspectionLogDTO[]
+  logs:    IInspectionLog[]
   total:   number
   page:    number
   perPage: number

@@ -9,7 +9,7 @@ import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
 import { env } from '../../../../env'
-import type { UploadMIInput, UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { UploadMIInput, IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 // ── Constantes de validação ────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ const ALLOWED_MIME_TYPE = 'application/pdf'
  *  5. Persiste os metadados no banco
  *  6. Retorna o DTO do material criado
  */
-export async function materialPdfUploadService(input: UploadMIInput): Promise<UploadedMIDTO> {
+export async function materialPdfUploadService(input: UploadMIInput): Promise<IUploadedMI> {
   const { title, buffer, originalFileName, mimeType, uploadedById, organizationIds = [] } = input
 
   if (mimeType !== ALLOWED_MIME_TYPE) {

@@ -1,7 +1,10 @@
 // src/repositories/organizations/orgRepository.ts
 import { prisma } from '../../database/prisma'
-import type { OrganizationDTO, OrgListItemDTO } from '../../@types/organizations'
-import type { UploadedMIDTO } from '../../@types/resources/materials/pdf'
+import type { IOrganization, IOrganizationListItem } from '../../@types/organizations'
+import type { IUploadedMI } from '../../@types/resources/materials/pdf'
+import { ERRORS, buildError } from '../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../utils/statusCode'
 
 const ORG_SELECT = {
   id:          true,
@@ -13,15 +16,21 @@ const ORG_SELECT = {
   updatedAt:   true,
 } as const
 
-export async function findOrgById(id: string): Promise<OrganizationDTO | null> {
+export async function findOrgById(id: string): Promise<IOrganization | null> {
   return prisma.organization.findUnique({ where: { id }, select: ORG_SELECT })
+}
+
+export async function findOrganization(id: string): Promise<IOrganization> {
+  const org = await findOrgById(id)
+  if (!org) throw new GeneralErrorResponse(StatusCode.NOT_FOUND, buildError(ERRORS.ORG.ORG_NOT_FOUND))
+  return org
 }
 
 export async function createOrg(params: {
   name:        string
   description?: string
   createdById: string
-}): Promise<OrganizationDTO> {
+}): Promise<IOrganization> {
   return prisma.organization.create({
     data:   { name: params.name, description: params.description, createdById: params.createdById },
     select: ORG_SELECT,
@@ -31,11 +40,11 @@ export async function createOrg(params: {
 export async function updateOrg(
   id: string,
   data: { name?: string; description?: string | null },
-): Promise<OrganizationDTO> {
+): Promise<IOrganization> {
   return prisma.organization.update({ where: { id }, data, select: ORG_SELECT })
 }
 
-export async function archiveOrg(id: string): Promise<OrganizationDTO> {
+export async function archiveOrg(id: string): Promise<IOrganization> {
   return prisma.organization.update({
     where:  { id },
     data:   { status: 'ARCHIVED' },
@@ -43,7 +52,7 @@ export async function archiveOrg(id: string): Promise<OrganizationDTO> {
   })
 }
 
-export async function listMyOrgs(userId: string): Promise<OrgListItemDTO[]> {
+export async function listMyOrgs(userId: string): Promise<IOrganizationListItem[]> {
   const memberships = await prisma.organizationMember.findMany({
     where: { userId },
     include: {
@@ -74,7 +83,7 @@ export async function listMyOrgs(userId: string): Promise<OrgListItemDTO[]> {
 
 export async function findOrgApprovedMaterials(
   orgId: string,
-): Promise<UploadedMIDTO[]> {
+): Promise<IUploadedMI[]> {
   const links = await prisma.materialInstrucionalOrganization.findMany({
     where: { organizationId: orgId, material: { status: 'APPROVED' } },
     include: {

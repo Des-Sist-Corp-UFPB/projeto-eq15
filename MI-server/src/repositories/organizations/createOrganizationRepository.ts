@@ -1,12 +1,12 @@
 // src/repositories/organizations/createOrganizationRepository.ts
 import { prisma } from '../../database/prisma'
-import type { OrganizationDTO } from '../../@types/organizations'
+import type { IOrganization } from '../../@types/organizations'
 
 export async function createOrganization(params: {
   name:        string
   description?: string
   createdById: string
-}): Promise<OrganizationDTO> {
+}): Promise<IOrganization> {
   return await prisma.organization.create({
     data: {
       name:        params.name,

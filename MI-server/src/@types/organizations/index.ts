@@ -1,6 +1,6 @@
 // src/@types/organizations/index.ts
 
-export interface OrganizationDTO {
+export interface IOrganization {
   id:          string
   name:        string
   description: string | null
@@ -10,7 +10,7 @@ export interface OrganizationDTO {
   updatedAt:   Date
 }
 
-export interface OrgListItemDTO {
+export interface IOrganizationListItem {
   id:          string
   name:        string
   description: string | null
@@ -20,7 +20,7 @@ export interface OrgListItemDTO {
   createdAt:   Date
 }
 
-export interface OrgMemberDTO {
+export interface IOrganizationMember {
   id:             string
   organizationId: string
   userId:         string
@@ -32,7 +32,7 @@ export interface OrgMemberDTO {
   }
 }
 
-export interface OrgInviteDTO {
+export interface IOrganizationInvite {
   id:             string
   organizationId: string
   invitedUserId:  string

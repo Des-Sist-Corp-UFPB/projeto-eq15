@@ -1,5 +1,5 @@
 // src/services/organizations/listOrgMembersService.ts
-import type { OrgMemberDTO } from '../../@types/organizations'
+import type { IOrganizationMember } from '../../@types/organizations'
 import { findOrgById } from '../../repositories/organizations/orgRepository'
 import { findMembership, listMembers } from '../../repositories/organizations/orgMembersRepository'
 import { validateRequest } from '../../utils/validateRequest'
@@ -14,7 +14,7 @@ const listOrgMembersSchema = z.object({
   requestingUserId: z.string().uuid(),
 })
 
-export async function listOrgMembersService(input: unknown): Promise<OrgMemberDTO[]> {
+export async function listOrgMembersService(input: unknown): Promise<IOrganizationMember[]> {
   logger.info('IN - listOrgMembersService')
 
   const { orgId, requestingUserId } = validateRequest(input, listOrgMembersSchema)

@@ -1,5 +1,5 @@
 // src/services/organizations/listOrgMaterialsService.ts
-import type { UploadedMIDTO } from '../../@types/resources/materials/pdf'
+import type { IUploadedMI } from '../../@types/resources/materials/pdf'
 import { findOrgById, findOrgApprovedMaterials } from '../../repositories/organizations/orgRepository'
 import { findMembership } from '../../repositories/organizations/orgMembersRepository'
 import { validateRequest } from '../../utils/validateRequest'
@@ -14,7 +14,7 @@ const listOrgMaterialsSchema = z.object({
   requestingUserId: z.string().uuid(),
 })
 
-export async function listOrgMaterialsService(input: unknown): Promise<UploadedMIDTO[]> {
+export async function listOrgMaterialsService(input: unknown): Promise<IUploadedMI[]> {
   logger.info('IN - listOrgMaterialsService')
 
   const { orgId, requestingUserId } = validateRequest(input, listOrgMaterialsSchema)

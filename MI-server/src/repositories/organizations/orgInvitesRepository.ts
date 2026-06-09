@@ -1,6 +1,6 @@
 // src/repositories/organizations/orgInvitesRepository.ts
 import { prisma } from '../../database/prisma'
-import type { OrgInviteDTO } from '../../@types/organizations'
+import type { IOrganizationInvite } from '../../@types/organizations'
 
 const INVITE_SELECT = {
   id:             true,
@@ -14,7 +14,7 @@ const INVITE_SELECT = {
   invitedBy:    { select: { name: true } },
 } as const
 
-export async function findInviteById(id: string): Promise<OrgInviteDTO | null> {
+export async function findInviteById(id: string): Promise<IOrganizationInvite | null> {
   return prisma.organizationInvite.findUnique({ where: { id }, select: INVITE_SELECT })
 }
 
@@ -32,7 +32,7 @@ export async function createInvite(params: {
   organizationId: string
   invitedUserId:  string
   invitedById:    string
-}): Promise<OrgInviteDTO> {
+}): Promise<IOrganizationInvite> {
   return prisma.organizationInvite.create({
     data:   params,
     select: INVITE_SELECT,
@@ -49,7 +49,7 @@ export async function updateInviteStatus(
   })
 }
 
-export async function listMyInvites(invitedUserId: string): Promise<OrgInviteDTO[]> {
+export async function listMyInvites(invitedUserId: string): Promise<IOrganizationInvite[]> {
   return prisma.organizationInvite.findMany({
     where:   { invitedUserId },
     select:  INVITE_SELECT,

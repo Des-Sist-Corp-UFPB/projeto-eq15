@@ -1,5 +1,5 @@
 // src/services/organizations/inviteUserService.ts
-import type { OrgInviteDTO } from '../../@types/organizations'
+import type { IOrganizationInvite } from '../../@types/organizations'
 import { findOrgById } from '../../repositories/organizations/orgRepository'
 import { findMembership } from '../../repositories/organizations/orgMembersRepository'
 import { findPendingInvite, createInvite } from '../../repositories/organizations/orgInvitesRepository'
@@ -11,7 +11,7 @@ import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
 
-export async function inviteUserService(input: unknown): Promise<OrgInviteDTO> {
+export async function inviteUserService(input: unknown): Promise<IOrganizationInvite> {
   logger.info('IN - inviteUserService')
 
   const { orgId, invitedEmail, invitedById } = validateRequest(input, inviteUserSchema)

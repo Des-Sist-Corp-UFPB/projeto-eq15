@@ -1,6 +1,6 @@
 // src/services/users/usersService.ts
 import { type Role } from '@prisma/client'
-import { type CreatedUserDTO } from '../../@types/users'
+import { type IUser } from '../../@types/users'
 import { type CreateUserRequest } from '../../schemas/users/usersSchema'
 import {
   findUserByEmail,
@@ -18,7 +18,7 @@ const INSTITUTIONAL_DOMAIN = '@dcx.ufpb.br'
 
 export async function createUserService(
   input: CreateUserRequest,
-): Promise<CreatedUserDTO> {
+): Promise<IUser> {
   const { name, email, password } = input
 
   logger.info('IN - createUserService')

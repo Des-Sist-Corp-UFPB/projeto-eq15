@@ -1,5 +1,5 @@
 // src/services/organizations/listMyOrganizationsService.ts
-import type { OrgListItemDTO } from '../../@types/organizations'
+import type { IOrganizationListItem } from '../../@types/organizations'
 import { listMyOrgs } from '../../repositories/organizations/orgRepository'
 import { validateRequest } from '../../utils/validateRequest'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ const listMyOrganizationsSchema = z.object({
   userId: z.string().uuid(),
 })
 
-export async function listMyOrganizationsService(input: unknown): Promise<OrgListItemDTO[]> {
+export async function listMyOrganizationsService(input: unknown): Promise<IOrganizationListItem[]> {
   logger.info('IN - listMyOrganizationsService')
 
   const { userId } = validateRequest(input, listMyOrganizationsSchema)

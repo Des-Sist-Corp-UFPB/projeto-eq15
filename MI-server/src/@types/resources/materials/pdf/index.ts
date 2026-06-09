@@ -11,14 +11,14 @@ export interface UploadMIInput {
   organizationIds?: string[]
 }
 
-/** DTO de resposta da URL pré-assinada para visualização temporária */
-export interface MaterialPresignedUrlDTO {
+/** URL pré-assinada para visualização temporária */
+export interface IMaterialPresignedUrl {
   url: string
   expiresInSeconds: number
 }
 
-/** DTO de material pendente — inclui dados do autor para exibição no painel do professor */
-export interface PendingMaterialDTO {
+/** Material pendente — inclui dados do autor para exibição no painel do professor */
+export interface IPendingMaterial {
   id: string
   title: string
   originalFileName: string
@@ -32,8 +32,8 @@ export interface PendingMaterialDTO {
   updatedAt: Date
 }
 
-/** DTO de resposta — nunca expõe campos internos desnecessários */
-export interface UploadedMIDTO {
+/** Material Instrucional — nunca expõe campos internos desnecessários */
+export interface IUploadedMI {
   id: string
   title: string
   originalFileName: string

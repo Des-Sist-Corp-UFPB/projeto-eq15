@@ -1,7 +1,7 @@
 // src/repositories/resources/materials/pdf/materialPdfPendingListRepository.ts
 import { type Prisma } from '@prisma/client'
 import { prisma } from '../../../../database/prisma'
-import type { PendingMaterialDTO } from '../../../../@types/resources/materials/pdf'
+import type { IPendingMaterial } from '../../../../@types/resources/materials/pdf'
 
 const PENDING_SELECT = {
   id:               true,
@@ -20,7 +20,7 @@ const PENDING_SELECT = {
 export async function findPendingMaterials(params: {
   reviewerId:   string
   reviewerRole: string
-}): Promise<PendingMaterialDTO[]> {
+}): Promise<IPendingMaterial[]> {
   const { reviewerId, reviewerRole } = params
 
   const where: Prisma.MaterialInstrucionalWhereInput = { status: 'PENDING_REVIEW' }

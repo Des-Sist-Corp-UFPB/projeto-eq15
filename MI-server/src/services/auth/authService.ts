@@ -1,5 +1,5 @@
 // src/services/auth/authService.ts
-import { type AuthUserDTO } from '../../@types/auth'
+import { type IAuthUser } from '../../@types/auth'
 import { type LoginRequest } from '../../schemas/auth/authSchema'
 import { findUserByEmail, findUserById } from '../../repositories/users/usersRepository'
 import {
@@ -20,7 +20,7 @@ import { logger } from '../../lib/logger'
  * Intencionalmente usa a mesma mensagem para "usuário não encontrado"
  * e "senha incorreta" para não revelar quais e-mails existem no sistema.
  */
-export async function loginService(input: LoginRequest): Promise<AuthUserDTO> {
+export async function loginService(input: LoginRequest): Promise<IAuthUser> {
   logger.info('IN - loginService')
 
   const { email, password } = input
@@ -60,7 +60,7 @@ export async function loginService(input: LoginRequest): Promise<AuthUserDTO> {
  * Valida um refresh token e retorna os dados do usuário associado.
  * Tokens expirados são deletados do banco antes de lançar o erro.
  */
-export async function refreshTokenService(token: string): Promise<AuthUserDTO> {
+export async function refreshTokenService(token: string): Promise<IAuthUser> {
   logger.info('IN - refreshTokenService')
 
   const stored = await findRefreshToken(token)

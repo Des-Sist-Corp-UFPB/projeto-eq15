@@ -1,5 +1,5 @@
 // src/services/organizations/updateOrganizationService.ts
-import type { OrganizationDTO } from '../../@types/organizations'
+import type { IOrganization } from '../../@types/organizations'
 import { findOrgById, updateOrg } from '../../repositories/organizations/orgRepository'
 import { findMembership } from '../../repositories/organizations/orgMembersRepository'
 import { validateRequest } from '../../utils/validateRequest'
@@ -9,7 +9,7 @@ import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
 
-export async function updateOrganizationService(input: unknown): Promise<OrganizationDTO> {
+export async function updateOrganizationService(input: unknown): Promise<IOrganization> {
   logger.info('IN - updateOrganizationService')
 
   const { orgId, requestingUserId, name, description } = validateRequest(input, updateOrganizationSchema)

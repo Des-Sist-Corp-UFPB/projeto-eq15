@@ -1,6 +1,6 @@
 // src/services/organizations/createOrganizationService.ts
 import type { OrganizationDTO } from '../../@types/organizations'
-import { createOrganization } from '../../repositories/organizations/createOrganizationRepository'
+import { prisma } from '../../database/prisma'
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { validateRequest } from '../../utils/validateRequest'
 import { createOrganizationSchema } from '../../schemas/organizations/createOrganizationSchema'
@@ -11,7 +11,18 @@ export async function createOrganizationService(input: unknown): Promise<Organiz
 
   const { name, description, createdById } = validateRequest(input, createOrganizationSchema)
 
-  const org = await createOrganization({ name, description, createdById })
+  const org = await prisma.$transaction(async (tx) => {
+    const created = await tx.organization.create({
+      data:   { name, description, createdById },
+      select: { id: true, name: true, description: true, status: true, createdById: true, createdAt: true, updatedAt: true },
+    })
+
+    await tx.organizationMember.create({
+      data: { organizationId: created.id, userId: createdById, role: 'ADMIN' },
+    })
+
+    return created
+  })
 
   await createAuditLog({
     actorId:  createdById,
@@ -21,6 +32,5 @@ export async function createOrganizationService(input: unknown): Promise<Organiz
   })
 
   logger.info('OUT - createOrganizationService')
-
   return org
 }

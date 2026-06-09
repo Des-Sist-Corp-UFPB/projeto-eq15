@@ -18,6 +18,24 @@ enum InspectionLogDirection {
   SERVER_TO_CLIENT
 }
 
+enum OrgMemberRole {
+  ADMIN
+  PROFESSOR
+  MEMBER
+}
+
+enum OrgStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String
@@ -30,11 +48,14 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  refreshTokens               RefreshToken[]
-  auditLogs                   AuditLog[]              @relation("AuditActor")
-  materiaisInstrucionais      MaterialInstrucional[]
-  emailVerificationTokens     EmailVerificationToken[]
-  organizations               Organization[]
+  refreshTokens           RefreshToken[]
+  auditLogs               AuditLog[]            @relation("AuditActor")
+  materiaisInstrucionais  MaterialInstrucional[]
+  emailVerificationTokens EmailVerificationToken[]
+  orgCreated              Organization[]         @relation("OrgCreator")
+  orgMemberships          OrganizationMember[]   @relation("OrgMemberships")
+  invitesReceived         OrganizationInvite[]   @relation("InvitesReceived")
+  invitesSent             OrganizationInvite[]   @relation("InvitesSent")
 }
 
 model EmailVerificationToken {
@@ -72,16 +93,16 @@ model AuditLog {
 // ── Materiais Instrucionais ────────────────────────────────────────────────────
 
 enum MIStatus {
-  PENDING_REVIEW // aguardando aprovação docente
-  APPROVED       // aprovado e disponível publicamente
-  REJECTED       // rejeitado com justificativa
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
 }
 
 model MaterialInstrucional {
   id               String   @id @default(uuid())
   title            String
-  originalFileName String   // nome original do arquivo enviado pelo usuário
-  storageKey       String   @unique // chave do objeto no MinIO
+  originalFileName String
+  storageKey       String   @unique
   mimeType         String
   sizeBytes        Int
   status           MIStatus @default(PENDING_REVIEW)
@@ -89,36 +110,82 @@ model MaterialInstrucional {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  uploadedBy User @relation(fields: [uploadedById], references: [id])
+  uploadedBy    User                              @relation(fields: [uploadedById], references: [id])
+  organizations MaterialInstrucionalOrganization[]
 
   @@index([uploadedById])
   @@index([status])
 }
 
-// ── Organizações ─────────────────────────────────────────────────────────────
+// ── Organizações ──────────────────────────────────────────────────────────────
 
 model Organization {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String?
+  status      OrgStatus @default(ACTIVE)
   createdById String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy User @relation("OrgCreator", fields: [createdById], references: [id])
+  members   OrganizationMember[]
+  invites   OrganizationInvite[]
+  materials MaterialInstrucionalOrganization[]
 
   @@index([createdById])
 }
 
+model OrganizationMember {
+  id             String        @id @default(uuid())
+  organizationId String
+  userId         String
+  role           OrgMemberRole
+  joinedAt       DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation("OrgMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model OrganizationInvite {
+  id             String       @id @default(uuid())
+  organizationId String
+  invitedUserId  String
+  invitedById    String
+  status         InviteStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  respondedAt    DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedUser  User         @relation("InvitesReceived", fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitesSent",     fields: [invitedById],  references: [id])
+
+  @@index([invitedUserId])
+  @@index([organizationId])
+}
+
+model MaterialInstrucionalOrganization {
+  materialId     String
+  organizationId String
+
+  material     MaterialInstrucional @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, organizationId])
+}
+
 // ── Observabilidade ───────────────────────────────────────────────────────────
 
-// Rastreio de ciclo de vida de requisições HTTP (observabilidade)
 model InspectionLog {
   id            String                 @id @default(uuid())
-  correlationId String?                // user ID de requests autenticadas
-  context       String                 // ex: "createUserController"
-  direction     InspectionLogDirection // CLIENT_TO_SERVER | SERVER_TO_CLIENT
-  payload       Json?                  // array de { title: string, content?: any }
+  correlationId String?
+  context       String
+  direction     InspectionLogDirection
+  payload       Json?
   createdAt     DateTime               @default(now())
 
   @@index([correlationId])

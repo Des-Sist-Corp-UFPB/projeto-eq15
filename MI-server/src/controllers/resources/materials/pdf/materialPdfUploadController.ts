@@ -24,6 +24,7 @@ interface ParsedMultipart {
   originalFileName: string | null
   mimeType:         string | null
   title:            string | undefined
+  organizationIds:  string[]
 }
 
 async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipart> {
@@ -31,11 +32,14 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
   let originalFileName: string | null = null
   let mimeType:         string | null = null
   let title:            string | undefined
+  const organizationIds: string[]     = []
 
   for await (const part of request.parts()) {
     if (part.type === 'field') {
       if (part.fieldname === 'title') {
         title = String(part.value).trim()
+      } else if (part.fieldname === 'organizationIds[]') {
+        organizationIds.push(String(part.value).trim())
       }
     } else {
       if (part.fieldname === 'file') {
@@ -49,7 +53,7 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
     }
   }
 
-  return { fileBuffer, originalFileName, mimeType, title }
+  return { fileBuffer, originalFileName, mimeType, title, organizationIds }
 }
 
 function resolveTitle(title: string | undefined, originalFileName: string): string {
@@ -77,18 +81,19 @@ export async function materialPdfUploadController(
   logger.info(`IN - ${ctx}`)
 
   try {
-    const { fileBuffer, originalFileName, mimeType, title } = await parsePdfMultipart(request)
+    const { fileBuffer, originalFileName, mimeType, title, organizationIds } = await parsePdfMultipart(request)
 
     if (!fileBuffer || !originalFileName || !mimeType) {
       throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
     }
 
     const mi = await materialPdfUploadService({
-      title:        resolveTitle(title, originalFileName),
-      buffer:       fileBuffer,
+      title:           resolveTitle(title, originalFileName),
+      buffer:          fileBuffer,
       originalFileName,
       mimeType,
-      uploadedById: request.user.sub,
+      uploadedById:    request.user.sub,
+      organizationIds,
     })
 
     httpResponse({ reply, statusCode: StatusCode.CREATED, data: mi, context: ctx })

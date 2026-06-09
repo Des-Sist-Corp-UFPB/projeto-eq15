@@ -1,23 +1,111 @@
 // src/features/organizations/api/organizationsApi.ts
 import { api } from '../../../lib/api'
 
-export interface CreateOrganizationInput {
-  name:        string
-  description?: string
-}
+// ── DTOs ──────────────────────────────────────────────────────────────────────
 
 export interface OrganizationDTO {
   id:          string
   name:        string
   description: string | null
+  status:      'ACTIVE' | 'ARCHIVED'
   createdById: string
   createdAt:   string
   updatedAt:   string
 }
 
-export async function createOrganizationRequest(
-  input: CreateOrganizationInput,
-): Promise<OrganizationDTO> {
+export interface OrgListItemDTO {
+  id:          string
+  name:        string
+  description: string | null
+  status:      'ACTIVE' | 'ARCHIVED'
+  myRole:      'ADMIN' | 'PROFESSOR' | 'MEMBER'
+  memberCount: number
+  createdAt:   string
+}
+
+export interface OrgMemberDTO {
+  id:             string
+  organizationId: string
+  userId:         string
+  role:           'ADMIN' | 'PROFESSOR' | 'MEMBER'
+  joinedAt:       string
+  user:           { name: string; email: string }
+}
+
+export interface OrgInviteDTO {
+  id:             string
+  organizationId: string
+  invitedUserId:  string
+  invitedById:    string
+  status:         'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
+  createdAt:      string
+  respondedAt:    string | null
+  organization:   { name: string }
+  invitedBy:      { name: string }
+}
+
+// ── API Calls ─────────────────────────────────────────────────────────────────
+
+export async function createOrganizationRequest(input: {
+  name: string; description?: string
+}): Promise<OrganizationDTO> {
   const { data } = await api.post<OrganizationDTO>('/organizations', input)
   return data
+}
+
+export async function listMyOrganizationsRequest(): Promise<OrgListItemDTO[]> {
+  const { data } = await api.get<OrgListItemDTO[]>('/organizations/mine')
+  return data
+}
+
+export async function updateOrganizationRequest(
+  orgId: string,
+  input: { name?: string; description?: string },
+): Promise<OrganizationDTO> {
+  const { data } = await api.put<OrganizationDTO>(`/organizations/${orgId}`, input)
+  return data
+}
+
+export async function archiveOrganizationRequest(orgId: string): Promise<OrganizationDTO> {
+  const { data } = await api.delete<OrganizationDTO>(`/organizations/${orgId}`)
+  return data
+}
+
+export async function listOrgMembersRequest(orgId: string): Promise<OrgMemberDTO[]> {
+  const { data } = await api.get<OrgMemberDTO[]>(`/organizations/${orgId}/members`)
+  return data
+}
+
+export async function removeMemberRequest(orgId: string, userId: string): Promise<void> {
+  await api.delete(`/organizations/${orgId}/members/${userId}`)
+}
+
+export async function leaveOrganizationRequest(orgId: string): Promise<void> {
+  await api.delete(`/organizations/${orgId}/leave`)
+}
+
+export async function inviteUserRequest(orgId: string, email: string): Promise<OrgInviteDTO> {
+  const { data } = await api.post<OrgInviteDTO>(`/organizations/${orgId}/invites`, { email })
+  return data
+}
+
+export async function cancelInviteRequest(inviteId: string): Promise<void> {
+  await api.delete(`/organizations/invites/${inviteId}`)
+}
+
+export async function listMyInvitesRequest(): Promise<OrgInviteDTO[]> {
+  const { data } = await api.get<OrgInviteDTO[]>('/organizations/invites/mine')
+  return data
+}
+
+export async function pendingInviteCountRequest(): Promise<{ count: number }> {
+  const { data } = await api.get<{ count: number }>('/organizations/invites/pending-count')
+  return data
+}
+
+export async function respondInviteRequest(
+  inviteId: string,
+  action: 'ACCEPT' | 'REJECT',
+): Promise<void> {
+  await api.patch(`/organizations/invites/${inviteId}/respond`, { action })
 }

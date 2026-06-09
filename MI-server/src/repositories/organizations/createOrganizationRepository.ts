@@ -17,6 +17,7 @@ export async function createOrganization(params: {
       id:          true,
       name:        true,
       description: true,
+      status:      true,
       createdById: true,
       createdAt:   true,
       updatedAt:   true,

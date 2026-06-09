@@ -3,9 +3,12 @@ import type { PendingMaterialDTO } from '../../../../@types/resources/materials/
 import { findPendingMaterials } from '../../../../repositories/resources/materials/pdf/materialPdfPendingListRepository'
 import { logger } from '../../../../lib/logger'
 
-export async function materialPdfPendingListService(): Promise<PendingMaterialDTO[]> {
+export async function materialPdfPendingListService(params: {
+  reviewerId:   string
+  reviewerRole: string
+}): Promise<PendingMaterialDTO[]> {
   logger.info('IN - materialPdfPendingListService')
-  const materials = await findPendingMaterials()
+  const materials = await findPendingMaterials(params)
   logger.info('OUT - materialPdfPendingListService')
   return materials
 }

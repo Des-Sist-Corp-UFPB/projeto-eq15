@@ -8,6 +8,7 @@ export interface UploadMIInput {
   originalFileName: string
   mimeType: string
   uploadedById: string
+  organizationIds?: string[]
 }
 
 /** DTO de resposta da URL pré-assinada para visualização temporária */

@@ -109,3 +109,43 @@ export async function respondInviteRequest(
 ): Promise<void> {
   await api.patch(`/organizations/invites/${inviteId}/respond`, { action })
 }
+
+// ── Materials ─────────────────────────────────────────────────────────────────
+
+export interface OrgMaterialDTO {
+  id:               string
+  title:            string
+  originalFileName: string
+  storageKey:       string
+  mimeType:         string
+  sizeBytes:        number
+  status:           'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
+  uploadedById:     string
+  createdAt:        string
+  updatedAt:        string
+}
+
+export interface UploadOrgMaterialPayload {
+  file:   File
+  title?: string
+}
+
+export async function listOrgMaterialsRequest(orgId: string): Promise<OrgMaterialDTO[]> {
+  const { data } = await api.get<OrgMaterialDTO[]>(`/organizations/${orgId}/materials`)
+  return data
+}
+
+export async function uploadOrgMaterialRequest(
+  orgId:   string,
+  payload: UploadOrgMaterialPayload,
+): Promise<OrgMaterialDTO> {
+  const formData = new FormData()
+  formData.append('file', payload.file)
+  if (payload.title?.trim()) formData.append('title', payload.title.trim())
+  const { data } = await api.post<OrgMaterialDTO>(
+    `/organizations/${orgId}/mis`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}

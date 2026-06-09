@@ -1,15 +1,18 @@
 // src/pages/OrganizationDetailPage.tsx
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Users, Trash2, LogOut, UserPlus, Archive, Pencil, Check, X, Mail } from 'lucide-react'
+import { ArrowLeft, Users, Trash2, LogOut, UserPlus, Archive, Pencil, Check, X, Mail, FileUp, BookOpen, ExternalLink } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useMyOrganizations } from '../features/organizations/hooks/useMyOrganizations'
 import { useOrgMembers } from '../features/organizations/hooks/useOrgMembers'
+import { useOrgMaterials } from '../features/organizations/hooks/useOrgMaterials'
+import { useUploadOrgMaterial } from '../features/organizations/hooks/useUploadOrgMaterial'
 import { useUpdateOrganization } from '../features/organizations/hooks/useUpdateOrganization'
 import { useArchiveOrganization } from '../features/organizations/hooks/useArchiveOrganization'
 import { useRemoveMember } from '../features/organizations/hooks/useRemoveMember'
 import { useLeaveOrganization } from '../features/organizations/hooks/useLeaveOrganization'
 import { useInviteUser } from '../features/organizations/hooks/useInviteUser'
+import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import type { OrgListItemDTO } from '../features/organizations/api/organizationsApi'
 
 const ROLE_LABEL: Record<string, string> = {
@@ -24,6 +27,16 @@ function getApiError(err: unknown): string {
     if (r?.data?.message) return r.data.message
   }
   return 'Ocorreu um erro inesperado.'
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 export function OrganizationDetailPage() {
@@ -42,6 +55,9 @@ export function OrganizationDetailPage() {
   const removeMutation  = useRemoveMember(orgId ?? '')
   const leaveMutation   = useLeaveOrganization()
   const inviteMutation  = useInviteUser(orgId ?? '')
+  const uploadMutation  = useUploadOrgMaterial(orgId ?? '')
+
+  const { data: materials, isLoading: materialsLoading } = useOrgMaterials(orgId ?? '')
 
   // Edit mode
   const [editing, setEditing]       = useState(false)
@@ -53,6 +69,13 @@ export function OrganizationDetailPage() {
   const [inviteSuccess, setInviteSuccess] = useState('')
   const [inviteError, setInviteError]     = useState('')
 
+  // Upload form
+  const [uploadFile, setUploadFile]       = useState<File | null>(null)
+  const [uploadTitle, setUploadTitle]     = useState('')
+  const [uploadError, setUploadError]     = useState('')
+  const [uploadSuccess, setUploadSuccess] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // General error
   const [actionError, setActionError] = useState('')
 
@@ -62,6 +85,10 @@ export function OrganizationDetailPage() {
   const isStaff       = org?.myRole === 'ADMIN' || org?.myRole === 'PROFESSOR'
   const isArchived    = org?.status === 'ARCHIVED'
   const currentUserId = user?.id
+  const canUpload     = !!(
+    user?.canUpload ||
+    ['INSTITUTIONALIZED', 'PROFESSOR', 'ADMIN'].includes(user?.role ?? '')
+  )
 
   function startEdit() {
     setEditName(org?.name ?? '')
@@ -119,6 +146,31 @@ export function OrganizationDetailPage() {
       setInviteEmail('')
     } catch (e) {
       setInviteError(getApiError(e))
+    }
+  }
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault()
+    if (!uploadFile) return
+    setUploadError('')
+    setUploadSuccess('')
+    try {
+      const mi = await uploadMutation.mutateAsync({ file: uploadFile, title: uploadTitle || undefined })
+      setUploadSuccess(`"${mi.title}" enviado para revisão.`)
+      setUploadFile(null)
+      setUploadTitle('')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    } catch (e) {
+      setUploadError(getApiError(e))
+    }
+  }
+
+  async function handleOpenMaterial(materialId: string) {
+    try {
+      const { url } = await getPublicPresignedUrlRequest(materialId)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      // silently ignore — URL expiration or permission issue
     }
   }
 
@@ -322,6 +374,99 @@ export function OrganizationDetailPage() {
                           </button>
                         )}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Upload de material */}
+              {canUpload && !isArchived && (
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                    <FileUp size={15} />
+                    Enviar material para este projeto
+                  </h2>
+                  <form onSubmit={handleUpload} className="space-y-3">
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        required
+                        onChange={(e) => setUploadFile(e.target.files?.[0] ?? null)}
+                        className="block w-full text-sm text-gray-500 dark:text-gray-400
+                                   file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                                   file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700
+                                   dark:file:bg-indigo-900 dark:file:text-indigo-300
+                                   hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800 cursor-pointer"
+                      />
+                      {uploadFile && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {uploadFile.name} — {formatBytes(uploadFile.size)}
+                        </p>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={uploadTitle}
+                      onChange={(e) => setUploadTitle(e.target.value)}
+                      placeholder="Título (opcional — padrão: nome do arquivo)"
+                      maxLength={200}
+                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm
+                                 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                                 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!uploadFile || uploadMutation.isPending}
+                      className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <FileUp size={14} />
+                      {uploadMutation.isPending ? 'Enviando…' : 'Enviar'}
+                    </button>
+                  </form>
+                  {uploadSuccess && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">{uploadSuccess}</p>
+                  )}
+                  {uploadError && (
+                    <p className="text-xs text-red-500 dark:text-red-400 mt-2">{uploadError}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Materiais do projeto */}
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                  <BookOpen size={15} />
+                  Materiais do projeto
+                </h2>
+
+                {materialsLoading && (
+                  <p className="text-sm text-gray-400 dark:text-gray-500">Carregando materiais…</p>
+                )}
+
+                {!materialsLoading && (!materials || materials.length === 0) && (
+                  <p className="text-sm text-gray-400 dark:text-gray-500">
+                    Nenhum material aprovado neste projeto ainda.
+                  </p>
+                )}
+
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {materials?.map((m) => (
+                    <div key={m.id} className="py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{m.title}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatBytes(m.sizeBytes)} · {formatDate(m.createdAt)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleOpenMaterial(m.id)}
+                        className="shrink-0 flex items-center gap-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 transition-colors"
+                      >
+                        <ExternalLink size={13} />
+                        Abrir PDF
+                      </button>
                     </div>
                   ))}
                 </div>

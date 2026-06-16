@@ -1,5 +1,5 @@
 // src/services/users/setUserAsProfessorService.ts
-import type { CreatedUserDTO } from '../../@types/users'
+import type { IUser } from '../../@types/users'
 import { findUserById, updateUser } from '../../repositories/users/usersRepository'
 import { createAuditLog } from '../../repositories/audit/auditRepository'
 import { validateRequest } from '../../utils/validateRequest'
@@ -10,7 +10,7 @@ import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
 
-export async function setUserAsProfessorService(input: unknown): Promise<CreatedUserDTO> {
+export async function setUserAsProfessorService(input: unknown): Promise<IUser> {
   logger.info('IN - setUserAsProfessorService')
 
   const { targetUserId, requestingAdminId } = validateRequest(input, setUserAsProfessorSchema)

@@ -7,4 +7,4 @@ export const materialPdfPresignedUrlSchema = z.object({
     .uuid('O materialId deve ser um UUID v4 válido.'),
 })
 
-export type MaterialPdfPresignedUrlInput = z.infer<typeof materialPdfPresignedUrlSchema>
+export type MaterialPdfPresignedUrlRequest = z.infer<typeof materialPdfPresignedUrlSchema>

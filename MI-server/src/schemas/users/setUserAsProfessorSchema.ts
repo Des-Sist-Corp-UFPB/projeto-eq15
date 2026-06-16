@@ -10,4 +10,4 @@ export const setUserAsProfessorSchema = z.object({
     .uuid('O requestingAdminId deve ser um UUID v4 válido.'),
 })
 
-export type SetUserAsProfessorInput = z.infer<typeof setUserAsProfessorSchema>
+export type SetUserAsProfessorRequest = z.infer<typeof setUserAsProfessorSchema>

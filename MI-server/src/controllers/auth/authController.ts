@@ -1,7 +1,7 @@
 // src/controllers/auth/authController.ts
 import { randomUUID } from "node:crypto";
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { type LoginInput } from "../../schemas/auth/authSchema";
+import { type LoginRequest } from "../../schemas/auth/authSchema";
 import {
   loginService,
   refreshTokenService,
@@ -29,7 +29,7 @@ function refreshCookieOptions() {
 }
 
 export async function loginController(
-  request: FastifyRequest<{ Body: LoginInput }>,
+  request: FastifyRequest<{ Body: LoginRequest }>,
   reply: FastifyReply,
 ): Promise<void> {
   const context = "loginController";

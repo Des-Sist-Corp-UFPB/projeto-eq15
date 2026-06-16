@@ -30,6 +30,6 @@ export const ListUsersQuerySchema = z.object({
   perPage: z.coerce.number().min(1).max(100).default(20),
 })
 
-export type CreateUserInput = z.infer<typeof CreateUserSchema>
-export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
-export type ListUsersQuery = z.infer<typeof ListUsersQuerySchema>
+export type CreateUserRequest = z.infer<typeof CreateUserSchema>
+export type UpdateProfileRequest = z.infer<typeof UpdateProfileSchema>
+export type ListUsersRequest = z.infer<typeof ListUsersQuerySchema>

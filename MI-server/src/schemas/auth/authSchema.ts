@@ -16,6 +16,6 @@ export const PasswordResetConfirmSchema = z.object({
   newPassword: z.string().min(8, 'Password must have at least 8 characters'),
 })
 
-export type LoginInput = z.infer<typeof LoginSchema>
-export type PasswordResetRequestInput = z.infer<typeof PasswordResetRequestSchema>
-export type PasswordResetConfirmInput = z.infer<typeof PasswordResetConfirmSchema>
+export type LoginRequest = z.infer<typeof LoginSchema>
+export type PasswordResetRequest = z.infer<typeof PasswordResetRequestSchema>
+export type PasswordResetConfirmRequest = z.infer<typeof PasswordResetConfirmSchema>

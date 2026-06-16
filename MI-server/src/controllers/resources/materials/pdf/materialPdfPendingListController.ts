@@ -28,7 +28,10 @@ export async function materialPdfPendingListController(
   try {
     authorizeByRole(request.user.role, [PROFESSOR, ADMIN])
 
-    const materials = await materialPdfPendingListService()
+    const materials = await materialPdfPendingListService({
+      reviewerId:   request.user.sub,
+      reviewerRole: request.user.role,
+    })
 
     httpResponse({ reply, statusCode: StatusCode.OK, data: materials, context: ctx })
   } catch (error) {

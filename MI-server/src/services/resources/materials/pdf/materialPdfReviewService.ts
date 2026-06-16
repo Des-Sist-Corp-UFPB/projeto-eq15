@@ -1,5 +1,5 @@
 // src/services/resources/materials/pdf/materialPdfReviewService.ts
-import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { IUploadedMI } from '../../../../@types/resources/materials/pdf'
 import { findMaterialById } from '../../../../repositories/resources/materials/pdf/materialPdfViewRepository'
 import { updateMaterialStatus } from '../../../../repositories/resources/materials/pdf/materialPdfReviewRepository'
 import { createAuditLog } from '../../../../repositories/audit/auditRepository'
@@ -11,7 +11,7 @@ import { StatusCode } from '../../../../utils/statusCode'
 import { PROFESSOR, ADMIN } from '../../../../constants/roles'
 import { logger } from '../../../../lib/logger'
 
-export async function materialPdfReviewService(input: unknown): Promise<UploadedMIDTO> {
+export async function materialPdfReviewService(input: unknown): Promise<IUploadedMI> {
   logger.info('IN - materialPdfReviewService')
 
   const { materialId, decision, reviewerId } = validateRequest(input, materialPdfReviewSchema)

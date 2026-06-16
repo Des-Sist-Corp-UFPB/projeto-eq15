@@ -1,6 +1,6 @@
 // src/repositories/resources/materials/pdf/materialPdfViewRepository.ts
 import { prisma } from '../../../../database/prisma'
-import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 const MI_SELECT = {
   id:               true,
@@ -15,7 +15,7 @@ const MI_SELECT = {
   updatedAt:        true,
 } as const
 
-export async function findMaterialById(id: string): Promise<UploadedMIDTO | null> {
+export async function findMaterialById(id: string): Promise<IUploadedMI | null> {
   return prisma.materialInstrucional.findUnique({
     where:  { id },
     select: MI_SELECT,

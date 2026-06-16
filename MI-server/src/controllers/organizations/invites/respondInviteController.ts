@@ -1,11 +1,11 @@
-// src/controllers/organizations/respondInviteController.ts
+﻿// src/controllers/organizations/respondInviteController.ts
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { respondInviteService } from '../../services/organizations/respondInviteService'
-import { createInspectionLog } from '../../repositories/inspectionLog/inspectionLogRepository'
-import { httpResponse, httpError } from '../../utils/http'
-import { StatusCode } from '../../utils/statusCode'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { logger } from '../../lib/logger'
+import { respondInviteService } from '../../../services/organizations/invites/respondInviteService'
+import { createInspectionLog } from '../../../repositories/inspectionLog/inspectionLogRepository'
+import { httpResponse, httpError } from '../../../utils/http'
+import { StatusCode } from '../../../utils/statusCode'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { logger } from '../../../lib/logger'
 const ctx = 'respondInviteController'
 
 export async function respondInviteController(
@@ -61,3 +61,4 @@ export async function respondInviteController(
     httpError({ error, context: ctx })
   }
 }
+

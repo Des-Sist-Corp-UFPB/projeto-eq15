@@ -1,9 +1,9 @@
-// src/controllers/organizations/pendingInviteCountController.ts
+﻿// src/controllers/organizations/pendingInviteCountController.ts
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { pendingInviteCountService } from '../../services/organizations/pendingInviteCountService'
-import { httpResponse, httpError } from '../../utils/http'
-import { StatusCode } from '../../utils/statusCode'
-import { logger } from '../../lib/logger'
+import { pendingInviteCountService } from '../../../services/organizations/invites/pendingInviteCountService'
+import { httpResponse, httpError } from '../../../utils/http'
+import { StatusCode } from '../../../utils/statusCode'
+import { logger } from '../../../lib/logger'
 const ctx = 'pendingInviteCountController'
 
 export async function pendingInviteCountController(
@@ -19,3 +19,4 @@ export async function pendingInviteCountController(
     httpError({ error, context: ctx })
   }
 }
+

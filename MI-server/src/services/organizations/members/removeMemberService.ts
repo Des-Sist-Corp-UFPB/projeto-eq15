@@ -1,12 +1,12 @@
-// src/services/organizations/removeMemberService.ts
-import { findOrgById } from '../../repositories/organizations/orgRepository'
-import { findMembership, removeMember } from '../../repositories/organizations/orgMembersRepository'
-import { validateRequest } from '../../utils/validateRequest'
+﻿// src/services/organizations/removeMemberService.ts
+import { findOrgById } from '../../../repositories/organizations/orgRepository'
+import { findMembership, removeMember } from '../../../repositories/organizations/orgMembersRepository'
+import { validateRequest } from '../../../utils/validateRequest'
 import { z } from 'zod'
-import { ERRORS, buildError } from '../../lib/errors/errors'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { StatusCode } from '../../utils/statusCode'
-import { logger } from '../../lib/logger'
+import { ERRORS, buildError } from '../../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../../utils/statusCode'
+import { logger } from '../../../lib/logger'
 
 const removeMemberSchema = z.object({
   orgId:            z.string().uuid(),
@@ -36,3 +36,4 @@ export async function removeMemberService(input: unknown): Promise<void> {
 
   logger.info('OUT - removeMemberService')
 }
+

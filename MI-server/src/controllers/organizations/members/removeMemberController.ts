@@ -1,11 +1,11 @@
-// src/controllers/organizations/removeMemberController.ts
+﻿// src/controllers/organizations/removeMemberController.ts
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { removeMemberService } from '../../services/organizations/removeMemberService'
-import { createInspectionLog } from '../../repositories/inspectionLog/inspectionLogRepository'
-import { httpResponse, httpError } from '../../utils/http'
-import { StatusCode } from '../../utils/statusCode'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { logger } from '../../lib/logger'
+import { removeMemberService } from '../../../services/organizations/members/removeMemberService'
+import { createInspectionLog } from '../../../repositories/inspectionLog/inspectionLogRepository'
+import { httpResponse, httpError } from '../../../utils/http'
+import { StatusCode } from '../../../utils/statusCode'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { logger } from '../../../lib/logger'
 const ctx = 'removeMemberController'
 
 export async function removeMemberController(
@@ -60,3 +60,4 @@ export async function removeMemberController(
     httpError({ error, context: ctx })
   }
 }
+

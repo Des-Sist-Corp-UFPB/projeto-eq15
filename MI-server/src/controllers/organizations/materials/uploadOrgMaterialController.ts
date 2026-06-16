@@ -1,11 +1,11 @@
-// src/controllers/organizations/uploadOrgMaterialController.ts
+﻿// src/controllers/organizations/uploadOrgMaterialController.ts
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { materialPdfUploadService } from '../../services/resources/materials/pdf/materialPdfUploadService'
-import { httpResponse, httpError } from '../../utils/http'
-import { StatusCode } from '../../utils/statusCode'
-import { ERRORS, buildError } from '../../lib/errors/errors'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { logger } from '../../lib/logger'
+import { materialPdfUploadService } from '../../../services/resources/materials/pdf/materialPdfUploadService'
+import { httpResponse, httpError } from '../../../utils/http'
+import { StatusCode } from '../../../utils/statusCode'
+import { ERRORS, buildError } from '../../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { logger } from '../../../lib/logger'
 
 const ctx = 'uploadOrgMaterialController'
 
@@ -27,13 +27,13 @@ async function collectBuffer(stream: AsyncIterable<Buffer>): Promise<Buffer> {
  * O orgId vem do parâmetro de rota e é vinculado automaticamente ao MI.
  */
 export async function uploadOrgMaterialController(
-  request: FastifyRequest<{ Params: { orgId: string } }>,
+  request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
   logger.info(`IN - ${ctx}`)
 
   try {
-    const { orgId } = request.params
+    const { orgId } = request.params as { orgId: string }
 
     let fileBuffer:       Buffer | null = null
     let originalFileName: string | null = null
@@ -81,3 +81,4 @@ export async function uploadOrgMaterialController(
     httpError({ error, context: ctx })
   }
 }
+

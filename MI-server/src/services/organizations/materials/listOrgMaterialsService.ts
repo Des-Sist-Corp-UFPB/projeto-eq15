@@ -1,13 +1,13 @@
-// src/services/organizations/listOrgMaterialsService.ts
-import type { IUploadedMI } from '../../@types/resources/materials/pdf'
-import { findOrgById, findOrgApprovedMaterials } from '../../repositories/organizations/orgRepository'
-import { findMembership } from '../../repositories/organizations/orgMembersRepository'
-import { validateRequest } from '../../utils/validateRequest'
+﻿// src/services/organizations/listOrgMaterialsService.ts
+import type { IUploadedMI } from '../../../@types/resources/materials/pdf'
+import { findOrgById, findOrgApprovedMaterials } from '../../../repositories/organizations/orgRepository'
+import { findMembership } from '../../../repositories/organizations/orgMembersRepository'
+import { validateRequest } from '../../../utils/validateRequest'
 import { z } from 'zod'
-import { ERRORS, buildError } from '../../lib/errors/errors'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { StatusCode } from '../../utils/statusCode'
-import { logger } from '../../lib/logger'
+import { ERRORS, buildError } from '../../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../../utils/statusCode'
+import { logger } from '../../../lib/logger'
 
 const listOrgMaterialsSchema = z.object({
   orgId:            z.string().uuid(),
@@ -30,3 +30,4 @@ export async function listOrgMaterialsService(input: unknown): Promise<IUploaded
   logger.info('OUT - listOrgMaterialsService')
   return materials
 }
+

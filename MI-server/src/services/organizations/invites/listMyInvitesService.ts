@@ -1,9 +1,9 @@
-// src/services/organizations/listMyInvitesService.ts
-import type { IOrganizationInvite } from '../../@types/organizations'
-import { listMyInvites } from '../../repositories/organizations/orgInvitesRepository'
-import { validateRequest } from '../../utils/validateRequest'
+﻿// src/services/organizations/listMyInvitesService.ts
+import type { IOrganizationInvite } from '../../../@types/organizations'
+import { listMyInvites } from '../../../repositories/organizations/orgInvitesRepository'
+import { validateRequest } from '../../../utils/validateRequest'
 import { z } from 'zod'
-import { logger } from '../../lib/logger'
+import { logger } from '../../../lib/logger'
 
 const listMyInvitesSchema = z.object({
   userId: z.string().uuid(),
@@ -18,3 +18,4 @@ export async function listMyInvitesService(input: unknown): Promise<IOrganizatio
   logger.info('OUT - listMyInvitesService')
   return invites
 }
+

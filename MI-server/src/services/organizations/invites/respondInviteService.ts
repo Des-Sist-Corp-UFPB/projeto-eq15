@@ -1,14 +1,14 @@
-// src/services/organizations/respondInviteService.ts
-import { findInviteById, updateInviteStatus } from '../../repositories/organizations/orgInvitesRepository'
-import { findMembership, addMember } from '../../repositories/organizations/orgMembersRepository'
-import { findUserById } from '../../repositories/users/usersRepository'
-import { findOrgById } from '../../repositories/organizations/orgRepository'
-import { validateRequest } from '../../utils/validateRequest'
-import { respondInviteSchema } from '../../schemas/organizations/respondInviteSchema'
-import { ERRORS, buildError } from '../../lib/errors/errors'
-import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
-import { StatusCode } from '../../utils/statusCode'
-import { logger } from '../../lib/logger'
+﻿// src/services/organizations/respondInviteService.ts
+import { findInviteById, updateInviteStatus } from '../../../repositories/organizations/orgInvitesRepository'
+import { findMembership, addMember } from '../../../repositories/organizations/orgMembersRepository'
+import { findUserById } from '../../../repositories/users/usersRepository'
+import { findOrgById } from '../../../repositories/organizations/orgRepository'
+import { validateRequest } from '../../../utils/validateRequest'
+import { respondInviteSchema } from '../../../schemas/organizations/respondInviteSchema'
+import { ERRORS, buildError } from '../../../lib/errors/errors'
+import { GeneralErrorResponse } from '../../../errors/GeneralErrorResponse'
+import { StatusCode } from '../../../utils/statusCode'
+import { logger } from '../../../lib/logger'
 
 export async function respondInviteService(input: unknown): Promise<void> {
   logger.info('IN - respondInviteService')
@@ -43,3 +43,4 @@ export async function respondInviteService(input: unknown): Promise<void> {
 
   logger.info('OUT - respondInviteService (accepted)')
 }
+

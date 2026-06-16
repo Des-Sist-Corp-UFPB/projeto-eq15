@@ -40,6 +40,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/** Redireciona para "/" se o usuário não for PROFESSOR ou ADMIN */
+function ProfessorRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'PROFESSOR' && user?.role !== 'ADMIN') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 /** Exige login e permissão de submissão (@dcx.ufpb.br ou ADMIN) */
 function UploadRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth()

@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, UploadCloud, Bell, LogOut, LogIn, Home, FileText,
   ClipboardCheck, Library, ShieldCheck, ScrollText, ChevronDown,
+  Users, Mail,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from './ThemeToggle'
@@ -27,6 +28,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Início',         icon: Home,           to: '/',                    show: () => true },
   { label: 'Publicar',       icon: UploadCloud,    to: '/upload',              show: (u) => canUploadMaterials(u) },
   { label: 'Meus Materiais', icon: FileText,       to: '/materials',           show: (u) => !!u },
+  { label: 'Organizações',   icon: Users,          to: '/organizations',       show: (u) => !!u },
+  { label: 'Convites',       icon: Mail,           to: '/invites',             show: (u) => !!u },
   { label: 'Revisar',        icon: ClipboardCheck, to: '/professor/review',    show: (u) => isSysAdmin(u) },
   { label: 'Acervo',         icon: Library,        to: '/professor/materials', show: (u) => isSysAdmin(u) },
   { label: 'Usuários',       icon: ShieldCheck,    to: '/admin/users',         show: (u) => isSysAdmin(u) },

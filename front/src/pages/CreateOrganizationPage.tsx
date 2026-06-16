@@ -1,229 +1,249 @@
 // src/pages/CreateOrganizationPage.tsx
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BookOpen, LogOut, ArrowLeft, FolderPlus, Loader2 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { FolderPlus, CheckCircle2, AlertCircle } from 'lucide-react'
+import { AppShell } from '../components/AppShell'
 import { useCreateOrganization } from '../features/organizations/hooks/useCreateOrganization'
 import { getApiErrorMessage } from '../lib/apiError'
+import type { OrganizationDTO } from '../features/organizations/api/organizationsApi'
 
-// ── Topbar ────────────────────────────────────────────────────────────────────
+// ── SuccessState ──────────────────────────────────────────────────────────────
 
-interface TopbarProps { userName: string; onBack: () => void; onLogout: () => void }
+interface SuccessStateProps {
+  org: OrganizationDTO
+  onCreateAnother: () => void
+}
 
-function Topbar({ userName, onBack, onLogout }: TopbarProps) {
+function SuccessState({ org, onCreateAnother }: SuccessStateProps) {
+  const navigate = useNavigate()
   return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-2xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} aria-label="Voltar"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <ArrowLeft size={16} /><span className="hidden sm:inline">Voltar</span>
-          </button>
-          <div className="w-px h-5 bg-white/20" />
-          <div className="flex items-center gap-2">
-            <div className="bg-white/10 rounded-xl p-2"><BookOpen size={18} /></div>
-            <div>
-              <p className="font-bold text-sm leading-tight">MI</p>
-              <p className="text-indigo-200 text-xs">Organizações · UFPB</p>
-            </div>
-          </div>
+    <div className="flex flex-col items-center gap-6 py-8 text-center">
+      <div className="rounded-full bg-green-100 dark:bg-green-950 p-5">
+        <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
+      </div>
+      <div className="space-y-1">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Organização criada!</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+          <span className="font-medium text-gray-700 dark:text-gray-300">"{org.name}"</span> foi criada
+          com sucesso. Você já é o administrador.
+        </p>
+      </div>
+
+      <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                      px-5 py-4 w-full text-left space-y-2">
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-500 dark:text-gray-400">Nome</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium truncate ml-4 max-w-[60%] text-right">
+            {org.name}
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          <p className="hidden sm:block text-sm font-medium">{userName}</p>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          <button onClick={onLogout} aria-label="Sair"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <LogOut size={16} /><span className="hidden sm:inline">Sair</span>
-          </button>
+        {org.description && (
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500 dark:text-gray-400">Descrição</span>
+            <span className="text-gray-700 dark:text-gray-300 font-medium truncate ml-4 max-w-[60%] text-right">
+              {org.description}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-500 dark:text-gray-400">Status</span>
+          <span className="inline-flex items-center gap-1 text-green-700 dark:text-green-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            Ativa
+          </span>
         </div>
       </div>
-    </header>
+
+      <div className="flex flex-col sm:flex-row gap-3 w-full">
+        <button
+          onClick={onCreateAnother}
+          className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600
+                     bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium
+                     text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
+                     transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500
+                     focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        >
+          Criar outra
+        </button>
+        <button
+          onClick={() => navigate(`/organizations/${org.id}`)}
+          className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white
+                     hover:bg-indigo-700 transition-colors
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500
+                     focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+        >
+          Ver organização
+        </button>
+      </div>
+    </div>
   )
 }
 
 // ── CreateOrganizationPage ────────────────────────────────────────────────────
 
 export function CreateOrganizationPage() {
-  const { user, clearSession } = useAuth()
-  const navigate = useNavigate()
-
   const [name,        setName]        = useState('')
   const [description, setDescription] = useState('')
 
-  const { mutate, isPending, isError, error, isSuccess, data } = useCreateOrganization()
-
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
+  const { mutate, isPending, isError, isSuccess, error, data, reset } = useCreateOrganization()
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    mutate(
-      { name: name.trim(), description: description.trim() || undefined },
-      { onSuccess: () => { setName(''); setDescription('') } },
-    )
+    mutate({ name: name.trim(), description: description.trim() || undefined })
   }
 
-  const nameError    = name.trim().length > 0 && name.trim().length < 2
-  const canSubmit    = name.trim().length >= 2 && name.trim().length <= 100 && !isPending
+  function handleReset() {
+    setName('')
+    setDescription('')
+    reset()
+  }
+
+  const nameError = name.trim().length > 0 && name.trim().length < 2
+  const canSubmit = name.trim().length >= 2 && name.trim().length <= 100 && !isPending
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar
-        userName={user?.name ?? ''}
-        onBack={() => navigate('/')}
-        onLogout={handleLogout}
-      />
+    <AppShell>
+      <div className="max-w-2xl mx-auto space-y-6">
 
-      <main className="flex-1 px-6 py-10">
-        <div className="max-w-2xl mx-auto space-y-6">
-
-          {/* Cabeçalho */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <FolderPlus size={20} className="text-indigo-600 dark:text-indigo-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Nova Organização
-              </h1>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Crie um projeto para agrupar materiais instrucionais e convidar alunos.
-            </p>
+        {/* Cabeçalho */}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <FolderPlus size={20} className="text-indigo-600 dark:text-indigo-400" />
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Nova Organização</h1>
           </div>
-
-          {/* Formulário */}
-          <form
-            onSubmit={handleSubmit}
-            className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5"
-          >
-            {/* Nome */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="org-name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Nome <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="org-name"
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                maxLength={100}
-                placeholder="ex: Projeto de Cálculo I"
-                disabled={isPending}
-                className={[
-                  'w-full rounded-lg border px-3 py-2 text-sm',
-                  'bg-white dark:bg-gray-800',
-                  'text-gray-900 dark:text-gray-100',
-                  'placeholder-gray-400 dark:placeholder-gray-500',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                  nameError
-                    ? 'border-red-400 dark:border-red-600'
-                    : 'border-gray-300 dark:border-gray-600',
-                ].join(' ')}
-              />
-              <div className="flex items-center justify-between">
-                {nameError ? (
-                  <p className="text-xs text-red-500">Mínimo de 2 caracteres.</p>
-                ) : (
-                  <span />
-                )}
-                <p className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
-                  {name.length}/100
-                </p>
-              </div>
-            </div>
-
-            {/* Descrição */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="org-description"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Descrição <span className="text-gray-400 text-xs font-normal">(opcional)</span>
-              </label>
-              <textarea
-                id="org-description"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                maxLength={500}
-                rows={4}
-                placeholder="Descreva o objetivo desta organização..."
-                disabled={isPending}
-                className={[
-                  'w-full rounded-lg border px-3 py-2 text-sm resize-none',
-                  'bg-white dark:bg-gray-800',
-                  'text-gray-900 dark:text-gray-100',
-                  'placeholder-gray-400 dark:placeholder-gray-500',
-                  'border-gray-300 dark:border-gray-600',
-                  'focus:outline-none focus:ring-2 focus:ring-indigo-500',
-                  'disabled:opacity-50 disabled:cursor-not-allowed',
-                ].join(' ')}
-              />
-              <p className="text-xs text-gray-400 dark:text-gray-500 text-right">
-                {description.length}/500
-              </p>
-            </div>
-
-            {/* Erro da API */}
-            {isError && (
-              <div className="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 px-4 py-3">
-                <p className="text-sm text-red-700 dark:text-red-400">
-                  {getApiErrorMessage(error)}
-                </p>
-              </div>
-            )}
-
-            {/* Sucesso */}
-            {isSuccess && data && (
-              <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 px-4 py-3">
-                <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                  Organização <span className="font-semibold">"{data.name}"</span> criada com sucesso!
-                </p>
-              </div>
-            )}
-
-            {/* Botões */}
-            <div className="flex items-center justify-end gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                disabled={isPending}
-                className="rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
-                           hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2 text-sm
-                           disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700
-                           text-white px-4 py-2 text-sm font-medium transition-colors
-                           disabled:opacity-50 disabled:cursor-not-allowed
-                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                {isPending ? (
-                  <><Loader2 size={15} className="animate-spin" /> Criando...</>
-                ) : (
-                  <><FolderPlus size={15} /> Criar organização</>
-                )}
-              </button>
-            </div>
-          </form>
-
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-            Campus IV · UFPB — Rio Tinto / Mamanguape
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Crie um projeto para agrupar materiais instrucionais e convidar membros.
           </p>
         </div>
-      </main>
-    </div>
+
+        {/* Card principal */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+
+          {/* Estado de sucesso */}
+          {isSuccess && data && (
+            <SuccessState org={data} onCreateAnother={handleReset} />
+          )}
+
+          {/* Formulário */}
+          {!isSuccess && (
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Nome */}
+              <div className="space-y-1.5">
+                <label htmlFor="org-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Nome <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="org-name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={100}
+                  placeholder="ex: Projeto de Cálculo I"
+                  disabled={isPending}
+                  className={[
+                    'w-full rounded-xl border px-4 py-2.5 text-sm',
+                    'bg-white dark:bg-gray-800',
+                    'text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500',
+                    'focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500',
+                    'disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition-colors',
+                    nameError
+                      ? 'border-red-400 dark:border-red-600'
+                      : 'border-gray-300 dark:border-gray-600',
+                  ].join(' ')}
+                />
+                <div className="flex items-center justify-between">
+                  {nameError ? (
+                    <p className="text-xs text-red-500">Mínimo de 2 caracteres.</p>
+                  ) : (
+                    <span />
+                  )}
+                  <p className="text-xs text-gray-400 dark:text-gray-500 ml-auto">{name.length}/100</p>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              <div className="space-y-1.5">
+                <label htmlFor="org-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Descrição
+                  <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+                </label>
+                <textarea
+                  id="org-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={500}
+                  rows={4}
+                  placeholder="Descreva o objetivo desta organização..."
+                  disabled={isPending}
+                  className={[
+                    'w-full rounded-xl border px-4 py-2.5 text-sm resize-none',
+                    'bg-white dark:bg-gray-800',
+                    'text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500',
+                    'border-gray-300 dark:border-gray-600',
+                    'focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500',
+                    'disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed transition-colors',
+                  ].join(' ')}
+                />
+                <p className="text-xs text-gray-400 dark:text-gray-500 text-right">
+                  {description.length}/500
+                </p>
+              </div>
+
+              {/* Erro da API */}
+              {isError && (
+                <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800
+                                bg-red-50 dark:bg-red-950 px-4 py-3">
+                  <AlertCircle size={16} className="shrink-0 text-red-500 dark:text-red-400 mt-0.5" />
+                  <p className="text-sm text-red-700 dark:text-red-400">{getApiErrorMessage(error)}</p>
+                </div>
+              )}
+
+              {/* Botões */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => window.history.back()}
+                  disabled={isPending}
+                  className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600
+                             bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
+                             hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2.5 text-sm font-medium
+                             disabled:opacity-50 disabled:cursor-not-allowed transition-colors
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-indigo-600
+                             hover:bg-indigo-700 active:bg-indigo-800 text-white px-4 py-2.5
+                             text-sm font-semibold transition-colors
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
+                             dark:focus:ring-offset-gray-900"
+                >
+                  {isPending ? (
+                    <>
+                      <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden />
+                      Criando…
+                    </>
+                  ) : (
+                    <>
+                      <FolderPlus size={16} />
+                      Criar organização
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500">
+          Campus IV · UFPB — Rio Tinto / Mamanguape
+        </p>
+      </div>
+    </AppShell>
   )
 }

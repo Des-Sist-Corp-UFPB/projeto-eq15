@@ -28,6 +28,7 @@ export interface IPendingMaterial {
   status: MIStatus
   uploadedById: string
   uploadedBy: { name: string; email: string }
+  organizations: { organization: { id: string; name: string } }[]
   createdAt: Date
   updatedAt: Date
 }

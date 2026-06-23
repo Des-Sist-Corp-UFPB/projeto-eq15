@@ -30,6 +30,13 @@ const MI_SELECT = {
   uploadedBy: {
     select: { name: true, email: true },
   },
+  organizations: {
+    select: {
+      organization: {
+        select: { id: true, name: true },
+      },
+    },
+  },
 } as const
 
 export async function findAllMaterials(

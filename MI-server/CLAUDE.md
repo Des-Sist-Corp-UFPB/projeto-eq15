@@ -180,3 +180,7 @@ app.post(
 
 - Prefixo `I` para interfaces de entidade retornadas pela API: `IOrganization`, `IUser`.
 - Apenas shapes de resposta — inputs ficam nos schemas.
+
+## Testes automatizados
+
+- TODAS as features feitas devem ter seus testes jest implementados, cobrindo 100% (ou proximo) do coverage da function relacionada

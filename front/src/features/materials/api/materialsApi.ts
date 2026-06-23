@@ -19,6 +19,7 @@ export interface UploadedMI {
 export interface UploadMaterialPayload {
   file: File
   title?: string
+  organizationId?: string
 }
 
 export async function uploadMaterialRequest(payload: UploadMaterialPayload): Promise<UploadedMI> {
@@ -28,7 +29,11 @@ export async function uploadMaterialRequest(payload: UploadMaterialPayload): Pro
     formData.append('title', payload.title.trim())
   }
 
-  const { data } = await api.post<UploadedMI>('/mis', formData, {
+  const url = payload.organizationId
+    ? `/organizations/${payload.organizationId}/mis`
+    : '/mis'
+
+  const { data } = await api.post<UploadedMI>(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data

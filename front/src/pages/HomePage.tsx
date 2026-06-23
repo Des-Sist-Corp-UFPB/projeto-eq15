@@ -53,6 +53,8 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
     }
   }
 
+  const organizationName = material.organizations?.[0]?.organization.name
+
   return (
     <ResourceCard
       id={material.id}
@@ -60,6 +62,7 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
       authorName={material.uploadedBy?.name}
       sizeBytes={material.sizeBytes}
       createdAt={material.createdAt}
+      organizationName={organizationName}
       onOpen={handleOpen}
       opening={opening}
       error={error}

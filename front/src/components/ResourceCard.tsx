@@ -2,7 +2,7 @@
 // Card de material no estilo MEC RED: miniatura quadrada + título + autor + meta.
 // A miniatura usa um placeholder gerado por gradiente; quando o back-end fornecer
 // uma URL de thumbnail (`thumbnailUrl`), ela é exibida automaticamente.
-import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react'
+import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle, Building2 } from 'lucide-react'
 import type { MIStatus } from '../features/materials/api/materialsApi'
 
 // Gradientes para os placeholders de miniatura — escolhidos de forma estável por título.
@@ -44,6 +44,8 @@ export interface ResourceCardProps {
   sizeBytes?: number
   createdAt?: string
   status?: MIStatus
+  /** Nome da organização/projeto ao qual este material pertence */
+  organizationName?: string
   /** URL de miniatura quando disponível via back-end */
   thumbnailUrl?: string
   /** Abre o material (ex.: gera presigned URL) */
@@ -53,7 +55,7 @@ export interface ResourceCardProps {
 }
 
 export function ResourceCard({
-  id, title, authorName, sizeBytes, createdAt, status, thumbnailUrl, onOpen, opening, error,
+  id, title, authorName, sizeBytes, createdAt, status, organizationName, thumbnailUrl, onOpen, opening, error,
 }: ResourceCardProps) {
   const statusInfo = status ? STATUS_BADGE[status] : null
 
@@ -100,6 +102,14 @@ export function ResourceCard({
         <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100" title={title}>
           {title}
         </p>
+
+        {organizationName && (
+          <span className="inline-flex items-center gap-1 self-start rounded-full border border-indigo-200 dark:border-indigo-800
+                           bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
+            <Building2 size={10} className="shrink-0" />
+            <span className="truncate max-w-[140px]">{organizationName}</span>
+          </span>
+        )}
 
         {authorName && (
           <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">

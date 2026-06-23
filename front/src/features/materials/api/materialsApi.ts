@@ -61,6 +61,7 @@ export interface PendingMaterial {
   status: MIStatus
   uploadedById: string
   uploadedBy: { name: string; email: string }
+  organizations?: { organization: { id: string; name: string } }[]
   createdAt: string
   updatedAt: string
 }

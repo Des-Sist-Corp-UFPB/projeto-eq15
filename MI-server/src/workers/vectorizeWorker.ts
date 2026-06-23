@@ -9,9 +9,8 @@ import { env } from '../env'
 import { logger } from '../lib/logger'
 import type { VectorizePdfJob } from '../lib/queue'
 
-// pdf-parse v2 usa exports CJS internos; require evita conflito de tipos
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
+import pdfParse = require('pdf-parse')
 
 const CHUNK_SIZE    = 1000
 const CHUNK_OVERLAP = 200

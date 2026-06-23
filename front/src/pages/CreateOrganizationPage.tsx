@@ -22,9 +22,9 @@ function SuccessState({ org, onCreateAnother }: SuccessStateProps) {
         <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
       </div>
       <div className="space-y-1">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Organização criada!</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Projeto criado!</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-          <span className="font-medium text-gray-700 dark:text-gray-300">"{org.name}"</span> foi criada
+          <span className="font-medium text-gray-700 dark:text-gray-300">"{org.name}"</span> foi criado
           com sucesso. Você já é o administrador.
         </p>
       </div>
@@ -72,7 +72,7 @@ function SuccessState({ org, onCreateAnother }: SuccessStateProps) {
                      focus:outline-none focus:ring-2 focus:ring-indigo-500
                      focus:ring-offset-2 dark:focus:ring-offset-gray-900"
         >
-          Ver organização
+          Ver projeto
         </button>
       </div>
     </div>
@@ -109,7 +109,7 @@ export function CreateOrganizationPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <FolderPlus size={20} className="text-indigo-600 dark:text-indigo-400" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Nova Organização</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Novo Projeto</h1>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Crie um projeto para agrupar materiais instrucionais e convidar membros.
@@ -174,7 +174,7 @@ export function CreateOrganizationPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={500}
                   rows={4}
-                  placeholder="Descreva o objetivo desta organização..."
+                  placeholder="Descreva o objetivo deste projeto..."
                   disabled={isPending}
                   className={[
                     'w-full rounded-xl border px-4 py-2.5 text-sm resize-none',
@@ -231,7 +231,7 @@ export function CreateOrganizationPage() {
                   ) : (
                     <>
                       <FolderPlus size={16} />
-                      Criar organização
+                      Criar projeto
                     </>
                   )}
                 </button>

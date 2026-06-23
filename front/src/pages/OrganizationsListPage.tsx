@@ -24,7 +24,7 @@ export function OrganizationsListPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Organizações</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projetos</h1>
           {canCreate && (
             <button
               onClick={() => navigate('/organizations/create')}
@@ -38,13 +38,13 @@ export function OrganizationsListPage() {
 
         {/* Estado de carregamento */}
         {isLoading && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">Carregando organizações…</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Carregando projetos…</p>
         )}
 
         {/* Erro */}
         {error && (
           <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-300">
-            Erro ao carregar organizações.
+            Erro ao carregar projetos.
           </div>
         )}
 
@@ -53,14 +53,14 @@ export function OrganizationsListPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
             <Users size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Você ainda não faz parte de nenhuma organização.
+              Você ainda não faz parte de nenhum projeto.
             </p>
             {canCreate && (
               <button
                 onClick={() => navigate('/organizations/create')}
                 className="mt-4 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline"
               >
-                Criar primeira organização
+                Criar primeiro projeto
               </button>
             )}
           </div>
@@ -101,7 +101,7 @@ export function OrganizationsListPage() {
                       </span>
                       {org.status === 'ARCHIVED' && (
                         <span className="text-xs px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300">
-                          Arquivada
+                          Arquivado
                         </span>
                       )}
                     </div>

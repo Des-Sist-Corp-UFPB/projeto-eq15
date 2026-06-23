@@ -103,7 +103,7 @@ export function OrganizationDetailPage() {
   }
 
   async function handleArchive() {
-    if (!window.confirm('Arquivar esta organização? Esta ação não pode ser desfeita facilmente.')) return
+    if (!window.confirm('Arquivar este projeto? Esta ação não pode ser desfeita facilmente.')) return
     try {
       await archiveMutation.mutateAsync(orgId!)
       navigate('/organizations')
@@ -113,7 +113,7 @@ export function OrganizationDetailPage() {
   }
 
   async function handleRemoveMember(userId: string) {
-    if (!window.confirm('Remover este membro da organização?')) return
+    if (!window.confirm('Remover este membro do projeto?')) return
     try {
       await removeMutation.mutateAsync(userId)
       setActionError('')
@@ -123,7 +123,7 @@ export function OrganizationDetailPage() {
   }
 
   async function handleLeave() {
-    if (!window.confirm('Sair desta organização?')) return
+    if (!window.confirm('Sair deste projeto?')) return
     try {
       await leaveMutation.mutateAsync(orgId!)
       navigate('/organizations')
@@ -177,7 +177,7 @@ export function OrganizationDetailPage() {
         {/* Org not found */}
         {!org && (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Organização não encontrada.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Projeto não encontrado.</p>
           </div>
         )}
 
@@ -196,7 +196,7 @@ export function OrganizationDetailPage() {
                         className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm
                                    bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
                                    focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Nome da organização"
+                        placeholder="Nome do projeto"
                       />
                       <textarea
                         value={editDesc}
@@ -230,7 +230,7 @@ export function OrganizationDetailPage() {
                         <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{org.name}</h1>
                         {isArchived && (
                           <span className="text-xs px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300">
-                            Arquivada
+                            Arquivado
                           </span>
                         )}
                       </div>

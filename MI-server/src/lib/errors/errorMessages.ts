@@ -22,6 +22,8 @@ export type ErrorMessageKey =
   | 'MI_NOT_FOUND'
   | 'MI_NOT_OWNED_BY_USER'
   | 'MI_NOT_PENDING'
+  | 'MI_NOT_APPROVED'
+  | 'MI_NOT_VECTORIZED'
   // ── Organizações ──────────────────────────────────────────────────────────
   | 'ORG_NOT_FOUND'
   | 'ORG_ARCHIVED'
@@ -55,6 +57,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_FOUND:             'Material instrucional não encontrado.',
     MI_NOT_OWNED_BY_USER:     'Este material não pertence ao usuário solicitante.',
     MI_NOT_PENDING:           'Este material não está pendente de revisão.',
+    MI_NOT_APPROVED:          'Este material ainda não foi aprovado para consulta.',
+    MI_NOT_VECTORIZED:        'Este material ainda está sendo processado. Tente novamente em alguns instantes.',
     ORG_NOT_FOUND:            'Organização não encontrada.',
     ORG_ARCHIVED:             'Esta organização está arquivada.',
     ORG_NOT_MEMBER:           'Você não é membro desta organização.',
@@ -86,6 +90,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_FOUND:             'Instructional material not found.',
     MI_NOT_OWNED_BY_USER:     'This material does not belong to the requesting user.',
     MI_NOT_PENDING:           'This material is not pending review.',
+    MI_NOT_APPROVED:          'This material has not been approved for querying.',
+    MI_NOT_VECTORIZED:        'This material is still being processed. Please try again in a few moments.',
     ORG_NOT_FOUND:            'Organization not found.',
     ORG_ARCHIVED:             'This organization is archived.',
     ORG_NOT_MEMBER:           'You are not a member of this organization.',
@@ -117,6 +123,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_FOUND:             'Material instruccional no encontrado.',
     MI_NOT_OWNED_BY_USER:     'Este material no pertenece al usuario solicitante.',
     MI_NOT_PENDING:           'Este material no está pendiente de revisión.',
+    MI_NOT_APPROVED:          'Este material aún no ha sido aprobado para consulta.',
+    MI_NOT_VECTORIZED:        'Este material aún se está procesando. Inténtalo de nuevo en unos instantes.',
     ORG_NOT_FOUND:            'Organización no encontrada.',
     ORG_ARCHIVED:             'Esta organización está archivada.',
     ORG_NOT_MEMBER:           'No eres miembro de esta organización.',

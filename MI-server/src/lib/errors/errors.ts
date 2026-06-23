@@ -52,6 +52,8 @@ export const ERRORS = {
     MI_NOT_FOUND:         'MI_NOT_FOUND',
     MI_NOT_OWNED_BY_USER: 'MI_NOT_OWNED_BY_USER',
     MI_NOT_PENDING:       'MI_NOT_PENDING',
+    MI_NOT_APPROVED:      'MI_NOT_APPROVED',
+    MI_NOT_VECTORIZED:    'MI_NOT_VECTORIZED',
   },
   ORG: {
     ORG_NOT_FOUND:            'ORG_NOT_FOUND',

@@ -11,6 +11,7 @@ import { materialPdfPublicListController } from '../../../../controllers/resourc
 import { materialPdfPublicPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfPublicPresignedUrlController'
 import { materialPdfReviewPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewPresignedUrlController'
 import { materialPdfReviewController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewController'
+import { materialPdfChatController } from '../../../../controllers/resources/materials/pdf/materialPdfChatController'
 import { env } from '../../../../env'
 
 export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<void> {
@@ -121,5 +122,18 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
     '/:id/presigned-url',
     { preHandler: [authenticate] },
     materialPdfPresignedUrlController,
+  )
+
+  /**
+   * POST /mis/:id/chat
+   * Pergunta via RAG sobre o conteúdo de um MI aprovado e vetorizado.
+   * Body: { question: string }
+   * Resposta: { answer: string, chunksUsed: number }
+   * Permissão: qualquer usuário autenticado.
+   */
+  app.post(
+    '/:id/chat',
+    { preHandler: [authenticate] },
+    materialPdfChatController,
   )
 }

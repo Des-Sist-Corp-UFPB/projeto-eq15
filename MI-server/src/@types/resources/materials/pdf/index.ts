@@ -33,6 +33,12 @@ export interface IPendingMaterial {
   updatedAt: Date
 }
 
+/** Resposta do endpoint de chat RAG com IA */
+export interface IMaterialChatResponse {
+  answer:     string
+  chunksUsed: number
+}
+
 /** Material Instrucional — nunca expõe campos internos desnecessários */
 export interface IUploadedMI {
   id: string

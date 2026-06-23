@@ -1,6 +1,7 @@
 // __tests__/unit/auth/authController.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FastifyRequest, FastifyReply } from 'fastify'
+import { StatusCode } from '../../../src/utils/statusCode'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -158,7 +159,7 @@ describe('loginController', () => {
 
   describe('fluxo de erro', () => {
     it('deve re-lançar o erro quando loginService falha', async () => {
-      const thrownError = new GeneralErrorResponse(buildError(ERRORS.USER.INVALID_CREDENTIALS))
+      const thrownError = new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
       vi.mocked(loginService).mockRejectedValue(thrownError)
 
       await expect(
@@ -284,7 +285,7 @@ describe('refreshController', () => {
 
   describe('fluxo de erro', () => {
     it('deve re-lançar o erro quando refreshTokenService falha', async () => {
-      const thrownError = new GeneralErrorResponse(buildError(ERRORS.AUTH.UNAUTHORIZED))
+      const thrownError = new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
       vi.mocked(refreshTokenService).mockRejectedValue(thrownError)
 
       await expect(

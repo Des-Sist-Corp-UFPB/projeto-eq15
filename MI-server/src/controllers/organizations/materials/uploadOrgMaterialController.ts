@@ -1,6 +1,7 @@
 ﻿// src/controllers/organizations/uploadOrgMaterialController.ts
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { materialPdfUploadService } from '../../../services/resources/materials/pdf/materialPdfUploadService'
+import { requireMembership } from '../../../repositories/organizations/orgMembersRepository'
 import { httpResponse, httpError } from '../../../utils/http'
 import { StatusCode } from '../../../utils/statusCode'
 import { ERRORS, buildError } from '../../../lib/errors/errors'
@@ -34,6 +35,8 @@ export async function uploadOrgMaterialController(
 
   try {
     const { orgId } = request.params as { orgId: string }
+
+    await requireMembership(orgId, request.user.sub)
 
     let fileBuffer:       Buffer | null = null
     let originalFileName: string | null = null

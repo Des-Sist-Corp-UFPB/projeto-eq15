@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { AuthUser } from '../types/auth'
+import { queryClient } from '../lib/queryClient'
 
 interface AuthContextValue {
   user: AuthUser | null
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     localStorage.removeItem('accessToken')
     localStorage.removeItem('authUser')
+    queryClient.clear()
   }, [])
 
   // Sincroniza abas abertas via storage event

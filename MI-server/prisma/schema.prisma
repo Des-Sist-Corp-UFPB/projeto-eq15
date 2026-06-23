@@ -98,23 +98,32 @@ enum MIStatus {
   REJECTED
 }
 
+enum VectorStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
 model MaterialInstrucional {
-  id               String   @id @default(uuid())
+  id               String       @id @default(uuid())
   title            String
   originalFileName String
-  storageKey       String   @unique
+  storageKey       String       @unique
   mimeType         String
   sizeBytes        Int
-  status           MIStatus @default(PENDING_REVIEW)
+  status           MIStatus     @default(PENDING_REVIEW)
+  vectorStatus     VectorStatus @default(PENDING)
   uploadedById     String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   uploadedBy    User                              @relation(fields: [uploadedById], references: [id])
   organizations MaterialInstrucionalOrganization[]
 
   @@index([uploadedById])
   @@index([status])
+  @@index([vectorStatus])
 }
 
 // ── Organizações ──────────────────────────────────────────────────────────────

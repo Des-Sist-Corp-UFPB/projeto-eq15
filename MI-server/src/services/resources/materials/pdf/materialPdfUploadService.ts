@@ -5,6 +5,7 @@ import { findUserById } from '../../../../repositories/users/usersRepository'
 import { createMaterialPdf } from '../../../../repositories/resources/materials/pdf/materialPdfUploadRepository'
 import { findMembership } from '../../../../repositories/organizations/orgMembersRepository'
 import { linkMaterialToOrgs } from '../../../../repositories/organizations/orgRepository'
+import { vectorizeQueue } from '../../../../lib/queue'
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
@@ -80,6 +81,8 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<IU
   if (organizationIds.length > 0) {
     await linkMaterialToOrgs(mi.id, organizationIds)
   }
+
+  await vectorizeQueue.add('vectorize', { materialId: mi.id, storageKey })
 
   return mi
 }

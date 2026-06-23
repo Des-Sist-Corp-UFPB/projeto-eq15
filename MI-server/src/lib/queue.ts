@@ -1,0 +1,23 @@
+import { Queue } from 'bullmq'
+import { env } from '../env'
+
+export interface VectorizePdfJob {
+  materialId: string
+  storageKey: string
+}
+
+export const vectorizeQueue = new Queue<VectorizePdfJob>('vectorize-pdf', {
+  connection: {
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+  },
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type:  'exponential',
+      delay: 5000,
+    },
+    removeOnComplete: 100,
+    removeOnFail:     50,
+  },
+})

@@ -14,7 +14,8 @@ const PENDING_SELECT = {
   uploadedById:     true,
   createdAt:        true,
   updatedAt:        true,
-  uploadedBy: { select: { name: true, email: true } },
+  uploadedBy:    { select: { name: true, email: true } },
+  organizations: { select: { organization: { select: { id: true, name: true } } } },
 } as const
 
 export async function findPendingMaterials(params: {

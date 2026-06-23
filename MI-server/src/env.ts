@@ -45,6 +45,17 @@ const envSchema = z.object({
   SMTP_PASS:    z.string().optional(),
   SMTP_FROM:    z.string().optional().default('MI UFPB <noreply@dcx.ufpb.br>'),
 
+  // ── Redis (BullMQ) ────────────────────────────────────────────────────────────
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.coerce.number().default(6379),
+
+  // ── Qdrant (banco de vetores) ──────────────────────────────────────────────
+  QDRANT_URL:     z.string().url().default('http://localhost:6333'),
+  QDRANT_API_KEY: z.string().optional(),
+
+  // ── OpenAI (embeddings) ────────────────────────────────────────────────────
+  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+
   // URL base do frontend (usada no link do e-mail de verificação)
   APP_URL: z.string().url().optional().default('http://localhost:5173'),
 

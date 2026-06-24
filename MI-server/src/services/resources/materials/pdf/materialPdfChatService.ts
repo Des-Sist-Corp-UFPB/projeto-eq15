@@ -26,7 +26,41 @@ Responda SEMPRE em português brasileiro com base EXCLUSIVAMENTE no contexto for
 Se a resposta não estiver no contexto, informe educadamente que não encontrou essa informação no documento.
 Seja claro, objetivo e didático.`
 
-// ── Tipo auxiliar para resultado de busca no Qdrant ───────────────────────────
+// ── GuardRail — Camada 1: Detecção de Prompt Injection ───────────────────────
+// Padrões que indicam tentativa de sobrescrever o system prompt ou manipular a IA.
+
+const INJECTION_PATTERNS: RegExp[] = [
+  // Ignorar instruções (pt-BR)
+  /ignore\s+(as\s+)?(instru[cç][oõ]es|prompts?|regras|contexto)/i,
+  /esque[cç]a\s+(tudo|todas?\s+as?\s+instru[cç][oõ]es|o\s+contexto)/i,
+  /desconsider[ae]\s+(as\s+)?(instru[cç][oõ]es|contexto)/i,
+  // Reprogramar o assistente (pt-BR)
+  /voc[eê]\s+(agora\s+[eé]|[eé]\s+agora|deve\s+ser|passou\s+a\s+ser)/i,
+  /novo\s+(prompt|papel|pap[eé]l|sistema|system)/i,
+  /a\s+partir\s+de\s+agora\s+voc[eê]/i,
+  // Ignorar instruções (en)
+  /ignore\s+(previous|all|prior|the\s+above|your)\s+(instructions?|prompts?|rules?|context)/i,
+  /forget\s+(everything|all|previous|what|the)/i,
+  /disregard\s+(previous|all|the)/i,
+  /override\s+(your\s+)?(instructions?|programming|training)/i,
+  // Mudança de persona (en)
+  /you\s+are\s+now\s+(a|an|the)/i,
+  /act\s+as\s+(if|a|an|the)/i,
+  /pretend\s+(you\s+are|to\s+be)/i,
+  /your\s+new\s+(instructions?|role|persona|task)/i,
+  // Jailbreaks conhecidos
+  /\bjailbreak\b/i,
+  /\bDAN\b/,
+  /do\s+anything\s+now/i,
+  // Marcadores de sistema injetados
+  /\[SYSTEM\]/i,
+  /\[INST\]/i,
+  /<\|im_start\|>/i,
+  /###\s*(instruction|system|prompt)/i,
+  /^system:/im,
+]
+
+// ── Tipos auxiliares ──────────────────────────────────────────────────────────
 
 interface QdrantScoredPoint {
   score:    number
@@ -39,6 +73,24 @@ interface EmbedResult {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function detectPromptInjection(question: string): string | null {
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(question)) return pattern.source
+  }
+  return null
+}
+
+async function moderateContent(question: string): Promise<string[]> {
+  const response = await openai.moderations.create({ input: question })
+  const result   = response.results[0]
+
+  if (!result.flagged) return []
+
+  return Object.entries(result.categories)
+    .filter(([, flagged]) => flagged)
+    .map(([category]) => category)
+}
 
 async function fetchAndValidateMaterial(materialId: string): Promise<MaterialForChat> {
   const material = await findMaterialForChat(materialId)
@@ -94,6 +146,46 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
 
   const { materialId, question, userId } = validateRequest(input, materialPdfChatSchema)
 
+  // ── GuardRail 1: Prompt Injection ─────────────────────────────────────────
+  const matchedPattern = detectPromptInjection(question)
+
+  if (matchedPattern !== null) {
+    await createInspectionLog({
+      correlationId: userId,
+      context:       SVC_CTX,
+      direction:     'SERVER_TO_CLIENT',
+      tag:           'AI_RAG',
+      payload: [
+        {
+          title:   'GuardRail - Prompt Injection bloqueado',
+          content: { materialId, matchedPattern, questionLength: question.length },
+        },
+      ],
+    }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog injection-blocked write failed`))
+
+    throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.CHAT.CHAT_PROMPT_INJECTION))
+  }
+
+  // ── GuardRail 2: Moderação de conteúdo (OpenAI) ───────────────────────────
+  const flaggedCategories = await moderateContent(question)
+
+  if (flaggedCategories.length > 0) {
+    await createInspectionLog({
+      correlationId: userId,
+      context:       SVC_CTX,
+      direction:     'SERVER_TO_CLIENT',
+      tag:           'AI_RAG',
+      payload: [
+        {
+          title:   'GuardRail - Conteúdo bloqueado pela moderação',
+          content: { materialId, flaggedCategories, questionLength: question.length },
+        },
+      ],
+    }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog content-flagged write failed`))
+
+    throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.CHAT.CHAT_CONTENT_FLAGGED))
+  }
+
   // ── 1. Valida material ────────────────────────────────────────────────────
   const material = await fetchAndValidateMaterial(materialId)
 
@@ -105,11 +197,7 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
     payload: [
       {
         title:   'Material validado para chat',
-        content: {
-          materialId,
-          status:       material.status,
-          vectorStatus: material.vectorStatus,
-        },
+        content: { materialId, status: material.status, vectorStatus: material.vectorStatus },
       },
     ],
   }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog material-validated write failed`))
@@ -125,11 +213,7 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
     payload: [
       {
         title:   'OpenAI - Embedding da pergunta',
-        content: {
-          model:           EMBED_MODEL,
-          embeddingTokens,
-          questionLength:  question.length,
-        },
+        content: { model: EMBED_MODEL, embeddingTokens, questionLength: question.length },
       },
     ],
   }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog embedding write failed`))
@@ -158,12 +242,12 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
     ],
   }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog qdrant-search write failed`))
 
-  // Sem chunks relevantes — retorno antecipado sem chamar o modelo
   if (chunks.length === 0) {
     await createInspectionLog({
       correlationId: userId,
       context:       SVC_CTX,
       direction:     'SERVER_TO_CLIENT',
+      tag:           'AI_RAG',
       payload: [
         {
           title:   'Resposta - Sem trechos relevantes',

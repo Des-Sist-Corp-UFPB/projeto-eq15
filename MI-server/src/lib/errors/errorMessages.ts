@@ -34,6 +34,9 @@ export type ErrorMessageKey =
   | 'INVITE_NOT_PENDING'
   | 'INVITE_ALREADY_PENDING'
   | 'INVITE_ONLY_INSTITUTIONAL'
+  // ── Chat / GuardRail ──────────────────────────────────────────────────────
+  | 'CHAT_PROMPT_INJECTION'
+  | 'CHAT_CONTENT_FLAGGED'
   // ── Genéricos ─────────────────────────────────────────────────────────────
   | 'BAD_REQUEST'
   | 'INTERNAL_ERROR'
@@ -68,6 +71,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     INVITE_NOT_PENDING:       'Este convite não está mais pendente.',
     INVITE_ALREADY_PENDING:   'Já existe um convite pendente para este usuário nesta organização.',
     INVITE_ONLY_INSTITUTIONAL: 'Apenas usuários com e-mail @dcx.ufpb.br podem receber convites.',
+    CHAT_PROMPT_INJECTION:    'Sua mensagem contém padrões não permitidos. Faça perguntas sobre o conteúdo do documento.',
+    CHAT_CONTENT_FLAGGED:     'Sua mensagem foi bloqueada por violar as políticas de uso da plataforma.',
     BAD_REQUEST:              'Requisição inválida.',
     INTERNAL_ERROR:           'Erro interno do servidor.',
     MISSING_ID:               'O identificador é obrigatório.',
@@ -101,6 +106,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     INVITE_NOT_PENDING:       'This invite is no longer pending.',
     INVITE_ALREADY_PENDING:   'A pending invite already exists for this user in this organization.',
     INVITE_ONLY_INSTITUTIONAL: 'Only users with @dcx.ufpb.br email can receive invites.',
+    CHAT_PROMPT_INJECTION:    'Your message contains disallowed patterns. Please ask questions about the document content.',
+    CHAT_CONTENT_FLAGGED:     'Your message was blocked for violating platform usage policies.',
     BAD_REQUEST:              'Bad request.',
     INTERNAL_ERROR:           'Internal server error.',
     MISSING_ID:               'The identifier is required.',
@@ -134,6 +141,8 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     INVITE_NOT_PENDING:       'Esta invitación ya no está pendiente.',
     INVITE_ALREADY_PENDING:   'Ya existe una invitación pendiente para este usuario en esta organización.',
     INVITE_ONLY_INSTITUTIONAL: 'Solo usuarios con correo @dcx.ufpb.br pueden recibir invitaciones.',
+    CHAT_PROMPT_INJECTION:    'Tu mensaje contiene patrones no permitidos. Haz preguntas sobre el contenido del documento.',
+    CHAT_CONTENT_FLAGGED:     'Tu mensaje fue bloqueado por violar las políticas de uso de la plataforma.',
     BAD_REQUEST:              'Solicitud no válida.',
     INTERNAL_ERROR:           'Error interno del servidor.',
     MISSING_ID:               'El identificador es obligatorio.',

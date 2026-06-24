@@ -9,6 +9,7 @@ set -e
 : "${DATABASE_URL:?DATABASE_URL não definido}"
 : "${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY não definido}"
 : "${MINIO_SECRET_KEY:?MINIO_SECRET_KEY não definido}"
+: "${OPENAI_API_KEY:?OPENAI_API_KEY não definido}"
 
 # Escreve .env temporário para o prisma.config.ts encontrar DATABASE_URL
 printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > /api/.env

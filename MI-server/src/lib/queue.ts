@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq'
 import { env } from '../env'
+import { logger } from './logger'
 
 export interface VectorizePdfJob {
   materialId: string
@@ -20,4 +21,8 @@ export const vectorizeQueue = new Queue<VectorizePdfJob>('vectorize-pdf', {
     removeOnComplete: 100,
     removeOnFail:     50,
   },
+})
+
+vectorizeQueue.on('error', (err) => {
+  logger.warn({ err: err.message }, 'BullMQ: falha na conexão com Redis — jobs pausados até Redis estar disponível')
 })

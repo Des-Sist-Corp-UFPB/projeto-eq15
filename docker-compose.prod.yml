@@ -7,6 +7,8 @@ services:
     ports:
       - "127.0.0.1:8115:8080"
     depends_on:
+      redis:
+        condition: service_healthy
       qdrant:
         condition: service_healthy
     environment:
@@ -34,32 +36,45 @@ services:
       MINIO_PUBLIC_USE_SSL: ${MINIO_PUBLIC_USE_SSL:-true}
 
       # ── Redis (BullMQ — jobs de vetorização) ──────────────────────────────────
-      # Redis já existe no servidor do professor; aponta para o container por nome.
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
 
       # ── Qdrant (banco de vetores — RAG) ───────────────────────────────────────
-      # Aponta para o serviço qdrant definido abaixo na rede interna do compose.
-      # Sobrescreva via portal apenas se quiser usar um Qdrant externo.
       QDRANT_URL: ${QDRANT_URL:-http://qdrant:6333}
       QDRANT_API_KEY: ${QDRANT_API_KEY:-}
 
       # ── OpenAI (embeddings e geração de respostas) ────────────────────────────
-      # Definir obrigatoriamente no portal — nunca commitar o valor real.
       OPENAI_API_KEY: ${OPENAI_API_KEY}
 
       # ── Frontend URL (links de e-mail) ─────────────────────────────────────────
       APP_URL: ${APP_URL:-https://eq15.dsc.rodrigor.com}
 
-  # ── Qdrant (banco de vetores) ──────────────────────────────────────────────────
+  # ── Redis (BullMQ — jobs de vetorização assíncrona) ───────────────────────────
   # Gerenciado pelo docker-compose — não precisa ser configurado no portal.
-  # Os dados são persistidos no volume qdrant_data.
+  # Dados persistidos no volume redis_data.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    expose:
+      - "6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Qdrant (banco de vetores — RAG) ───────────────────────────────────────────
+  # Gerenciado pelo docker-compose — não precisa ser configurado no portal.
+  # Dados persistidos no volume qdrant_data.
   qdrant:
     image: qdrant/qdrant:v1.13.6
     restart: unless-stopped
     expose:
-      - "6333"   # REST API  — acessível apenas na rede interna do compose
-      - "6334"   # gRPC
+      - "6333"
+      - "6334"
     volumes:
       - qdrant_data:/qdrant/storage
     healthcheck:
@@ -70,4 +85,5 @@ services:
       start_period: 15s
 
 volumes:
+  redis_data:
   qdrant_data:

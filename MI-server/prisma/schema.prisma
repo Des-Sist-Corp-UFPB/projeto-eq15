@@ -194,8 +194,10 @@ model InspectionLog {
   correlationId String?
   context       String
   direction     InspectionLogDirection
+  tag           String?
   payload       Json?
   createdAt     DateTime               @default(now())
 
   @@index([correlationId])
+  @@index([tag])
 }

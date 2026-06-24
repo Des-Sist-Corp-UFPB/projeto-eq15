@@ -7,6 +7,7 @@ export interface IInspectionLog {
   correlationId: string | null
   context:       string
   direction:     InspectionLogDirection
+  tag:           string | null
   payload:       Prisma.JsonValue
   createdAt:     Date
 }
@@ -15,6 +16,7 @@ export interface ListInspectionLogsParams {
   direction?:     InspectionLogDirection
   context?:       string
   correlationId?: string
+  tag?:           string
   page:           number
   perPage:        number
 }
@@ -31,6 +33,7 @@ const LOG_SELECT = {
   correlationId: true,
   context:       true,
   direction:     true,
+  tag:           true,
   payload:       true,
   createdAt:     true,
 } as const
@@ -38,13 +41,14 @@ const LOG_SELECT = {
 export async function findInspectionLogs(
   params: ListInspectionLogsParams,
 ): Promise<ListInspectionLogsResult> {
-  const { direction, context, correlationId, page, perPage } = params
+  const { direction, context, correlationId, tag, page, perPage } = params
 
   const where: Prisma.InspectionLogWhereInput = {}
 
   if (direction)     where.direction     = direction
   if (correlationId) where.correlationId = correlationId
   if (context)       where.context       = { contains: context, mode: 'insensitive' }
+  if (tag)           where.tag           = tag
 
   const [logs, total] = await prisma.$transaction([
     prisma.inspectionLog.findMany({

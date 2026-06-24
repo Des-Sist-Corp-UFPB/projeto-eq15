@@ -9,9 +9,10 @@ export interface PayloadEntry {
 
 export interface CreateInspectionLogParams {
   correlationId?: string
-  context: string
-  direction: InspectionLogDirection
-  payload?: PayloadEntry[]
+  context:        string
+  direction:      InspectionLogDirection
+  tag?:           string
+  payload?:       PayloadEntry[]
 }
 
 export async function createInspectionLog(
@@ -22,6 +23,7 @@ export async function createInspectionLog(
       correlationId: params.correlationId,
       context:       params.context,
       direction:     params.direction,
+      tag:           params.tag,
       payload:       params.payload as Prisma.InputJsonValue | undefined,
     },
   })

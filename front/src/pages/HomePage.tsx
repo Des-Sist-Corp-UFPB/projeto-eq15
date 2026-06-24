@@ -12,6 +12,7 @@ import { ResourceCard } from '../components/ResourceCard'
 import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
 import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
+import { canUseAiChat } from '../lib/permissions'
 import type { PendingMaterial } from '../features/materials/api/materialsApi'
 
 // ── Ordenação (tabs estilo "MEC Recomenda / Recentes / …") ──────────────────────
@@ -38,6 +39,7 @@ function sortMaterials(list: PendingMaterial[], key: SortKey): PendingMaterial[]
 
 function PublicResourceCard({ material }: { material: PendingMaterial }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -71,7 +73,7 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
       onOpen={handleOpen}
       opening={opening}
       error={error}
-      onChat={handleChat}
+      onChat={canUseAiChat(user) ? handleChat : undefined}
     />
   )
 }

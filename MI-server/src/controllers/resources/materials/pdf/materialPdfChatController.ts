@@ -5,8 +5,12 @@ import { createInspectionLog } from '../../../../repositories/inspectionLog/insp
 import { httpResponse, httpError } from '../../../../utils/http'
 import { StatusCode } from '../../../../utils/statusCode'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
+import { authorizeByRole } from '../../../../utils/authorizeByRole'
+import { INSTITUTIONALIZED, PROFESSOR, ADMIN } from '../../../../constants/roles'
 import { logger } from '../../../../lib/logger'
 import type { MaterialPdfChatRequest } from '../../../../schemas/resources/materials/pdf/materialPdfChatSchema'
+
+const CHAT_AI_ROLES = [INSTITUTIONALIZED, PROFESSOR, ADMIN] as const
 
 const ctx = 'materialPdfChatController'
 
@@ -14,7 +18,7 @@ const ctx = 'materialPdfChatController'
  * POST /mis/:id/chat
  * Envia uma pergunta sobre o conteúdo de um MI aprovado e vetorizado.
  * Resposta gerada via RAG: Qdrant (busca semântica) + OpenAI (geração).
- * Permissão: qualquer usuário autenticado.
+ * Permissão: INSTITUTIONALIZED, PROFESSOR, ADMIN (usuários @dcx.ufpb.br ou superiores).
  * Middlewares: [authenticate]
  */
 export async function materialPdfChatController(
@@ -45,6 +49,8 @@ export async function materialPdfChatController(
   }).catch((err) => logger.error({ err }, `${ctx}: inspectionLog CLIENT_TO_SERVER write failed`))
 
   try {
+    authorizeByRole(request.user.role, CHAT_AI_ROLES)
+
     const result = await materialPdfChatService({
       materialId: id,
       question,

@@ -1,27 +1,17 @@
 // src/pages/AllMaterialsPage.tsx
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen, LogOut, ArrowLeft, Library, FileText,
+  Library, FileText,
   ExternalLink, AlertCircle, RefreshCw, Loader2,
   Clock, CheckCircle2, XCircle,
 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { AppShell } from '../components/AppShell'
 import { useAllMaterials } from '../features/materials/hooks/useAllMaterials'
 import { getReviewPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
-import type { Role } from '../types/auth'
 import type { MIStatus, PendingMaterial } from '../features/materials/api/materialsApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const ROLE_LABELS: Record<Role, string> = {
-  COMMON:            'Usuário',
-  INSTITUTIONALIZED: 'Institucionalizado',
-  PROFESSOR:         'Professor',
-  ADMIN:             'Administrador',
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
@@ -61,51 +51,6 @@ function StatusBadge({ status }: { status: MIStatus }) {
     <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${classes}`}>
       <Icon size={11} />{label}
     </span>
-  )
-}
-
-// ── Topbar ────────────────────────────────────────────────────────────────────
-
-interface TopbarProps {
-  userName: string
-  userRole: Role
-  onBack: () => void
-  onLogout: () => void
-}
-
-function Topbar({ userName, userRole, onBack, onLogout }: TopbarProps) {
-  return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} aria-label="Voltar"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <ArrowLeft size={16} /><span className="hidden sm:inline">Voltar</span>
-          </button>
-          <div className="w-px h-5 bg-white/20" />
-          <div className="flex items-center gap-2">
-            <div className="bg-white/10 rounded-xl p-2"><BookOpen size={18} /></div>
-            <div>
-              <p className="font-bold text-sm leading-tight">MI</p>
-              <p className="text-indigo-200 text-xs">Materiais Instrucionais · UFPB</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium leading-tight">{userName}</p>
-            <p className="text-indigo-200 text-xs">{ROLE_LABELS[userRole]}</p>
-          </div>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          <button onClick={onLogout} aria-label="Sair"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <LogOut size={16} /><span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
   )
 }
 
@@ -199,18 +144,10 @@ const STATUS_TABS: { label: string; value: MIStatus | undefined }[] = [
 ]
 
 export function AllMaterialsPage() {
-  const { user, clearSession } = useAuth()
-  const navigate = useNavigate()
-
   const [statusFilter, setStatusFilter] = useState<MIStatus | undefined>(undefined)
   const [page, setPage] = useState(1)
 
   const { data, isLoading, isError, error, refetch } = useAllMaterials(statusFilter, page)
-
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
 
   function handleTabChange(value: MIStatus | undefined) {
     setStatusFilter(value)
@@ -222,15 +159,7 @@ export function AllMaterialsPage() {
   const totalPages = Math.ceil(total / 25)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar
-        userName={user?.name ?? ''}
-        userRole={user?.role ?? 'PROFESSOR'}
-        onBack={() => navigate('/')}
-        onLogout={handleLogout}
-      />
-
-      <main className="flex-1 px-6 py-10">
+    <AppShell>
         <div className="max-w-5xl mx-auto space-y-6">
 
           {/* Cabeçalho */}
@@ -355,7 +284,6 @@ export function AllMaterialsPage() {
             Campus IV · UFPB — Rio Tinto / Mamanguape
           </p>
         </div>
-      </main>
-    </div>
+    </AppShell>
   )
 }

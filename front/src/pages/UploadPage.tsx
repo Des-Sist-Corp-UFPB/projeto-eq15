@@ -2,30 +2,22 @@
 import { useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen,
-  LogOut,
-  ArrowLeft,
   UploadCloud,
   FileText,
   X,
   CheckCircle2,
   AlertCircle,
+  Users,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { AppShell } from '../components/AppShell'
+import { canUploadMaterials } from '../lib/permissions'
 import { useUploadMaterial } from '../features/materials/hooks/useUploadMaterial'
+import { useMyOrganizations } from '../features/organizations/hooks/useMyOrganizations'
 import { getApiErrorCode, getApiErrorMessage } from '../lib/apiError'
-import type { Role } from '../types/auth'
 import type { UploadedMI } from '../features/materials/api/materialsApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const ROLE_LABELS: Record<Role, string> = {
-  COMMON:            'Usuário',
-  INSTITUTIONALIZED: 'Institucionalizado',
-  PROFESSOR:         'Professor',
-  ADMIN:             'Administrador',
-}
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -39,64 +31,6 @@ function friendlyError(error: unknown): string {
   if (code === 'INVALID_FILE_TYPE')  return 'O arquivo enviado não é um PDF válido.'
   if (code === 'FILE_TOO_LARGE')     return 'O arquivo excede o tamanho máximo permitido (50 MB).'
   return getApiErrorMessage(error)
-}
-
-// ── Topbar ────────────────────────────────────────────────────────────────────
-
-interface TopbarProps {
-  userName: string
-  userRole: Role
-  onBack: () => void
-  onLogout: () => void
-}
-
-function Topbar({ userName, userRole, onBack, onLogout }: TopbarProps) {
-  return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-3xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            aria-label="Voltar"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1"
-          >
-            <ArrowLeft size={16} />
-            <span className="hidden sm:inline">Voltar</span>
-          </button>
-
-          <div className="w-px h-5 bg-white/20" />
-
-          <div className="flex items-center gap-2">
-            <div className="bg-white/10 rounded-xl p-2">
-              <BookOpen size={18} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight">MI</p>
-              <p className="text-indigo-200 text-xs">Materiais Instrucionais · UFPB</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium leading-tight">{userName}</p>
-            <p className="text-indigo-200 text-xs">{ROLE_LABELS[userRole]}</p>
-          </div>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          <button
-            onClick={onLogout}
-            aria-label="Sair da conta"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1"
-          >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
-  )
 }
 
 // ── Dropzone ──────────────────────────────────────────────────────────────────
@@ -269,18 +203,17 @@ function SuccessState({ material, onUploadAnother, onGoHome }: SuccessStateProps
 // ── UploadPage ────────────────────────────────────────────────────────────────
 
 export function UploadPage() {
-  const { user, clearSession } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
+  const [selectedOrgId, setSelectedOrgId] = useState('')
 
   const { mutate, isPending, isSuccess, data: uploadedMaterial, error, reset } = useUploadMaterial()
+  const { data: orgs } = useMyOrganizations()
 
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
+  const activeOrgs = orgs?.filter((o) => o.status === 'ACTIVE') ?? []
 
   function handleFileSelect(selected: File) {
     setFile(selected)
@@ -296,29 +229,25 @@ export function UploadPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file) return
-    mutate({ file, title: title.trim() || undefined })
+    mutate({
+      file,
+      title: title.trim() || undefined,
+      organizationId: selectedOrgId || undefined,
+    })
   }
 
   function handleUploadAnother() {
     setFile(null)
     setTitle('')
+    setSelectedOrgId('')
     reset()
   }
 
-  const ROLES_WITH_UPLOAD = new Set(['INSTITUTIONALIZED', 'PROFESSOR', 'ADMIN'])
-  const canUpload = (user?.role && ROLES_WITH_UPLOAD.has(user.role)) || (user?.canUpload ?? false)
+  const canUpload = canUploadMaterials(user)
   const isUploading = isPending
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar
-        userName={user?.name ?? ''}
-        userRole={user?.role ?? 'COMMON'}
-        onBack={() => navigate('/')}
-        onLogout={handleLogout}
-      />
-
-      <main className="flex-1 px-6 py-10">
+    <AppShell>
         <div className="max-w-3xl mx-auto space-y-6">
 
           {/* Cabeçalho da página */}
@@ -400,6 +329,41 @@ export function UploadPage() {
                   </p>
                 </div>
 
+                {/* Projeto de destino */}
+                {activeOrgs.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="mi-org" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <span className="flex items-center gap-1.5">
+                        <Users size={14} className="text-gray-400 dark:text-gray-500" />
+                        Destinar a um projeto
+                        <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+                      </span>
+                    </label>
+                    <select
+                      id="mi-org"
+                      value={selectedOrgId}
+                      onChange={(e) => setSelectedOrgId(e.target.value)}
+                      disabled={isUploading || !canUpload}
+                      className="w-full rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm
+                                 text-gray-900 dark:text-gray-100
+                                 bg-white dark:bg-gray-800
+                                 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30
+                                 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+                                 transition-colors"
+                    >
+                      <option value="">Nenhum (publicação geral)</option>
+                      {activeOrgs.map((org) => (
+                        <option key={org.id} value={org.id}>{org.name}</option>
+                      ))}
+                    </select>
+                    {selectedOrgId && (
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                        O material será enviado para revisão dentro do projeto selecionado.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Mensagem de erro */}
                 {error && (
                   <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 px-4 py-3">
@@ -442,7 +406,6 @@ export function UploadPage() {
             Campus IV · UFPB — Rio Tinto / Mamanguape
           </p>
         </div>
-      </main>
-    </div>
+    </AppShell>
   )
 }

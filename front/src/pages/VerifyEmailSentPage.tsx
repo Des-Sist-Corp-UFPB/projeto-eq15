@@ -1,7 +1,8 @@
 // src/pages/VerifyEmailSentPage.tsx
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, Navigate } from 'react-router-dom'
-import { BookOpen, Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { Mail, CheckCircle, Loader2 } from 'lucide-react'
+import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useVerifyEmail } from '../features/auth/hooks/useVerifyEmail'
 import { getApiErrorMessage } from '../lib/apiError'
@@ -73,14 +74,8 @@ export function VerifyEmailSentPage() {
       <div className="w-full max-w-sm">
 
         {/* Logo */}
-        <div className="flex items-center gap-2 mb-10 justify-center">
-          <div className="bg-indigo-700 rounded-xl p-2">
-            <BookOpen size={20} className="text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
-          </div>
+        <div className="flex justify-center mb-10">
+          <Logo />
         </div>
 
         {/* Card */}

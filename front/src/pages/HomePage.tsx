@@ -1,275 +1,277 @@
 // src/pages/HomePage.tsx
+// Tela inicial no estilo MEC RED: grade de recursos (materiais aprovados) com
+// miniatura, filtros e busca, dentro do layout AppShell.
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen,
-  UploadCloud,
-  FileText,
-  User,
-  Settings,
-  LogOut,
-  ChevronRight,
-  ShieldCheck,
-  ClipboardCheck,
-  ScrollText,
-  Library,
-  FolderPlus,
-  Bell,
-  Users,
+  SlidersHorizontal, AlertCircle, RefreshCw, Loader2, Library, LogIn,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
-import { usePendingInviteCount } from '../features/organizations/hooks/usePendingInviteCount'
-import type { Role } from '../types/auth'
+import { AppShell } from '../components/AppShell'
+import { ResourceCard } from '../components/ResourceCard'
+import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
+import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
+import { getApiErrorMessage } from '../lib/apiError'
+import { canUseAiChat } from '../lib/permissions'
+import type { PendingMaterial } from '../features/materials/api/materialsApi'
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Ordenação (tabs estilo "MEC Recomenda / Recentes / …") ──────────────────────
 
-const ROLE_LABELS: Record<Role, string> = {
-  COMMON:           'Usuário',
-  INSTITUTIONALIZED: 'Institucionalizado',
-  PROFESSOR:        'Professor',
-  ADMIN:            'Administrador',
+type SortKey = 'recent' | 'oldest' | 'az'
+
+const TABS: { label: string; value: SortKey }[] = [
+  { label: 'Mais recentes', value: 'recent' },
+  { label: 'Mais antigos',  value: 'oldest' },
+  { label: 'A–Z',           value: 'az' },
+]
+
+function sortMaterials(list: PendingMaterial[], key: SortKey): PendingMaterial[] {
+  const copy = [...list]
+  if (key === 'az') return copy.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
+  return copy.sort((a, b) => {
+    const da = new Date(a.createdAt).getTime()
+    const db = new Date(b.createdAt).getTime()
+    return key === 'recent' ? db - da : da - db
+  })
 }
 
-function getRoleLabel(role: Role): string {
-  return ROLE_LABELS[role] ?? role
-}
+// ── Card conectado ao presigned URL ──────────────────────────────────────────────
 
-function getGreeting(): string {
-  const h = new Date().getHours()
-  if (h < 12) return 'Bom dia'
-  if (h < 18) return 'Boa tarde'
-  return 'Boa noite'
-}
+function PublicResourceCard({ material }: { material: PendingMaterial }) {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [opening, setOpening] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-// ── Sub-componentes ───────────────────────────────────────────────────────────
+  async function handleOpen() {
+    setOpening(true)
+    setError(null)
+    try {
+      const { url } = await getPublicPresignedUrlRequest(material.id)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    } finally {
+      setOpening(false)
+    }
+  }
 
-interface TopbarProps {
-  userName: string
-  userRole: Role
-  onLogout: () => void
-  onBell:   () => void
-  pendingInvites: number
-}
+  function handleChat() {
+    navigate(`/materials/${material.id}/chat`, { state: { material } })
+  }
 
-function Topbar({ userName, userRole, onLogout, onBell, pendingInvites }: TopbarProps) {
+  const organizationName = material.organizations?.[0]?.organization.name
+
   return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
-        {/* Marca */}
-        <div className="flex items-center gap-3">
-          <div className="bg-white/10 rounded-xl p-2">
-            <BookOpen size={20} className="text-white" />
-          </div>
-          <div>
-            <p className="font-bold text-sm leading-tight">MI</p>
-            <p className="text-indigo-200 text-xs">Materiais Instrucionais · UFPB</p>
-          </div>
-        </div>
-
-        {/* Usuário + toggle + bell + logout */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium leading-tight">{userName}</p>
-            <p className="text-indigo-200 text-xs">{getRoleLabel(userRole)}</p>
-          </div>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          {/* Bell de convites */}
-          <button
-            onClick={onBell}
-            aria-label="Convites pendentes"
-            className="relative flex items-center justify-center text-indigo-200 hover:text-white transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg p-1.5"
-          >
-            <Bell size={18} />
-            {pendingInvites > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                {pendingInvites > 9 ? '9+' : pendingInvites}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={onLogout}
-            aria-label="Sair da conta"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1"
-          >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
-  )
-}
-
-interface DashboardCardProps {
-  icon: React.ElementType
-  title: string
-  description: string
-  onClick?: () => void
-  disabled?: boolean
-}
-
-function DashboardCard({ icon: Icon, title, description, onClick, disabled = false }: DashboardCardProps) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="group w-full text-left bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6
-                 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md
-                 disabled:opacity-50 disabled:cursor-not-allowed
-                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2
-                 dark:focus:ring-offset-gray-950
-                 transition-all duration-150"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          {/* Ícone */}
-          <div className="shrink-0 bg-indigo-50 dark:bg-indigo-950 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900 rounded-xl p-3 transition-colors">
-            <Icon size={22} className="text-indigo-600 dark:text-indigo-400" />
-          </div>
-
-          {/* Texto */}
-          <div>
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{title}</p>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 leading-relaxed">{description}</p>
-          </div>
-        </div>
-
-        {/* Seta */}
-        <ChevronRight
-          size={18}
-          className="shrink-0 mt-0.5 text-gray-300 dark:text-gray-600 group-hover:text-indigo-400 transition-colors"
-        />
-      </div>
-    </button>
+    <ResourceCard
+      id={material.id}
+      title={material.title}
+      authorName={material.uploadedBy?.name}
+      sizeBytes={material.sizeBytes}
+      createdAt={material.createdAt}
+      organizationName={organizationName}
+      onOpen={handleOpen}
+      opening={opening}
+      error={error}
+      onChat={canUseAiChat(user) ? handleChat : undefined}
+    />
   )
 }
 
 // ── HomePage ──────────────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const { user, clearSession } = useAuth()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
-  const { data: inviteCountData } = usePendingInviteCount()
-  const pendingInvites = inviteCountData?.count ?? 0
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortKey>('recent')
+  const [tabLabel, setTabLabel] = useState(TABS[0].label)
+  const [mode, setMode] = useState<'resources' | 'collections'>('resources')
 
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
+  const { data, isLoading, isError, error, refetch } = usePublicMaterials(page)
 
-  const cards = [
-    {
-      icon:        UploadCloud,
-      title:       'Upload de Material',
-      description: 'Envie um novo material instrucional em PDF para análise e publicação.',
-      onClick:     () => navigate('/upload'),
-    },
-    {
-      icon:        FileText,
-      title:       'Meus Materiais',
-      description: 'Consulte e gerencie os materiais que você já enviou à plataforma.',
-      onClick:     () => navigate('/materials'),
-    },
-    {
-      icon:        User,
-      title:       'Meu Perfil',
-      description: 'Visualize e edite suas informações pessoais e acadêmicas.',
-      onClick:     () => navigate('/profile'),
-    },
-    {
-      icon:        Settings,
-      title:       'Configurações',
-      description: 'Ajuste preferências de notificações e privacidade da sua conta.',
-      onClick:     () => navigate('/settings'),
-    },
-    ...(user?.role === 'PROFESSOR' || user?.role === 'ADMIN' ? [
-      {
-        icon:        ClipboardCheck,
-        title:       'Revisar Materiais',
-        description: 'Aprove ou rejeite submissões de materiais instrucionais pendentes.',
-        onClick:     () => navigate('/professor/review'),
-      },
-      {
-        icon:        Library,
-        title:       'Todos os Materiais',
-        description: 'Visualize todos os materiais enviados à plataforma, por status.',
-        onClick:     () => navigate('/professor/materials'),
-      },
-      {
-        icon:        FolderPlus,
-        title:       'Nova Organização',
-        description: 'Crie um projeto para agrupar materiais e convidar alunos.',
-        onClick:     () => navigate('/organizations/create'),
-      },
-      {
-        icon:        Users,
-        title:       'Minhas Organizações',
-        description: 'Veja as organizações das quais você faz parte e gerencie membros.',
-        onClick:     () => navigate('/organizations'),
-      },
-    ] : []),
-    ...(user?.role === 'ADMIN' ? [
-      {
-        icon:        ShieldCheck,
-        title:       'Gerenciar Usuários',
-        description: 'Promova usuários para Professor e gerencie permissões de acesso.',
-        onClick:     () => navigate('/admin/users'),
-      },
-      {
-        icon:        ScrollText,
-        title:       'Logs de Inspeção',
-        description: 'Visualize o rastreio de ciclo de vida das requisições HTTP.',
-        onClick:     () => navigate('/admin/logs'),
-      },
-    ] : []),
-  ]
+  const materials = data?.materials ?? []
+  const total = data?.total ?? 0
+  const totalPages = Math.ceil(total / 25)
+
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    const filtered = term
+      ? materials.filter(
+          (m) =>
+            m.title.toLowerCase().includes(term) ||
+            m.uploadedBy?.name?.toLowerCase().includes(term),
+        )
+      : materials
+    return sortMaterials(filtered, sort)
+  }, [materials, search, sort])
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar
-        userName={user?.name ?? ''}
-        userRole={user?.role ?? 'COMMON'}
-        onLogout={handleLogout}
-        onBell={() => navigate('/invites')}
-        pendingInvites={pendingInvites}
-      />
+    <AppShell searchValue={search} onSearchChange={setSearch}>
+      <div className="mx-auto max-w-7xl space-y-6">
 
-      <main className="flex-1 px-6 py-10">
-        <div className="max-w-5xl mx-auto space-y-8">
-
-          {/* Saudação */}
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {getGreeting()}, {user?.name?.split(' ')[0] ?? 'usuário'}.
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              O que você gostaria de fazer hoje?
-            </p>
+        {/* Linha de modo: Recursos / Coleções */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <span className="flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200">
+            <Library size={18} className="text-indigo-600 dark:text-indigo-400" />
+            Exibindo recursos disponíveis na plataforma
+          </span>
+          <div className="flex items-center gap-4">
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === 'resources'}
+                onChange={() => setMode('resources')}
+                className="accent-indigo-600"
+              />
+              <span className={mode === 'resources' ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}>
+                Recursos
+              </span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-not-allowed opacity-60" title="Em breve">
+              <input type="radio" name="mode" disabled className="accent-indigo-600" />
+              <span className="text-gray-500 dark:text-gray-400">Coleções</span>
+            </label>
           </div>
-
-          {/* Badge de perfil */}
-          <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            <span className="text-indigo-700 dark:text-indigo-300 text-xs font-medium">
-              Perfil: {getRoleLabel(user?.role ?? 'COMMON')}
-            </span>
-          </div>
-
-          {/* Grade de cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {cards.map((card) => (
-              <DashboardCard key={card.title} {...card} />
-            ))}
-          </div>
-
-          {/* Rodapé */}
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500 pt-4">
-            Campus IV · UFPB — Rio Tinto / Mamanguape
-          </p>
         </div>
-      </main>
-    </div>
+
+        {/* Tabs de filtro/ordenação */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-sm font-semibold text-white">
+            <SlidersHorizontal size={15} />
+            Filtros
+          </span>
+          {TABS.map((tab) => {
+            const active = tabLabel === tab.label
+            return (
+              <button
+                key={tab.label}
+                onClick={() => { setTabLabel(tab.label); setSort(tab.value) }}
+                className={[
+                  'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
+                  active
+                    ? 'bg-indigo-700 text-white shadow-sm'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Título da seção */}
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+          Recursos disponíveis
+        </h1>
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 size={30} className="animate-spin text-indigo-500" />
+          </div>
+        )}
+
+        {/* Erro — usuário anônimo precisa entrar para carregar os materiais */}
+        {isError && !isAuthenticated && (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <div className="rounded-full bg-indigo-50 dark:bg-indigo-950 p-4">
+              <LogIn size={28} className="text-indigo-500 dark:text-indigo-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium text-gray-900 dark:text-gray-100">Entre para ver os materiais</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Faça login com sua conta para consultar o acervo de materiais instrucionais.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5
+                         text-sm font-semibold text-white transition-colors
+                         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              <LogIn size={15} /> Entrar
+            </button>
+          </div>
+        )}
+
+        {/* Erro — usuário autenticado, falha real de carregamento */}
+        {isError && isAuthenticated && (
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <div className="rounded-full bg-red-50 dark:bg-red-950 p-4">
+              <AlertCircle size={28} className="text-red-500 dark:text-red-400" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium text-gray-900 dark:text-gray-100">Não foi possível carregar os recursos</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{getApiErrorMessage(error)}</p>
+            </div>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600
+                         bg-white dark:bg-gray-800 px-4 py-2 text-sm text-gray-700 dark:text-gray-300
+                         hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <RefreshCw size={14} /> Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {/* Conteúdo */}
+        {!isLoading && !isError && (
+          visible.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-20 text-center">
+              <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-5">
+                <Library size={32} className="text-gray-400 dark:text-gray-500" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  {search ? 'Nenhum recurso encontrado para a sua busca' : 'Nenhum recurso disponível'}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {search ? 'Tente outros termos de pesquisa.' : 'Os materiais aprovados pelos professores aparecerão aqui.'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {visible.map((m) => (
+                  <PublicResourceCard key={m.id} material={m} />
+                ))}
+              </div>
+
+              {/* Paginação */}
+              {totalPages > 1 && !search && (
+                <div className="flex items-center justify-center gap-2 pt-4">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                               text-gray-700 dark:text-gray-300 px-4 py-1.5 text-sm disabled:opacity-40
+                               hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Anterior
+                  </button>
+                  <span className="text-sm text-gray-500 dark:text-gray-400 px-2">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                               text-gray-700 dark:text-gray-300 px-4 py-1.5 text-sm disabled:opacity-40
+                               hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              )}
+            </>
+          )
+        )}
+      </div>
+    </AppShell>
   )
 }

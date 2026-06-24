@@ -1,8 +1,9 @@
 // src/pages/LoginPage.tsx
 import { useState, type FormEvent } from 'react'
-import { Eye, EyeOff, Loader2, BookOpen } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BrandingPanel } from '../components/auth/BrandingPanel'
+import { Logo } from '../components/Logo'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useLogin } from '../features/auth/hooks/useLogin'
 import { getApiErrorMessage, getApiErrorCode } from '../lib/apiError'
@@ -26,6 +27,7 @@ function resolveErrorMessage(error: unknown): string {
 
 export function LoginPage() {
   const { mutate: login, isPending, error, reset } = useLogin()
+  const navigate = useNavigate()
   const location = useLocation()
   const successMessage = (location.state as { successMessage?: string } | null)?.successMessage
 
@@ -57,14 +59,8 @@ export function LoginPage() {
         <div className="w-full max-w-sm">
 
           {/* Logo mobile (visível apenas em telas pequenas) */}
-          <div className="flex lg:hidden items-center gap-2 mb-10 justify-center">
-            <div className="bg-indigo-700 rounded-xl p-2">
-              <BookOpen size={20} className="text-white" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-900 dark:text-gray-100">MI</p>
-              <p className="text-gray-400 dark:text-gray-500 text-xs">Materiais Instrucionais · UFPB</p>
-            </div>
+          <div className="flex lg:hidden justify-center mb-10">
+            <Logo />
           </div>
 
           {/* Cabeçalho do formulário */}
@@ -174,6 +170,25 @@ export function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Separador */}
+          <div className="my-6 flex items-center gap-3">
+            <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+            <span className="text-xs text-gray-400 dark:text-gray-500">ou</span>
+            <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+          </div>
+
+          {/* Acesso sem login — apenas visualização de materiais */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="w-full py-2.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600
+                       bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-semibold
+                       hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Explorar materiais sem login
+          </button>
 
           {/* Rodapé do painel */}
           <p className="mt-8 text-center text-xs text-gray-400 dark:text-gray-500">

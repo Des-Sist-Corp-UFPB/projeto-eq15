@@ -8,6 +8,7 @@ import { materialPdfReviewSchema } from '../../../../schemas/resources/materials
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
+import { vectorizeQueue } from '../../../../lib/queue'
 import { PROFESSOR, ADMIN } from '../../../../constants/roles'
 import { logger } from '../../../../lib/logger'
 
@@ -27,6 +28,10 @@ export async function materialPdfReviewService(input: unknown): Promise<IUploade
   }
 
   const updated = await updateMaterialStatus(materialId, decision)
+
+  if (decision === 'APPROVED') {
+    await vectorizeQueue.add('vectorize', { materialId, storageKey: material.storageKey })
+  }
 
   await createAuditLog({
     actorId:   reviewerId,

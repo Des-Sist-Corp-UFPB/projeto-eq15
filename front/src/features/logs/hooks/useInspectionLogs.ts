@@ -6,6 +6,7 @@ interface UseInspectionLogsParams {
   direction?:     LogDirection
   context?:       string
   correlationId?: string
+  tag?:           string
   page?:          number
   perPage?:       number
 }

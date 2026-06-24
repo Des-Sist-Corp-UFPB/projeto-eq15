@@ -1,12 +1,10 @@
 // src/pages/AdminLogsPage.tsx
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen, LogOut, ArrowLeft, ScrollText,
-  AlertCircle, RefreshCw, Loader2, ChevronDown, ChevronRight, Search, X,
+  ScrollText,
+  AlertCircle, RefreshCw, Loader2, ChevronDown, ChevronRight, Search, X, Sparkles,
 } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { AppShell } from '../components/AppShell'
 import { useInspectionLogs } from '../features/logs/hooks/useInspectionLogs'
 import { getApiErrorMessage } from '../lib/apiError'
 import type { LogDirection, InspectionLog, PayloadEntry } from '../features/logs/api/logsApi'
@@ -29,48 +27,31 @@ const DIRECTION_SELECT_LABEL: Record<string, string> = {
   SERVER_TO_CLIENT: 'API → Cliente',
 }
 
+const TAG_STYLES: Record<string, { label: string; classes: string }> = {
+  AI_RAG: {
+    label:   'IA · RAG',
+    classes: 'bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800',
+  },
+}
+
+function TagBadge({ tag }: { tag: string }) {
+  const style = TAG_STYLES[tag] ?? {
+    label:   tag,
+    classes: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700',
+  }
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${style.classes}`}>
+      <Sparkles size={9} />
+      {style.label}
+    </span>
+  )
+}
+
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   }).format(new Date(iso))
-}
-
-// ── Topbar ────────────────────────────────────────────────────────────────────
-
-interface TopbarProps { userName: string; onBack: () => void; onLogout: () => void }
-
-function Topbar({ userName, onBack, onLogout }: TopbarProps) {
-  return (
-    <header className="bg-indigo-700 text-white px-6 py-4">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} aria-label="Voltar"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <ArrowLeft size={16} /><span className="hidden sm:inline">Voltar</span>
-          </button>
-          <div className="w-px h-5 bg-white/20" />
-          <div className="flex items-center gap-2">
-            <div className="bg-white/10 rounded-xl p-2"><BookOpen size={18} /></div>
-            <div>
-              <p className="font-bold text-sm leading-tight">MI</p>
-              <p className="text-indigo-200 text-xs">Logs de Inspeção · UFPB</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <p className="hidden sm:block text-sm font-medium">{userName}</p>
-          <ThemeToggle className="text-indigo-200 hover:text-white hover:bg-white/10 focus:ring-white/50 focus:ring-offset-indigo-700" />
-          <button onClick={onLogout} aria-label="Sair"
-            className="flex items-center gap-1.5 text-indigo-200 hover:text-white text-sm transition-colors
-                       focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg px-2 py-1">
-            <LogOut size={16} /><span className="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
-  )
 }
 
 // ── PayloadEntryView ──────────────────────────────────────────────────────────
@@ -96,7 +77,6 @@ function PayloadEntryView({ entry }: { entry: PayloadEntry }) {
     </div>
   )
 }
-
 // ── LogRow ────────────────────────────────────────────────────────────────────
 
 function LogRow({ log }: { log: InspectionLog }) {
@@ -105,22 +85,27 @@ function LogRow({ log }: { log: InspectionLog }) {
   const hasPayload = entries.length > 0
   const hasError   = entries.some(e => e.title.toLowerCase().startsWith('erro'))
 
+  const isAi = log.tag === 'AI_RAG'
+
   return (
     <div className={[
       'rounded-xl border transition-colors',
       hasError
         ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/30'
-        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900',
+        : isAi
+          ? 'border-violet-200 dark:border-violet-800 bg-violet-50/30 dark:bg-violet-950/20'
+          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900',
     ].join(' ')}>
 
       {/* Linha principal */}
       <div className="flex items-start gap-3 px-4 py-3">
 
         {/* Badge de direção */}
-        <div className="shrink-0 mt-0.5">
+        <div className="shrink-0 mt-0.5 flex flex-col gap-1">
           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-mono whitespace-nowrap ${DIRECTION_STYLE[log.direction]}`}>
             {DIRECTION_LABEL[log.direction]}
           </span>
+          {log.tag && <TagBadge tag={log.tag} />}
         </div>
 
         {/* Info */}
@@ -167,30 +152,29 @@ function LogRow({ log }: { log: InspectionLog }) {
 // ── AdminLogsPage ─────────────────────────────────────────────────────────────
 
 const DIRECTIONS: (LogDirection | '')[] = ['', 'CLIENT_TO_SERVER', 'SERVER_TO_CLIENT']
+const TAGS = ['', 'AI_RAG'] as const
+const TAG_FILTER_LABEL: Record<string, string> = {
+  '':     'Todas',
+  AI_RAG: 'IA · RAG',
+}
 
 export function AdminLogsPage() {
-  const { user, clearSession } = useAuth()
-  const navigate = useNavigate()
-
   const [direction,     setDirection]     = useState<LogDirection | ''>('')
   const [context,       setContext]       = useState('')
   const [correlationId, setCorrelationId] = useState('')
+  const [tag,           setTag]           = useState('')
   const [page,          setPage]          = useState(1)
 
   const params = {
     direction:     direction     || undefined,
     context:       context       || undefined,
     correlationId: correlationId || undefined,
+    tag:           tag           || undefined,
     page,
     perPage: 50,
   }
 
   const { data, isLoading, isError, error, refetch } = useInspectionLogs(params)
-
-  function handleLogout() {
-    clearSession()
-    navigate('/login', { replace: true })
-  }
 
   function handleFilter() {
     setPage(1)
@@ -200,19 +184,17 @@ export function AdminLogsPage() {
     setDirection('')
     setContext('')
     setCorrelationId('')
+    setTag('')
     setPage(1)
   }
 
   const logs       = data?.logs  ?? []
   const total      = data?.total ?? 0
   const totalPages = Math.ceil(total / 50)
-  const hasFilters = direction || context || correlationId
+  const hasFilters = direction || context || correlationId || tag
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
-      <Topbar userName={user?.name ?? ''} onBack={() => navigate('/')} onLogout={handleLogout} />
-
-      <main className="flex-1 px-6 py-10">
+    <AppShell>
         <div className="max-w-7xl mx-auto space-y-6">
 
           {/* Cabeçalho */}
@@ -274,6 +256,22 @@ export function AdminLogsPage() {
                              text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500
                              px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              {/* Tag */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Tipo</label>
+                <select
+                  value={tag}
+                  onChange={e => setTag(e.target.value)}
+                  className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                             text-sm text-gray-900 dark:text-gray-100 px-3 py-1.5
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {TAGS.map(t => (
+                    <option key={t} value={t}>{TAG_FILTER_LABEL[t]}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -394,7 +392,6 @@ export function AdminLogsPage() {
             Campus IV · UFPB — Rio Tinto / Mamanguape
           </p>
         </div>
-      </main>
-    </div>
+    </AppShell>
   )
 }

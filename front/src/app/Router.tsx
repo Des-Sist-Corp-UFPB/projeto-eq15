@@ -1,6 +1,7 @@
 // src/app/Router.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { canUploadMaterials } from '../lib/permissions'
 import { LoginPage } from '../pages/LoginPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
@@ -14,6 +15,7 @@ import { CreateOrganizationPage }    from '../pages/CreateOrganizationPage'
 import { OrganizationsListPage }     from '../pages/OrganizationsListPage'
 import { OrganizationDetailPage }    from '../pages/OrganizationDetailPage'
 import { InvitesPage }               from '../pages/InvitesPage'
+import { MaterialChatPage } from '../pages/MaterialChatPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -31,7 +33,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
 }
 
-/** Redireciona para "/" se o usuário não for ADMIN */
+/** Redireciona para "/" se o usuário não for ADMIN (sysadmin) */
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
@@ -44,6 +46,14 @@ function ProfessorRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (user?.role !== 'PROFESSOR' && user?.role !== 'ADMIN') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+/** Exige login e permissão de submissão (@dcx.ufpb.br ou ADMIN) */
+function UploadRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!canUploadMaterials(user)) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
@@ -71,23 +81,20 @@ export function Router() {
           }
         />
 
-        {/* Protegidas */}
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <HomePage />
-            </PrivateRoute>
-          }
-        />
+        {/* Pública — página principal acessível sem login (apenas materiais) */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Submissão — login + permissão (@dcx.ufpb.br ou ADMIN) */}
         <Route
           path="/upload"
           element={
-            <PrivateRoute>
+            <UploadRoute>
               <UploadPage />
-            </PrivateRoute>
+            </UploadRoute>
           }
         />
+
+        {/* Requer login (qualquer usuário autenticado) */}
         <Route
           path="/materials"
           element={
@@ -96,22 +103,30 @@ export function Router() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/materials/:materialId/chat"
+          element={
+            <PrivateRoute>
+              <MaterialChatPage />
+            </PrivateRoute>
+          }
+        />
 
-        {/* Exclusivas de PROFESSOR e ADMIN */}
+        {/* Exclusivas do ADMIN (sysadmin) */}
         <Route
           path="/professor/review"
           element={
-            <ProfessorRoute>
+            <AdminRoute>
               <ProfessorReviewPage />
-            </ProfessorRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/professor/materials"
           element={
-            <ProfessorRoute>
+            <AdminRoute>
               <AllMaterialsPage />
-            </ProfessorRoute>
+            </AdminRoute>
           }
         />
 

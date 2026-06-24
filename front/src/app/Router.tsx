@@ -15,6 +15,7 @@ import { CreateOrganizationPage }    from '../pages/CreateOrganizationPage'
 import { OrganizationsListPage }     from '../pages/OrganizationsListPage'
 import { OrganizationDetailPage }    from '../pages/OrganizationDetailPage'
 import { InvitesPage }               from '../pages/InvitesPage'
+import { MaterialChatPage } from '../pages/MaterialChatPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -99,6 +100,14 @@ export function Router() {
           element={
             <PrivateRoute>
               <MaterialsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/materials/:materialId/chat"
+          element={
+            <PrivateRoute>
+              <MaterialChatPage />
             </PrivateRoute>
           }
         />

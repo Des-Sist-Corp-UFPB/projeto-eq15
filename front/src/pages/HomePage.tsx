@@ -37,6 +37,7 @@ function sortMaterials(list: PendingMaterial[], key: SortKey): PendingMaterial[]
 // ── Card conectado ao presigned URL ──────────────────────────────────────────────
 
 function PublicResourceCard({ material }: { material: PendingMaterial }) {
+  const navigate = useNavigate()
   const [opening, setOpening] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -53,6 +54,10 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
     }
   }
 
+  function handleChat() {
+    navigate(`/materials/${material.id}/chat`, { state: { material } })
+  }
+
   const organizationName = material.organizations?.[0]?.organization.name
 
   return (
@@ -66,6 +71,7 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
       onOpen={handleOpen}
       opening={opening}
       error={error}
+      onChat={handleChat}
     />
   )
 }

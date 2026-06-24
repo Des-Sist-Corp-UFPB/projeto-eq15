@@ -125,3 +125,18 @@ export async function reviewMaterialRequest(
   const { data } = await api.patch<UploadedMI>(`/mis/${materialId}/review`, { decision })
   return data
 }
+
+// ── Chat com IA (RAG) ─────────────────────────────────────────────────────────
+
+export interface MaterialChatResponse {
+  answer:     string
+  chunksUsed: number
+}
+
+export async function materialChatRequest(
+  materialId: string,
+  question:   string,
+): Promise<MaterialChatResponse> {
+  const { data } = await api.post<MaterialChatResponse>(`/mis/${materialId}/chat`, { question })
+  return data
+}

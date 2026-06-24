@@ -2,7 +2,7 @@
 // Card de material no estilo MEC RED: miniatura quadrada + título + autor + meta.
 // A miniatura usa um placeholder gerado por gradiente; quando o back-end fornecer
 // uma URL de thumbnail (`thumbnailUrl`), ela é exibida automaticamente.
-import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle, Building2 } from 'lucide-react'
+import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle, Building2, MessageSquare } from 'lucide-react'
 import type { MIStatus } from '../features/materials/api/materialsApi'
 
 // Gradientes para os placeholders de miniatura — escolhidos de forma estável por título.
@@ -52,10 +52,12 @@ export interface ResourceCardProps {
   onOpen: () => void
   opening?: boolean
   error?: string | null
+  /** Navega para o chat de IA sobre este material (opcional) */
+  onChat?: () => void
 }
 
 export function ResourceCard({
-  id, title, authorName, sizeBytes, createdAt, status, organizationName, thumbnailUrl, onOpen, opening, error,
+  id, title, authorName, sizeBytes, createdAt, status, organizationName, thumbnailUrl, onOpen, opening, error, onChat,
 }: ResourceCardProps) {
   const statusInfo = status ? STATUS_BADGE[status] : null
 
@@ -128,6 +130,20 @@ export function ResourceCard({
           <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
             <AlertCircle size={12} /> {error}
           </p>
+        )}
+
+        {onChat && (
+          <button
+            onClick={onChat}
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg
+                       border border-indigo-200 dark:border-indigo-800 bg-indigo-50
+                       dark:bg-indigo-950 py-1.5 text-xs font-semibold text-indigo-700
+                       dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900
+                       transition-colors"
+          >
+            <MessageSquare size={12} />
+            Conversar com IA
+          </button>
         )}
       </div>
     </div>

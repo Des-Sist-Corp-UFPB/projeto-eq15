@@ -26,3 +26,7 @@ export const vectorizeQueue = new Queue<VectorizePdfJob>('vectorize-pdf', {
 vectorizeQueue.on('error', (err) => {
   logger.warn({ err: err.message }, 'BullMQ: falha na conexão com Redis — jobs pausados até Redis estar disponível')
 })
+
+vectorizeQueue.waitUntilReady()
+  .then(() => logger.info({ host: env.REDIS_HOST, port: env.REDIS_PORT }, 'BullMQ: conexão com Redis estabelecida ✅'))
+  .catch(() => { /* erro já tratado pelo listener acima */ })

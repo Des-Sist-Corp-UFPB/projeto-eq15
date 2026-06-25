@@ -1,4 +1,5 @@
 import { env } from '../env'
+import { logger } from './logger'
 
 export const QDRANT_COLLECTION = 'materiais_instrucionais'
 export const VECTOR_SIZE       = 1536 // text-embedding-3-small
@@ -43,9 +44,16 @@ export async function getQdrant(): Promise<QdrantClientInstance> {
 export async function ensureQdrantCollection(): Promise<void> {
   const client = await getQdrant()
   const { collections } = await client.getCollections()
-  if (collections.some(c => c.name === QDRANT_COLLECTION)) return
+
+  logger.info({ url: env.QDRANT_URL, collection: QDRANT_COLLECTION }, 'Qdrant: conexão estabelecida ✅')
+
+  if (collections.some(c => c.name === QDRANT_COLLECTION)) {
+    logger.info({ collection: QDRANT_COLLECTION }, 'Qdrant: collection já existe')
+    return
+  }
 
   await client.createCollection(QDRANT_COLLECTION, {
     vectors: { size: VECTOR_SIZE, distance: 'Cosine' },
   })
+  logger.info({ collection: QDRANT_COLLECTION, vectorSize: VECTOR_SIZE }, 'Qdrant: collection criada ✅')
 }

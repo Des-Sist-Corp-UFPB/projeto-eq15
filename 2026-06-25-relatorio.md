@@ -6,7 +6,7 @@
 | **Repositório** | https://github.com/des-sist-corp-ufpb/projeto-eq15 |
 | **Aplicação** | https://eq15.dsc.rodrigor.com |
 | **Período de atividade** | 2026-06-25 → 2026-06-25 |
-| **Total de commits** (sem merges, branch main) | 3 |
+| **Total de commits** (sem merges, branch main) | 4 |
 | **Integrantes** | Ryan Pereira De Souza (@ryanpsouzaa), Jose Ryan Da Silva Beserra (@JoseRyanBeserra) |
 
 ---
@@ -43,7 +43,7 @@ Não detectados automaticamente.
 | Aspecto | Status | Observação |
 |---------|--------|-----------|
 | Arquitetura em camadas | ❌ | controller=❌  service=❌  repository=❌ |
-| Testes automatizados | ❌ | 0 arquivo(s) de teste |
+| Testes automatizados | ✅ | 0 Java, 28 JS/TS, 0 Python |
 | Migrations versionadas | ❌ | não encontradas |
 | Logging | ❌ | não detectado |
 | Autenticação / Segurança | ❌ | não detectado |
@@ -63,7 +63,7 @@ Não detectados automaticamente.
 |---------|---------------|---------------------|-------------------|----------------------|----------------|
 | Ryan Pereira De Souza (@ryanpsouzaa) | 2 | **116** ⚠️ | 32.022 | 19.402 | 100% |
 | Jose Ryan Da Silva Beserra (@JoseRyanBeserra) | 0 | **6** ⚠️ | 0 | 0 | 0% |
-| *(sem login GitHub)* | 1 | 33% | — | — | — |
+| *(sem login GitHub)* | 2 | 50% | — | — | — |
 
 > **⚠️ Divergência entre commits locais e GitHub API:**
 > - **@ryanpsouzaa**: 2 commit(s) na branch `main` vs **116** registrados na API GitHub (commits em branches não mergeadas ou absorvidos via squash-merge sem preservação de autoria).

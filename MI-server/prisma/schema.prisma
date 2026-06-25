@@ -91,6 +91,7 @@ model MaterialInstrucional {
   storageKey       String   @unique // chave do objeto no MinIO
   mimeType         String
   sizeBytes        Int
+  habilidadesBncc  String[] @default([]) // códigos/nomes de habilidades da BNCC associadas ao material
   status           MIStatus @default(PENDING_REVIEW)
   uploadedById     String
   createdAt        DateTime @default(now())

@@ -10,6 +10,7 @@ const MI_SELECT = {
   storageKey:       true,
   mimeType:         true,
   sizeBytes:        true,
+  habilidadesBncc:  true,
   status:           true,
   uploadedById:     true,
   createdAt:        true,
@@ -22,6 +23,8 @@ interface CreateMaterialPdfInput {
   storageKey:       string
   mimeType:         string
   sizeBytes:        number
+  /** Opcional — quando ausente o material é criado com lista de habilidades vazia */
+  habilidadesBncc?: string[]
   uploadedById:     string
 }
 
@@ -33,6 +36,7 @@ export async function createMaterialPdf(input: CreateMaterialPdfInput): Promise<
       storageKey:       input.storageKey,
       mimeType:         input.mimeType,
       sizeBytes:        input.sizeBytes,
+      habilidadesBncc:  input.habilidadesBncc ?? [],
       uploadedById:     input.uploadedById,
     },
     select: MI_SELECT,

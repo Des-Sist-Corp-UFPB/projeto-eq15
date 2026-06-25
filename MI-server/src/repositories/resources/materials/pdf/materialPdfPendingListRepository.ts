@@ -12,6 +12,7 @@ export async function findPendingMaterials(): Promise<PendingMaterialDTO[]> {
       storageKey:       true,
       mimeType:         true,
       sizeBytes:        true,
+      habilidadesBncc:  true,
       status:           true,
       uploadedById:     true,
       createdAt:        true,

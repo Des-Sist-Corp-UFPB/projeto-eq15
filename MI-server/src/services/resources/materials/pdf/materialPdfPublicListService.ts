@@ -7,12 +7,28 @@ import { logger } from '../../../../lib/logger'
 const publicListQuerySchema = z.object({
   page:    z.coerce.number().min(1).default(1),
   perPage: z.coerce.number().min(1).max(100).default(25),
+  // Aceita o parâmetro repetido (habilidades=A&habilidades=B) ou único
+  habilidades: z.preprocess(
+    (v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]),
+    z.array(z.string()),
+  ),
+  // "true" → inclui também materiais sem habilidade
+  semHabilidade: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === 'true'),
 })
 
 export async function materialPdfPublicListService(input: unknown): Promise<AllMaterialsResult> {
   logger.info('IN - materialPdfPublicListService')
-  const { page, perPage } = validateRequest(input, publicListQuerySchema)
-  const result = await findAllMaterials({ status: 'APPROVED', page, perPage })
+  const { page, perPage, habilidades, semHabilidade } = validateRequest(input, publicListQuerySchema)
+  const result = await findAllMaterials({
+    status:               'APPROVED',
+    page,
+    perPage,
+    habilidades,
+    includeSemHabilidade: semHabilidade,
+  })
   logger.info('OUT - materialPdfPublicListService')
   return result
 }

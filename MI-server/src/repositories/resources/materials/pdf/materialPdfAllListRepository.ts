@@ -1,10 +1,14 @@
 // src/repositories/resources/materials/pdf/materialPdfAllListRepository.ts
-import { type MIStatus } from '@prisma/client'
+import { Prisma, type MIStatus } from '@prisma/client'
 import { prisma } from '../../../../database/prisma'
 import type { PendingMaterialDTO } from '../../../../@types/resources/materials/pdf'
 
 export interface AllMaterialsParams {
   status?:  MIStatus
+  /** Filtra materiais que possuam QUALQUER uma destas habilidades (hasSome) */
+  habilidades?: string[]
+  /** Inclui também materiais sem nenhuma habilidade (lista vazia) */
+  includeSemHabilidade?: boolean
   page:     number
   perPage:  number
 }
@@ -23,6 +27,7 @@ const MI_SELECT = {
   storageKey:       true,
   mimeType:         true,
   sizeBytes:        true,
+  habilidadesBncc:  true,
   status:           true,
   uploadedById:     true,
   createdAt:        true,
@@ -35,9 +40,24 @@ const MI_SELECT = {
 export async function findAllMaterials(
   params: AllMaterialsParams,
 ): Promise<AllMaterialsResult> {
-  const { status, page, perPage } = params
+  const { status, habilidades, includeSemHabilidade, page, perPage } = params
 
-  const where = status ? { status } : {}
+  const where: Prisma.MaterialInstrucionalWhereInput = {}
+  if (status) where.status = status
+
+  // Filtro de habilidades: união entre "tem alguma das selecionadas" e "sem habilidade"
+  const habilidadeConditions: Prisma.MaterialInstrucionalWhereInput[] = []
+  if (habilidades && habilidades.length > 0) {
+    habilidadeConditions.push({ habilidadesBncc: { hasSome: habilidades } })
+  }
+  if (includeSemHabilidade) {
+    habilidadeConditions.push({ habilidadesBncc: { isEmpty: true } })
+  }
+  if (habilidadeConditions.length === 1) {
+    Object.assign(where, habilidadeConditions[0])
+  } else if (habilidadeConditions.length > 1) {
+    where.OR = habilidadeConditions
+  }
 
   const [materials, total] = await prisma.$transaction([
     prisma.materialInstrucional.findMany({

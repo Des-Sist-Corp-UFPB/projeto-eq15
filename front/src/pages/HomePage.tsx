@@ -4,13 +4,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  SlidersHorizontal, AlertCircle, RefreshCw, Loader2, Library, LogIn,
+  SlidersHorizontal, AlertCircle, RefreshCw, Loader2, Library, LogIn, GraduationCap, X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { ResourceCard } from '../components/ResourceCard'
 import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
-import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
+import { useHabilidades } from '../features/materials/hooks/useHabilidades'
 import { getApiErrorMessage } from '../lib/apiError'
 import type { PendingMaterial } from '../features/materials/api/materialsApi'
 
@@ -34,25 +34,9 @@ function sortMaterials(list: PendingMaterial[], key: SortKey): PendingMaterial[]
   })
 }
 
-// ── Card conectado ao presigned URL ──────────────────────────────────────────────
+// ── Card de material (navega para a tela de detalhe) ─────────────────────────────
 
 function PublicResourceCard({ material }: { material: PendingMaterial }) {
-  const [opening, setOpening] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleOpen() {
-    setOpening(true)
-    setError(null)
-    try {
-      const { url } = await getPublicPresignedUrlRequest(material.id)
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } catch (err) {
-      setError(getApiErrorMessage(err))
-    } finally {
-      setOpening(false)
-    }
-  }
-
   return (
     <ResourceCard
       id={material.id}
@@ -60,9 +44,8 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
       authorName={material.uploadedBy?.name}
       sizeBytes={material.sizeBytes}
       createdAt={material.createdAt}
-      onOpen={handleOpen}
-      opening={opening}
-      error={error}
+      habilidades={material.habilidadesBncc}
+      detailTo={`/materials/${material.id}`}
     />
   )
 }
@@ -77,8 +60,34 @@ export function HomePage() {
   const [sort, setSort] = useState<SortKey>('recent')
   const [tabLabel, setTabLabel] = useState(TABS[0].label)
   const [mode, setMode] = useState<'resources' | 'collections'>('resources')
+  const [selectedHabilidades, setSelectedHabilidades] = useState<string[]>([])
+  const [semHabilidade, setSemHabilidade] = useState(false)
 
-  const { data, isLoading, isError, error, refetch } = usePublicMaterials(page)
+  const { data: habilidadesDisponiveis = [] } = useHabilidades(isAuthenticated)
+  const { data, isLoading, isError, error, refetch } = usePublicMaterials(page, {
+    habilidades: selectedHabilidades,
+    semHabilidade,
+  })
+
+  const hasActiveFilters = selectedHabilidades.length > 0 || semHabilidade
+
+  function toggleHabilidade(habilidade: string) {
+    setPage(1)
+    setSelectedHabilidades((prev) =>
+      prev.includes(habilidade) ? prev.filter((h) => h !== habilidade) : [...prev, habilidade],
+    )
+  }
+
+  function toggleSemHabilidade() {
+    setPage(1)
+    setSemHabilidade((v) => !v)
+  }
+
+  function clearFilters() {
+    setPage(1)
+    setSelectedHabilidades([])
+    setSemHabilidade(false)
+  }
 
   const materials = data?.materials ?? []
   const total = data?.total ?? 0
@@ -151,6 +160,62 @@ export function HomePage() {
           })}
         </div>
 
+        {/* Filtro por habilidade BNCC */}
+        {isAuthenticated && (habilidadesDisponiveis.length > 0 || hasActiveFilters) && (
+          <div className="space-y-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <GraduationCap size={15} className="text-indigo-500" />
+                Filtrar por habilidade BNCC
+              </span>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  <X size={12} /> Limpar filtros
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {/* Sem habilidade */}
+              <button
+                onClick={toggleSemHabilidade}
+                aria-pressed={semHabilidade}
+                className={[
+                  'rounded-lg border px-3 py-1 text-xs font-medium transition-colors',
+                  semHabilidade
+                    ? 'border-indigo-600 bg-indigo-600 text-white'
+                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
+                ].join(' ')}
+              >
+                Sem habilidade
+              </button>
+
+              {/* Cada habilidade existente */}
+              {habilidadesDisponiveis.map((habilidade) => {
+                const active = selectedHabilidades.includes(habilidade)
+                return (
+                  <button
+                    key={habilidade}
+                    onClick={() => toggleHabilidade(habilidade)}
+                    aria-pressed={active}
+                    className={[
+                      'rounded-lg border px-3 py-1 text-xs font-medium transition-colors',
+                      active
+                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        : 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900',
+                    ].join(' ')}
+                  >
+                    {habilidade}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Título da seção */}
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
           Recursos disponíveis
@@ -216,10 +281,18 @@ export function HomePage() {
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {search ? 'Nenhum recurso encontrado para a sua busca' : 'Nenhum recurso disponível'}
+                  {search
+                    ? 'Nenhum recurso encontrado para a sua busca'
+                    : hasActiveFilters
+                      ? 'Nenhum recurso para os filtros selecionados'
+                      : 'Nenhum recurso disponível'}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {search ? 'Tente outros termos de pesquisa.' : 'Os materiais aprovados pelos professores aparecerão aqui.'}
+                  {search
+                    ? 'Tente outros termos de pesquisa.'
+                    : hasActiveFilters
+                      ? 'Ajuste ou limpe os filtros de habilidade.'
+                      : 'Os materiais aprovados pelos professores aparecerão aqui.'}
                 </p>
               </div>
             </div>

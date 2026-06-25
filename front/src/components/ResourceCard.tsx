@@ -2,7 +2,9 @@
 // Card de material no estilo MEC RED: miniatura quadrada + título + autor + meta.
 // A miniatura usa um placeholder gerado por gradiente; quando o back-end fornecer
 // uma URL de thumbnail (`thumbnailUrl`), ela é exibida automaticamente.
-import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { FileText, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { HabilidadesBncc } from './HabilidadesBncc'
 import type { MIStatus } from '../features/materials/api/materialsApi'
 
 // Gradientes para os placeholders de miniatura — escolhidos de forma estável por título.
@@ -44,29 +46,31 @@ export interface ResourceCardProps {
   sizeBytes?: number
   createdAt?: string
   status?: MIStatus
+  /** Habilidades BNCC associadas ao material */
+  habilidades?: string[]
+  /** Rota da tela de detalhe — o card inteiro navega para cá ao ser clicado */
+  detailTo: string
   /** URL de miniatura quando disponível via back-end */
   thumbnailUrl?: string
-  /** Abre o material (ex.: gera presigned URL) */
-  onOpen: () => void
-  opening?: boolean
-  error?: string | null
 }
 
 export function ResourceCard({
-  id, title, authorName, sizeBytes, createdAt, status, thumbnailUrl, onOpen, opening, error,
+  id, title, authorName, sizeBytes, createdAt, status, habilidades, detailTo, thumbnailUrl,
 }: ResourceCardProps) {
   const statusInfo = status ? STATUS_BADGE[status] : null
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
-                    bg-white dark:bg-gray-900 transition-all hover:-translate-y-0.5 hover:shadow-lg
-                    hover:border-indigo-300 dark:hover:border-indigo-700">
+    <Link
+      to={detailTo}
+      aria-label={`Ver detalhes de ${title}`}
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
+                 bg-white dark:bg-gray-900 transition-all hover:-translate-y-0.5 hover:shadow-lg
+                 hover:border-indigo-300 dark:hover:border-indigo-700
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+    >
       {/* Miniatura */}
-      <button
-        onClick={onOpen}
-        disabled={opening}
-        aria-label={`Abrir ${title}`}
-        className="relative block aspect-[4/3] w-full overflow-hidden focus:outline-none"
+      <div
+        className="relative block aspect-[4/3] w-full overflow-hidden"
         style={thumbnailUrl ? undefined : { background: gradientFor(id || title) }}
       >
         {thumbnailUrl ? (
@@ -85,21 +89,24 @@ export function ResourceCard({
           </span>
         )}
 
-        {/* Overlay de abrir no hover */}
+        {/* Overlay de detalhes no hover */}
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/25 transition-colors">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-full
                            bg-white/95 text-gray-800 px-3 py-1.5 text-xs font-semibold shadow">
-            {opening ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
-            {opening ? 'Abrindo…' : 'Abrir'}
+            <ArrowRight size={13} />
+            Ver detalhes
           </span>
         </span>
-      </button>
+      </div>
 
       {/* Conteúdo */}
       <div className="flex flex-1 flex-col gap-2 p-3.5">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100" title={title}>
+        <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100
+                      group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" title={title}>
           {title}
         </p>
+
+        {habilidades && habilidades.length > 0 && <HabilidadesBncc habilidades={habilidades} />}
 
         {authorName && (
           <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
@@ -113,13 +120,7 @@ export function ResourceCard({
           {sizeBytes != null && createdAt && <span aria-hidden>•</span>}
           {createdAt && <span>{formatDate(createdAt)}</span>}
         </div>
-
-        {error && (
-          <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-            <AlertCircle size={12} /> {error}
-          </p>
-        )}
       </div>
-    </div>
+    </Link>
   )
 }

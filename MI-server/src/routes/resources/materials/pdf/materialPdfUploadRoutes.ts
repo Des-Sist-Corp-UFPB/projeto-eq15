@@ -8,6 +8,8 @@ import { materialPdfPresignedUrlController } from '../../../../controllers/resou
 import { materialPdfPendingListController } from '../../../../controllers/resources/materials/pdf/materialPdfPendingListController'
 import { materialPdfAllListController } from '../../../../controllers/resources/materials/pdf/materialPdfAllListController'
 import { materialPdfPublicListController } from '../../../../controllers/resources/materials/pdf/materialPdfPublicListController'
+import { materialPdfDetailController } from '../../../../controllers/resources/materials/pdf/materialPdfDetailController'
+import { materialPdfHabilidadesListController } from '../../../../controllers/resources/materials/pdf/materialPdfHabilidadesListController'
 import { materialPdfPublicPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfPublicPresignedUrlController'
 import { materialPdfReviewPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewPresignedUrlController'
 import { materialPdfReviewController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewController'
@@ -45,6 +47,16 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
     '/public',
     { preHandler: [authenticate] },
     materialPdfPublicListController,
+  )
+
+  /**
+   * GET /mis/habilidades
+   * Lista as habilidades BNCC distintas dos materiais aprovados (para o filtro).
+   */
+  app.get(
+    '/habilidades',
+    { preHandler: [authenticate] },
+    materialPdfHabilidadesListController,
   )
 
   /**
@@ -121,5 +133,17 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
     '/:id/presigned-url',
     { preHandler: [authenticate] },
     materialPdfPresignedUrlController,
+  )
+
+  /**
+   * GET /mis/:id
+   * Detalhe de um material específico (metadados + autor + habilidades BNCC).
+   *
+   * Acesso: APPROVED para qualquer autenticado; demais status apenas dono ou PROFESSOR/ADMIN.
+   */
+  app.get(
+    '/:id',
+    { preHandler: [authenticate] },
+    materialPdfDetailController,
   )
 }

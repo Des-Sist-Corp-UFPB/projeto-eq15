@@ -11,6 +11,7 @@ export interface UploadedMI {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  habilidadesBncc: string[]
   uploadedById: string
   createdAt: string
   updatedAt: string
@@ -19,6 +20,7 @@ export interface UploadedMI {
 export interface UploadMaterialPayload {
   file: File
   title?: string
+  habilidadesBncc?: string[]
 }
 
 export async function uploadMaterialRequest(payload: UploadMaterialPayload): Promise<UploadedMI> {
@@ -26,6 +28,12 @@ export async function uploadMaterialRequest(payload: UploadMaterialPayload): Pro
   formData.append('file', payload.file)
   if (payload.title?.trim()) {
     formData.append('title', payload.title.trim())
+  }
+  if (payload.habilidadesBncc?.length) {
+    // Uma habilidade por campo — o backend agrega as repetições do campo em um array
+    for (const habilidade of payload.habilidadesBncc) {
+      formData.append('habilidadesBncc', habilidade)
+    }
   }
 
   const { data } = await api.post<UploadedMI>('/mis', formData, {
@@ -36,6 +44,11 @@ export async function uploadMaterialRequest(payload: UploadMaterialPayload): Pro
 
 export async function listMyMaterialsRequest(): Promise<UploadedMI[]> {
   const { data } = await api.get<UploadedMI[]>('/mis/me')
+  return data
+}
+
+export async function getMaterialByIdRequest(materialId: string): Promise<PendingMaterial> {
+  const { data } = await api.get<PendingMaterial>(`/mis/${materialId}`)
   return data
 }
 
@@ -54,6 +67,7 @@ export interface PendingMaterial {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
   createdAt: string
@@ -70,13 +84,24 @@ export interface AllMaterialsResponse {
 }
 
 export async function listPublicMaterialsRequest(params?: {
-  page?:    number
-  perPage?: number
+  page?:          number
+  perPage?:       number
+  habilidades?:   string[]
+  semHabilidade?: boolean
 }): Promise<AllMaterialsResponse> {
   const query = new URLSearchParams()
   if (params?.page)    query.append('page',    String(params.page))
   if (params?.perPage) query.append('perPage', String(params.perPage))
+  if (params?.habilidades) {
+    for (const habilidade of params.habilidades) query.append('habilidades', habilidade)
+  }
+  if (params?.semHabilidade) query.append('semHabilidade', 'true')
   const { data } = await api.get<AllMaterialsResponse>(`/mis/public?${query}`)
+  return data
+}
+
+export async function listHabilidadesRequest(): Promise<string[]> {
+  const { data } = await api.get<string[]>('/mis/habilidades')
   return data
 }
 

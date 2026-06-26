@@ -3,11 +3,12 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, FileText, ExternalLink, AlertCircle, RefreshCw, Loader2,
-  Clock, CheckCircle2, XCircle, User, HardDrive, Calendar,
+  Clock, CheckCircle2, XCircle, User, HardDrive, Calendar, Sparkles,
 } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
 import { HabilidadesBncc } from '../components/HabilidadesBncc'
 import { useAuth } from '../context/AuthContext'
+import { canUseAiChat } from '../lib/permissions'
 import { useMaterial } from '../features/materials/hooks/useMaterial'
 import {
   getReviewPresignedUrlRequest,
@@ -61,6 +62,7 @@ function StatusBadge({ status }: { status: MIStatus }) {
 
 function DetailContent({ material }: { material: PendingMaterial }) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [isOpening, setIsOpening] = useState(false)
   const [viewError, setViewError] = useState<string | null>(null)
 
@@ -157,18 +159,34 @@ function DetailContent({ material }: { material: PendingMaterial }) {
         </p>
       )}
 
-      {/* Abrir PDF */}
-      <button
-        onClick={handleOpenPdf}
-        disabled={isOpening}
-        className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5
-                   text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50
-                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900
-                   transition-colors"
-      >
-        {isOpening ? <Loader2 size={15} className="animate-spin" /> : <ExternalLink size={15} />}
-        {isOpening ? 'Abrindo…' : 'Abrir PDF'}
-      </button>
+      {/* Ações */}
+      <div className="flex flex-wrap gap-3">
+        <button
+          onClick={handleOpenPdf}
+          disabled={isOpening}
+          className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5
+                     text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900
+                     transition-colors"
+        >
+          {isOpening ? <Loader2 size={15} className="animate-spin" /> : <ExternalLink size={15} />}
+          {isOpening ? 'Abrindo…' : 'Abrir PDF'}
+        </button>
+
+        {/* Conversar com IA — somente usuários institucionais e material aprovado */}
+        {canUseAiChat(user) && material.status === 'APPROVED' && (
+          <button
+            onClick={() => navigate(`/materials/${material.id}/chat`, { state: { material } })}
+            className="flex items-center justify-center gap-2 rounded-xl border border-indigo-200 dark:border-indigo-800
+                       bg-indigo-50 dark:bg-indigo-950 px-4 py-2.5 text-sm font-semibold text-indigo-700 dark:text-indigo-300
+                       hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            <Sparkles size={15} />
+            Conversar com IA
+          </button>
+        )}
+      </div>
     </div>
   )
 }

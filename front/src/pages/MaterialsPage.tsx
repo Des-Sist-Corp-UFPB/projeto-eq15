@@ -1,6 +1,6 @@
 // src/pages/MaterialsPage.tsx
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   FileText,
   UploadCloud,
@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
+import { HabilidadesBncc } from '../components/HabilidadesBncc'
 import { useMyMaterials } from '../features/materials/hooks/useMyMaterials'
 import { getMaterialPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
@@ -76,6 +77,7 @@ interface MaterialCardProps {
 }
 
 function MaterialCard({ material }: MaterialCardProps) {
+  const navigate = useNavigate()
   const [isOpening, setIsOpening] = useState(false)
   const [viewError, setViewError] = useState<string | null>(null)
 
@@ -93,8 +95,10 @@ function MaterialCard({ material }: MaterialCardProps) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5
-                    hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all">
+    <div
+      onClick={() => navigate(`/materials/${material.id}`)}
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer
+                 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-sm transition-all">
       <div className="flex items-start gap-4">
         {/* Ícone */}
         <div className="shrink-0 bg-indigo-50 dark:bg-indigo-950 rounded-xl p-3 mt-0.5">
@@ -105,9 +109,13 @@ function MaterialCard({ material }: MaterialCardProps) {
         <div className="flex-1 min-w-0 space-y-2">
           {/* Título + status */}
           <div className="flex flex-wrap items-start gap-2 justify-between">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug">
+            <Link
+              to={`/materials/${material.id}`}
+              className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug
+                         hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+            >
               {material.title}
-            </p>
+            </Link>
             <StatusBadge status={material.status} />
           </div>
 
@@ -125,6 +133,9 @@ function MaterialCard({ material }: MaterialCardProps) {
             )}
           </div>
 
+          {/* Habilidades BNCC */}
+          {material.habilidadesBncc.length > 0 && <HabilidadesBncc habilidades={material.habilidadesBncc} />}
+
           {/* Erro ao abrir */}
           {viewError && (
             <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -136,7 +147,7 @@ function MaterialCard({ material }: MaterialCardProps) {
 
         {/* Botão visualizar */}
         <button
-          onClick={handleView}
+          onClick={(e) => { e.stopPropagation(); handleView() }}
           disabled={isOpening}
           aria-label={`Visualizar ${material.title}`}
           className="shrink-0 flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700

@@ -112,6 +112,7 @@ model MaterialInstrucional {
   storageKey       String       @unique
   mimeType         String
   sizeBytes        Int
+  habilidadesBncc  String[]     @default([]) // códigos/nomes de habilidades da BNCC associadas ao material
   status           MIStatus     @default(PENDING_REVIEW)
   vectorStatus     VectorStatus @default(PENDING)
   uploadedById     String

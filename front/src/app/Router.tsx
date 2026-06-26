@@ -7,6 +7,7 @@ import { RegisterPage } from '../pages/RegisterPage'
 import { HomePage } from '../pages/HomePage'
 import { UploadPage } from '../pages/UploadPage'
 import { MaterialsPage } from '../pages/MaterialsPage'
+import { MaterialDetailPage } from '../pages/MaterialDetailPage'
 import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { AdminLogsPage } from '../pages/AdminLogsPage'
 import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
@@ -83,6 +84,9 @@ export function Router() {
 
         {/* Pública — página principal acessível sem login (apenas materiais) */}
         <Route path="/" element={<HomePage />} />
+
+        {/* Detalhe de um material específico — o acesso é validado pela API */}
+        <Route path="/materials/:id" element={<MaterialDetailPage />} />
 
         {/* Submissão — login + permissão (@dcx.ufpb.br ou ADMIN) */}
         <Route

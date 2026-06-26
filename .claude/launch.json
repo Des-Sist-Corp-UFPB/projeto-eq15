@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "front",
       "port": 5173
+    },
+    {
+      "name": "back",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "MI-server",
+      "port": 3333
     }
   ]
 }

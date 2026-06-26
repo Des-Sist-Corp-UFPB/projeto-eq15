@@ -22,10 +22,14 @@ export function canUploadMaterials(user: AuthUser | null): boolean {
   )
 }
 
-/** Pode interagir com a IA (chat de materiais)? */
+/** Pode interagir com a IA (chat de materiais)? — usuários com e-mail institucional. */
 export function canUseAiChat(user: AuthUser | null): boolean {
   if (!user) return false
-  return user.role === 'INSTITUTIONALIZED' || user.role === 'PROFESSOR' || user.role === 'ADMIN'
+  return (
+    UPLOAD_ROLES.has(user.role) ||
+    user.canUpload ||
+    user.email.toLowerCase().endsWith(INSTITUTIONAL_DOMAIN)
+  )
 }
 
 /** É administrador do sistema (sysadmin)? */

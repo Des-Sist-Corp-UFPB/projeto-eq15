@@ -7,6 +7,8 @@ export interface UploadMIInput {
   buffer: Buffer
   originalFileName: string
   mimeType: string
+  /** Habilidades BNCC — opcional; quando ausente assume-se lista vazia */
+  habilidadesBncc?: string[]
   uploadedById: string
   organizationIds?: string[]
 }
@@ -26,6 +28,7 @@ export interface IPendingMaterial {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
   organizations: { organization: { id: string; name: string } }[]
@@ -57,6 +60,7 @@ export interface IUploadedMI {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  habilidadesBncc: string[]
   uploadedById: string
   createdAt: Date
   updatedAt: Date

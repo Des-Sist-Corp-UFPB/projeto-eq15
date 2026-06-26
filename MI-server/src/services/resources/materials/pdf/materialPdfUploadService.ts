@@ -1,5 +1,6 @@
 // src/services/resources/materials/pdf/materialPdfUploadService.ts
 import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
 import { minioClient, MINIO_BUCKET } from '../../../../lib/minio'
 import { findUserById } from '../../../../repositories/users/usersRepository'
 import { createMaterialPdf } from '../../../../repositories/resources/materials/pdf/materialPdfUploadRepository'
@@ -18,6 +19,17 @@ const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46])
 
 const ALLOWED_MIME_TYPE = 'application/pdf'
 
+/**
+ * Habilidades BNCC são OPCIONAIS: a lista sempre existe, mas pode ser vazia.
+ * Normaliza para um array de strings (sem espaços, sem vazios, sem duplicados)
+ * e assume `[]` quando ausente — o material não é obrigado a possuir habilidades.
+ */
+const habilidadesBnccSchema = z
+  .array(z.string())
+  .optional()
+  .default([])
+  .transform((arr) => [...new Set(arr.map((s) => s.trim()).filter(Boolean))])
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 /**
@@ -31,6 +43,7 @@ const ALLOWED_MIME_TYPE = 'application/pdf'
  */
 export async function materialPdfUploadService(input: UploadMIInput): Promise<IUploadedMI> {
   const { title, buffer, originalFileName, mimeType, uploadedById, organizationIds = [] } = input
+  const habilidadesBncc = habilidadesBnccSchema.parse(input.habilidadesBncc)
 
   if (mimeType !== ALLOWED_MIME_TYPE) {
     throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
@@ -74,6 +87,7 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<IU
     storageKey,
     mimeType,
     sizeBytes: buffer.length,
+    habilidadesBncc,
     uploadedById,
   })
 

@@ -1,8 +1,11 @@
 // src/components/ResourceCard.tsx
 // Card de material no estilo MEC RED: miniatura quadrada + título + autor + meta.
+// O card inteiro navega para a tela de detalhe ao ser clicado.
 // A miniatura usa um placeholder gerado por gradiente; quando o back-end fornecer
 // uma URL de thumbnail (`thumbnailUrl`), ela é exibida automaticamente.
-import { FileText, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, XCircle, Building2, MessageSquare } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { FileText, ArrowRight, CheckCircle2, Clock, XCircle, Building2, MessageSquare } from 'lucide-react'
+import { HabilidadesBncc } from './HabilidadesBncc'
 import type { MIStatus } from '../features/materials/api/materialsApi'
 
 // Gradientes para os placeholders de miniatura — escolhidos de forma estável por título.
@@ -44,33 +47,39 @@ export interface ResourceCardProps {
   sizeBytes?: number
   createdAt?: string
   status?: MIStatus
+  /** Habilidades BNCC associadas ao material */
+  habilidades?: string[]
   /** Nome da organização/projeto ao qual este material pertence */
   organizationName?: string
+  /** Rota da tela de detalhe — o card inteiro navega para cá ao ser clicado */
+  detailTo: string
   /** URL de miniatura quando disponível via back-end */
   thumbnailUrl?: string
-  /** Abre o material (ex.: gera presigned URL) */
-  onOpen: () => void
-  opening?: boolean
-  error?: string | null
   /** Navega para o chat de IA sobre este material (opcional) */
   onChat?: () => void
 }
 
 export function ResourceCard({
-  id, title, authorName, sizeBytes, createdAt, status, organizationName, thumbnailUrl, onOpen, opening, error, onChat,
+  id, title, authorName, sizeBytes, createdAt, status, habilidades, organizationName, detailTo, thumbnailUrl, onChat,
 }: ResourceCardProps) {
+  const navigate = useNavigate()
   const statusInfo = status ? STATUS_BADGE[status] : null
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
-                    bg-white dark:bg-gray-900 transition-all hover:-translate-y-0.5 hover:shadow-lg
-                    hover:border-indigo-300 dark:hover:border-indigo-700">
+    <div
+      onClick={() => navigate(detailTo)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(detailTo) } }}
+      aria-label={`Ver detalhes de ${title}`}
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
+                 bg-white dark:bg-gray-900 transition-all hover:-translate-y-0.5 hover:shadow-lg
+                 hover:border-indigo-300 dark:hover:border-indigo-700
+                 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+    >
       {/* Miniatura */}
-      <button
-        onClick={onOpen}
-        disabled={opening}
-        aria-label={`Abrir ${title}`}
-        className="relative block aspect-[4/3] w-full overflow-hidden focus:outline-none"
+      <div
+        className="relative block aspect-[4/3] w-full overflow-hidden"
         style={thumbnailUrl ? undefined : { background: gradientFor(id || title) }}
       >
         {thumbnailUrl ? (
@@ -89,19 +98,20 @@ export function ResourceCard({
           </span>
         )}
 
-        {/* Overlay de abrir no hover */}
+        {/* Overlay de detalhes no hover */}
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/25 transition-colors">
           <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-full
                            bg-white/95 text-gray-800 px-3 py-1.5 text-xs font-semibold shadow">
-            {opening ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
-            {opening ? 'Abrindo…' : 'Abrir'}
+            <ArrowRight size={13} />
+            Ver detalhes
           </span>
         </span>
-      </button>
+      </div>
 
       {/* Conteúdo */}
       <div className="flex flex-1 flex-col gap-2 p-3.5">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100" title={title}>
+        <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-gray-100
+                      group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" title={title}>
           {title}
         </p>
 
@@ -112,6 +122,8 @@ export function ResourceCard({
             <span className="truncate max-w-[140px]">{organizationName}</span>
           </span>
         )}
+
+        {habilidades && habilidades.length > 0 && <HabilidadesBncc habilidades={habilidades} />}
 
         {authorName && (
           <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300">
@@ -126,15 +138,9 @@ export function ResourceCard({
           {createdAt && <span>{formatDate(createdAt)}</span>}
         </div>
 
-        {error && (
-          <p className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-            <AlertCircle size={12} /> {error}
-          </p>
-        )}
-
         {onChat && (
           <button
-            onClick={onChat}
+            onClick={(e) => { e.stopPropagation(); onChat() }}
             className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg
                        border border-indigo-200 dark:border-indigo-800 bg-indigo-50
                        dark:bg-indigo-950 py-1.5 text-xs font-semibold text-indigo-700

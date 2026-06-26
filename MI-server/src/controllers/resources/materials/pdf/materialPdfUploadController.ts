@@ -24,6 +24,7 @@ interface ParsedMultipart {
   originalFileName: string | null
   mimeType:         string | null
   title:            string | undefined
+  habilidadesBncc:  string[]
   organizationIds:  string[]
 }
 
@@ -32,12 +33,28 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
   let originalFileName: string | null = null
   let mimeType:         string | null = null
   let title:            string | undefined
-  const organizationIds: string[]     = []
+  const habilidadesBncc: string[] = []
+  const organizationIds: string[] = []
 
   for await (const part of request.parts()) {
     if (part.type === 'field') {
       if (part.fieldname === 'title') {
         title = String(part.value).trim()
+      } else if (part.fieldname === 'habilidadesBncc' || part.fieldname === 'habilidadesBncc[]') {
+        // Aceita repetições do campo (uma habilidade por parte) ou um JSON array em uma única parte
+        const raw = String(part.value).trim()
+        if (raw.startsWith('[')) {
+          try {
+            const parsed: unknown = JSON.parse(raw)
+            if (Array.isArray(parsed)) {
+              for (const h of parsed) habilidadesBncc.push(String(h).trim())
+            }
+          } catch {
+            if (raw) habilidadesBncc.push(raw)
+          }
+        } else if (raw) {
+          habilidadesBncc.push(raw)
+        }
       } else if (part.fieldname === 'organizationIds[]') {
         organizationIds.push(String(part.value).trim())
       }
@@ -53,7 +70,10 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
     }
   }
 
-  return { fileBuffer, originalFileName, mimeType, title, organizationIds }
+  // Remove vazios e duplicados, preservando a ordem de envio
+  const normalizedHabilidades = [...new Set(habilidadesBncc.filter(Boolean))]
+
+  return { fileBuffer, originalFileName, mimeType, title, habilidadesBncc: normalizedHabilidades, organizationIds }
 }
 
 function resolveTitle(title: string | undefined, originalFileName: string): string {
@@ -81,7 +101,7 @@ export async function materialPdfUploadController(
   logger.info(`IN - ${ctx}`)
 
   try {
-    const { fileBuffer, originalFileName, mimeType, title, organizationIds } = await parsePdfMultipart(request)
+    const { fileBuffer, originalFileName, mimeType, title, habilidadesBncc, organizationIds } = await parsePdfMultipart(request)
 
     if (!fileBuffer || !originalFileName || !mimeType) {
       throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
@@ -92,6 +112,7 @@ export async function materialPdfUploadController(
       buffer:          fileBuffer,
       originalFileName,
       mimeType,
+      habilidadesBncc,
       uploadedById:    request.user.sub,
       organizationIds,
     })

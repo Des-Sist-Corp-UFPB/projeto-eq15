@@ -95,6 +95,7 @@ export async function findOrgApprovedMaterials(
           storageKey:       true,
           mimeType:         true,
           sizeBytes:        true,
+          habilidadesBncc:  true,
           status:           true,
           uploadedById:     true,
           createdAt:        true,

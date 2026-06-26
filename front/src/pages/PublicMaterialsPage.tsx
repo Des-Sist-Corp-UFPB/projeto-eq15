@@ -1,12 +1,13 @@
 // src/pages/PublicMaterialsPage.tsx
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   BookOpen, LogOut, ArrowLeft, Library,
   FileText, ExternalLink, AlertCircle, RefreshCw, Loader2,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { HabilidadesBncc } from '../components/HabilidadesBncc'
 import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
 import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
@@ -76,6 +77,7 @@ function Topbar({ userName, userRole, onBack, onLogout }: TopbarProps) {
 // ── MaterialCard ──────────────────────────────────────────────────────────────
 
 function MaterialCard({ material }: { material: PendingMaterial }) {
+  const navigate = useNavigate()
   const [isOpening, setIsOpening] = useState(false)
   const [viewError, setViewError] = useState<string | null>(null)
 
@@ -93,8 +95,10 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5
-                    hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all">
+    <div
+      onClick={() => navigate(`/materials/${material.id}`)}
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 cursor-pointer
+                 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all">
       <div className="flex items-start gap-4">
 
         {/* Ícone */}
@@ -104,9 +108,13 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0 space-y-2">
-          <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug">
+          <Link
+            to={`/materials/${material.id}`}
+            className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug
+                       hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
             {material.title}
-          </p>
+          </Link>
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
             <span>
@@ -119,6 +127,8 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
             <span>{formatDate(material.createdAt)}</span>
           </div>
 
+          {material.habilidadesBncc.length > 0 && <HabilidadesBncc habilidades={material.habilidadesBncc} />}
+
           {viewError && (
             <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
               <AlertCircle size={11} />{viewError}
@@ -128,7 +138,7 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
 
         {/* Botão visualizar */}
         <button
-          onClick={handleView}
+          onClick={(e) => { e.stopPropagation(); handleView() }}
           disabled={isOpening}
           aria-label={`Visualizar ${material.title}`}
           className="shrink-0 flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700

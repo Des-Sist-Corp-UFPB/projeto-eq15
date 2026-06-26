@@ -2,9 +2,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { listPublicMaterialsRequest } from '../api/materialsApi'
 
-export function usePublicMaterials(page = 1) {
+interface PublicMaterialsFilters {
+  habilidades?:   string[]
+  semHabilidade?: boolean
+}
+
+export function usePublicMaterials(page = 1, filters: PublicMaterialsFilters = {}) {
+  const { habilidades = [], semHabilidade = false } = filters
   return useQuery({
-    queryKey: ['public-materials', page],
-    queryFn:  () => listPublicMaterialsRequest({ page, perPage: 25 }),
+    queryKey: ['public-materials', page, habilidades, semHabilidade],
+    queryFn:  () => listPublicMaterialsRequest({ page, perPage: 25, habilidades, semHabilidade }),
   })
 }

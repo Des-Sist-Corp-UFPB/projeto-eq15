@@ -4,13 +4,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  SlidersHorizontal, AlertCircle, RefreshCw, Loader2, Library, LogIn,
+  AlertCircle, RefreshCw, Loader2, Library, LogIn,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { ResourceCard } from '../components/ResourceCard'
+import { HabilidadeFilter } from '../components/HabilidadeFilter'
 import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
-import { getPublicPresignedUrlRequest } from '../features/materials/api/materialsApi'
+import { useHabilidades } from '../features/materials/hooks/useHabilidades'
 import { getApiErrorMessage } from '../lib/apiError'
 import { canUseAiChat } from '../lib/permissions'
 import type { PendingMaterial } from '../features/materials/api/materialsApi'
@@ -35,26 +36,11 @@ function sortMaterials(list: PendingMaterial[], key: SortKey): PendingMaterial[]
   })
 }
 
-// ── Card conectado ao presigned URL ──────────────────────────────────────────────
+// ── Card de material (navega para a tela de detalhe) ─────────────────────────────
 
 function PublicResourceCard({ material }: { material: PendingMaterial }) {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [opening, setOpening] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleOpen() {
-    setOpening(true)
-    setError(null)
-    try {
-      const { url } = await getPublicPresignedUrlRequest(material.id)
-      window.open(url, '_blank', 'noopener,noreferrer')
-    } catch (err) {
-      setError(getApiErrorMessage(err))
-    } finally {
-      setOpening(false)
-    }
-  }
 
   function handleChat() {
     navigate(`/materials/${material.id}/chat`, { state: { material } })
@@ -69,10 +55,9 @@ function PublicResourceCard({ material }: { material: PendingMaterial }) {
       authorName={material.uploadedBy?.name}
       sizeBytes={material.sizeBytes}
       createdAt={material.createdAt}
+      habilidades={material.habilidadesBncc}
       organizationName={organizationName}
-      onOpen={handleOpen}
-      opening={opening}
-      error={error}
+      detailTo={`/materials/${material.id}`}
       onChat={canUseAiChat(user) ? handleChat : undefined}
     />
   )
@@ -88,8 +73,34 @@ export function HomePage() {
   const [sort, setSort] = useState<SortKey>('recent')
   const [tabLabel, setTabLabel] = useState(TABS[0].label)
   const [mode, setMode] = useState<'resources' | 'collections'>('resources')
+  const [selectedHabilidades, setSelectedHabilidades] = useState<string[]>([])
+  const [semHabilidade, setSemHabilidade] = useState(false)
 
-  const { data, isLoading, isError, error, refetch } = usePublicMaterials(page)
+  const { data: habilidadesDisponiveis = [] } = useHabilidades(isAuthenticated)
+  const { data, isLoading, isError, error, refetch } = usePublicMaterials(page, {
+    habilidades: selectedHabilidades,
+    semHabilidade,
+  })
+
+  const hasActiveFilters = selectedHabilidades.length > 0 || semHabilidade
+
+  function toggleHabilidade(habilidade: string) {
+    setPage(1)
+    setSelectedHabilidades((prev) =>
+      prev.includes(habilidade) ? prev.filter((h) => h !== habilidade) : [...prev, habilidade],
+    )
+  }
+
+  function toggleSemHabilidade() {
+    setPage(1)
+    setSemHabilidade((v) => !v)
+  }
+
+  function clearFilters() {
+    setPage(1)
+    setSelectedHabilidades([])
+    setSemHabilidade(false)
+  }
 
   const materials = data?.materials ?? []
   const total = data?.total ?? 0
@@ -137,12 +148,8 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Tabs de filtro/ordenação */}
+        {/* Tabs de ordenação */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-sm font-semibold text-white">
-            <SlidersHorizontal size={15} />
-            Filtros
-          </span>
           {TABS.map((tab) => {
             const active = tabLabel === tab.label
             return (
@@ -161,6 +168,18 @@ export function HomePage() {
             )
           })}
         </div>
+
+        {/* Filtro por habilidade BNCC (busca + autocomplete) */}
+        {isAuthenticated && (habilidadesDisponiveis.length > 0 || hasActiveFilters) && (
+          <HabilidadeFilter
+            available={habilidadesDisponiveis}
+            selected={selectedHabilidades}
+            semHabilidade={semHabilidade}
+            onToggleHabilidade={toggleHabilidade}
+            onToggleSemHabilidade={toggleSemHabilidade}
+            onClear={clearFilters}
+          />
+        )}
 
         {/* Título da seção */}
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
@@ -227,10 +246,18 @@ export function HomePage() {
               </div>
               <div className="space-y-1">
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {search ? 'Nenhum recurso encontrado para a sua busca' : 'Nenhum recurso disponível'}
+                  {search
+                    ? 'Nenhum recurso encontrado para a sua busca'
+                    : hasActiveFilters
+                      ? 'Nenhum recurso para os filtros selecionados'
+                      : 'Nenhum recurso disponível'}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {search ? 'Tente outros termos de pesquisa.' : 'Os materiais aprovados pelos professores aparecerão aqui.'}
+                  {search
+                    ? 'Tente outros termos de pesquisa.'
+                    : hasActiveFilters
+                      ? 'Ajuste ou limpe os filtros de habilidade.'
+                      : 'Os materiais aprovados pelos professores aparecerão aqui.'}
                 </p>
               </div>
             </div>

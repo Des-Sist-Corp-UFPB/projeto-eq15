@@ -1,5 +1,6 @@
 // src/pages/ProfessorReviewPage.tsx
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ClipboardCheck,
   FileText,
@@ -13,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
+import { HabilidadesBncc } from '../components/HabilidadesBncc'
 import { usePendingMaterials } from '../features/materials/hooks/usePendingMaterials'
 import { useReviewMaterial } from '../features/materials/hooks/useReviewMaterial'
 import { getReviewPresignedUrlRequest } from '../features/materials/api/materialsApi'
@@ -38,6 +40,7 @@ function formatDate(iso: string): string {
 interface MaterialReviewCardProps { material: PendingMaterial }
 
 function MaterialReviewCard({ material }: MaterialReviewCardProps) {
+  const navigate = useNavigate()
   const [confirming, setConfirming] = useState<ReviewDecision | null>(null)
   const [isOpening, setIsOpening]   = useState(false)
   const [viewError, setViewError]   = useState<string | null>(null)
@@ -77,8 +80,10 @@ function MaterialReviewCard({ material }: MaterialReviewCardProps) {
   }
 
   return (
-    <div className={[
-      'bg-white dark:bg-gray-900 rounded-xl border p-5 transition-colors',
+    <div
+      onClick={() => navigate(`/materials/${material.id}`)}
+      className={[
+      'bg-white dark:bg-gray-900 rounded-xl border p-5 transition-colors cursor-pointer',
       decided === 'APPROVED' ? 'border-green-200 dark:border-green-800' :
       decided === 'REJECTED' ? 'border-red-200 dark:border-red-800'    :
       'border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-700',
@@ -92,9 +97,13 @@ function MaterialReviewCard({ material }: MaterialReviewCardProps) {
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0 space-y-2">
-          <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug">
+          <Link
+            to={`/materials/${material.id}`}
+            className="font-semibold text-gray-900 dark:text-gray-100 text-sm leading-snug
+                       hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
             {material.title}
-          </p>
+          </Link>
 
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {material.originalFileName}
@@ -109,6 +118,8 @@ function MaterialReviewCard({ material }: MaterialReviewCardProps) {
             <span>Enviado em {formatDate(material.createdAt)}</span>
           </div>
 
+          {material.habilidadesBncc.length > 0 && <HabilidadesBncc habilidades={material.habilidadesBncc} />}
+
           {/* Erros */}
           {viewError && (
             <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -122,8 +133,8 @@ function MaterialReviewCard({ material }: MaterialReviewCardProps) {
           )}
         </div>
 
-        {/* Ações */}
-        <div className="shrink-0 flex flex-col items-end gap-2 min-w-[140px]">
+        {/* Ações — não disparam a navegação do card */}
+        <div onClick={(e) => e.stopPropagation()} className="shrink-0 flex flex-col items-end gap-2 min-w-[140px]">
 
           {/* Resultado final */}
           {decided === 'APPROVED' && (

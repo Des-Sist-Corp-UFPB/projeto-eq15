@@ -1,5 +1,5 @@
 // src/services/resources/materials/pdf/materialPdfPresignedUrlService.ts
-import type { MaterialPresignedUrlDTO, UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { IMaterialPresignedUrl, IUploadedMI } from '../../../../@types/resources/materials/pdf'
 import { findMaterialById } from '../../../../repositories/resources/materials/pdf/materialPdfViewRepository'
 import { minioPublicClient, MINIO_BUCKET } from '../../../../lib/minio'
 import { validateRequest } from '../../../../utils/validateRequest'
@@ -14,8 +14,8 @@ const PRESIGNED_URL_EXPIRY_SECONDS = 3600 // 1 hora
 // ── Validação interna ─────────────────────────────────────────────────────────
 
 function validateMaterialExists(
-  material: UploadedMIDTO | null,
-): asserts material is UploadedMIDTO {
+  material: IUploadedMI | null,
+): asserts material is IUploadedMI {
   if (!material) {
     throw new GeneralErrorResponse(StatusCode.NOT_FOUND, buildError(ERRORS.ERRORS_RESOURCES.MI_NOT_FOUND))
   }
@@ -44,8 +44,8 @@ function validateMaterialExists(
  */
 export async function materialPdfPresignedUrlService(
   input: unknown,
-  accessPolicy?: (material: UploadedMIDTO) => void,
-): Promise<MaterialPresignedUrlDTO> {
+  accessPolicy?: (material: IUploadedMI) => void,
+): Promise<IMaterialPresignedUrl> {
   logger.info('IN - materialPdfPresignedUrlService')
 
   const { materialId } = validateRequest(input, materialPdfPresignedUrlSchema)

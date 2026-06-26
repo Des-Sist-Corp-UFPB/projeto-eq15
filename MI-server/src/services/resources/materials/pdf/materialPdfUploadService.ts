@@ -4,11 +4,13 @@ import { z } from 'zod'
 import { minioClient, MINIO_BUCKET } from '../../../../lib/minio'
 import { findUserById } from '../../../../repositories/users/usersRepository'
 import { createMaterialPdf } from '../../../../repositories/resources/materials/pdf/materialPdfUploadRepository'
+import { findMembership } from '../../../../repositories/organizations/orgMembersRepository'
+import { linkMaterialToOrgs } from '../../../../repositories/organizations/orgRepository'
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
 import { env } from '../../../../env'
-import type { UploadMIInput, UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { UploadMIInput, IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 // ── Constantes de validação ────────────────────────────────────────────────────
 
@@ -39,8 +41,8 @@ const habilidadesBnccSchema = z
  *  5. Persiste os metadados no banco
  *  6. Retorna o DTO do material criado
  */
-export async function materialPdfUploadService(input: UploadMIInput): Promise<UploadedMIDTO> {
-  const { title, buffer, originalFileName, mimeType, uploadedById } = input
+export async function materialPdfUploadService(input: UploadMIInput): Promise<IUploadedMI> {
+  const { title, buffer, originalFileName, mimeType, uploadedById, organizationIds = [] } = input
   const habilidadesBncc = habilidadesBnccSchema.parse(input.habilidadesBncc)
 
   if (mimeType !== ALLOWED_MIME_TYPE) {
@@ -69,7 +71,17 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<Up
     throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_FAILED))
   }
 
-  return createMaterialPdf({
+  // Validate uploader is a member of each specified org before linking
+  if (organizationIds.length > 0) {
+    for (const orgId of organizationIds) {
+      const membership = await findMembership(orgId, uploadedById)
+      if (!membership) {
+        throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ORG.ORG_NOT_MEMBER))
+      }
+    }
+  }
+
+  const mi = await createMaterialPdf({
     title,
     originalFileName,
     storageKey,
@@ -78,6 +90,12 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<Up
     habilidadesBncc,
     uploadedById,
   })
+
+  if (organizationIds.length > 0) {
+    await linkMaterialToOrgs(mi.id, organizationIds)
+  }
+
+  return mi
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

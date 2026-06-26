@@ -2,7 +2,7 @@
 import type { Role } from '@prisma/client'
 
 /** Dados públicos do usuário autenticado — nunca contém passwordHash */
-export interface AuthUserDTO {
+export interface IAuthUser {
   id: string
   name: string
   email: string
@@ -11,12 +11,12 @@ export interface AuthUserDTO {
 }
 
 /** Resposta de POST /auth/login */
-export interface LoginResponseDTO {
+export interface ILoginResponse {
   accessToken: string
-  user: AuthUserDTO
+  user: IAuthUser
 }
 
 /** Resposta de POST /auth/refresh */
-export interface RefreshResponseDTO {
+export interface IRefreshResponse {
   accessToken: string
 }

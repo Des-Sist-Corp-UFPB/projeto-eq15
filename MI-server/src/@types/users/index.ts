@@ -2,7 +2,7 @@
 import type { Role } from '@prisma/client'
 
 /** Resposta segura de usuário — nunca contém passwordHash */
-export interface CreatedUserDTO {
+export interface IUser {
   id: string
   name: string
   email: string

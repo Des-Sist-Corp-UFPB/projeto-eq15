@@ -1,6 +1,6 @@
 // src/repositories/resources/materials/pdf/materialPdfReviewRepository.ts
 import { prisma } from '../../../../database/prisma'
-import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 const MI_SELECT = {
   id:               true,
@@ -19,7 +19,7 @@ const MI_SELECT = {
 export async function updateMaterialStatus(
   id: string,
   status: 'APPROVED' | 'REJECTED',
-): Promise<UploadedMIDTO> {
+): Promise<IUploadedMI> {
   return prisma.materialInstrucional.update({
     where:  { id },
     data:   { status },

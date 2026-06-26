@@ -21,6 +21,7 @@ export interface UploadMaterialPayload {
   file: File
   title?: string
   habilidadesBncc?: string[]
+  organizationId?: string
 }
 
 export async function uploadMaterialRequest(payload: UploadMaterialPayload): Promise<UploadedMI> {
@@ -36,7 +37,11 @@ export async function uploadMaterialRequest(payload: UploadMaterialPayload): Pro
     }
   }
 
-  const { data } = await api.post<UploadedMI>('/mis', formData, {
+  const url = payload.organizationId
+    ? `/organizations/${payload.organizationId}/mis`
+    : '/mis'
+
+  const { data } = await api.post<UploadedMI>(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return data
@@ -70,6 +75,7 @@ export interface PendingMaterial {
   habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
+  organizations?: { organization: { id: string; name: string } }[]
   createdAt: string
   updatedAt: string
 }
@@ -142,5 +148,20 @@ export async function reviewMaterialRequest(
   decision: ReviewDecision,
 ): Promise<UploadedMI> {
   const { data } = await api.patch<UploadedMI>(`/mis/${materialId}/review`, { decision })
+  return data
+}
+
+// ── Chat com IA (RAG) ─────────────────────────────────────────────────────────
+
+export interface MaterialChatResponse {
+  answer:     string
+  chunksUsed: number
+}
+
+export async function materialChatRequest(
+  materialId: string,
+  question:   string,
+): Promise<MaterialChatResponse> {
+  const { data } = await api.post<MaterialChatResponse>(`/mis/${materialId}/chat`, { question })
   return data
 }

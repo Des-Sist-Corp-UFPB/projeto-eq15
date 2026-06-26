@@ -1,54 +1,54 @@
 // src/repositories/inspectionLog/listInspectionLogsRepository.ts
-import { type InspectionLogLevel, type InspectionLogDirection, type Prisma } from '@prisma/client'
+import { type InspectionLogDirection, type Prisma } from '@prisma/client'
 import { prisma } from '../../database/prisma'
 
-export interface InspectionLogDTO {
-  id: string
-  requestId: string
-  level: InspectionLogLevel
-  context: string
-  direction: InspectionLogDirection
-  payload: Prisma.JsonValue
-  createdAt: Date
+export interface IInspectionLog {
+  id:            string
+  correlationId: string | null
+  context:       string
+  direction:     InspectionLogDirection
+  tag:           string | null
+  payload:       Prisma.JsonValue
+  createdAt:     Date
 }
 
 export interface ListInspectionLogsParams {
-  level?:     InspectionLogLevel
-  direction?: InspectionLogDirection
-  context?:   string
-  requestId?: string
-  page:       number
-  perPage:    number
+  direction?:     InspectionLogDirection
+  context?:       string
+  correlationId?: string
+  tag?:           string
+  page:           number
+  perPage:        number
 }
 
 export interface ListInspectionLogsResult {
-  logs:    InspectionLogDTO[]
+  logs:    IInspectionLog[]
   total:   number
   page:    number
   perPage: number
 }
 
 const LOG_SELECT = {
-  id:        true,
-  requestId: true,
-  level:     true,
-  context:   true,
-  direction: true,
-  payload:   true,
-  createdAt: true,
+  id:            true,
+  correlationId: true,
+  context:       true,
+  direction:     true,
+  tag:           true,
+  payload:       true,
+  createdAt:     true,
 } as const
 
 export async function findInspectionLogs(
   params: ListInspectionLogsParams,
 ): Promise<ListInspectionLogsResult> {
-  const { level, direction, context, requestId, page, perPage } = params
+  const { direction, context, correlationId, tag, page, perPage } = params
 
   const where: Prisma.InspectionLogWhereInput = {}
 
-  if (level)     where.level     = level
-  if (direction) where.direction = direction
-  if (requestId) where.requestId = requestId
-  if (context)   where.context   = { contains: context, mode: 'insensitive' }
+  if (direction)     where.direction     = direction
+  if (correlationId) where.correlationId = correlationId
+  if (context)       where.context       = { contains: context, mode: 'insensitive' }
+  if (tag)           where.tag           = tag
 
   const [logs, total] = await prisma.$transaction([
     prisma.inspectionLog.findMany({

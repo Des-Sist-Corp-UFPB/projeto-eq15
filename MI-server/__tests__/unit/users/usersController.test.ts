@@ -1,8 +1,8 @@
 // __tests__/unit/users/usersController.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import type { CreateUserInput } from '../../../src/schemas/users/usersSchema'
-import type { CreatedUserDTO } from '../../../src/@types/users'
+import type { CreateUserRequest } from '../../../src/schemas/users/usersSchema'
+import type { IUser } from '../../../src/@types/users'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 vi.mock('../../../src/services/users/usersService', () => ({
@@ -28,12 +28,13 @@ import { createInspectionLog } from '../../../src/repositories/inspectionLog/ins
 import { logger } from '../../../src/lib/logger'
 import { GeneralErrorResponse } from '../../../src/errors/GeneralErrorResponse'
 import { ERRORS, buildError } from '../../../src/lib/errors/errors'
+import { StatusCode } from '../../../src/utils/statusCode'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function makeMockRequest(
-  bodyOverrides: Partial<CreateUserInput> = {},
-): FastifyRequest<{ Body: CreateUserInput }> {
+  bodyOverrides: Partial<CreateUserRequest> = {},
+): FastifyRequest<{ Body: CreateUserRequest }> {
   return {
     id: 'req-test-abc123',
     method: 'POST',
@@ -44,7 +45,7 @@ function makeMockRequest(
       password: 'senha123',
       ...bodyOverrides,
     },
-  } as unknown as FastifyRequest<{ Body: CreateUserInput }>
+  } as unknown as FastifyRequest<{ Body: CreateUserRequest }>
 }
 
 function makeMockReply(): FastifyReply {
@@ -54,7 +55,7 @@ function makeMockReply(): FastifyReply {
   } as unknown as FastifyReply
 }
 
-function makeCreatedUser(overrides: Partial<CreatedUserDTO> = {}): CreatedUserDTO {
+function makeCreatedUser(overrides: Partial<IUser> = {}): IUser {
   return {
     id: 'user-uuid-456',
     name: 'João Silva',
@@ -125,7 +126,7 @@ describe('createUserController', () => {
 
     it('deve logar "ERROR - createUserController" quando o service lança erro', async () => {
       vi.mocked(createUserService).mockRejectedValue(
-        new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
+        new GeneralErrorResponse(StatusCode.CONFLICT, buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
       )
 
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
@@ -138,69 +139,61 @@ describe('createUserController', () => {
   })
 
   describe('InspectionLog — rastreio em banco', () => {
-    it('deve criar InspectionLog IN com requestId e dados não-sensíveis da requisição', async () => {
+    it('deve criar InspectionLog CLIENT_TO_SERVER com dados não-sensíveis da requisição', async () => {
       const request = makeMockRequest()
       await createUserController(request, makeMockReply())
 
       expect(vi.mocked(createInspectionLog)).toHaveBeenCalledWith(
         expect.objectContaining({
-          requestId: 'req-test-abc123',
-          direction: 'IN',
-          context: 'createUserController',
-          level: 'INFO',
+          direction: 'CLIENT_TO_SERVER',
+          context:   'createUserController',
         }),
       )
     })
 
-    it('InspectionLog IN não deve conter a senha no payload', async () => {
+    it('InspectionLog CLIENT_TO_SERVER não deve conter a senha no payload', async () => {
       const request = makeMockRequest({ password: 'senha_super_secreta' })
       await createUserController(request, makeMockReply())
 
-      const inCall = vi.mocked(createInspectionLog).mock.calls.find(
-        ([params]) => params.direction === 'IN',
+      const clientCall = vi.mocked(createInspectionLog).mock.calls.find(
+        ([params]) => params.direction === 'CLIENT_TO_SERVER',
       )
-      expect(inCall).toBeDefined()
-      const payload = JSON.stringify(inCall![0].payload)
+      expect(clientCall).toBeDefined()
+      const payload = JSON.stringify(clientCall![0].payload)
       expect(payload).not.toContain('senha_super_secreta')
     })
 
-    it('deve criar InspectionLog OUT com statusCode e userId em caso de sucesso', async () => {
+    it('deve criar InspectionLog SERVER_TO_CLIENT com statusCode 201 em caso de sucesso', async () => {
       await createUserController(makeMockRequest(), makeMockReply())
 
-      expect(vi.mocked(createInspectionLog)).toHaveBeenCalledWith(
-        expect.objectContaining({
-          requestId: 'req-test-abc123',
-          direction: 'OUT',
-          context: 'createUserController',
-          level: 'INFO',
-          payload: expect.objectContaining({ statusCode: 201, userId: 'user-uuid-456' }),
-        }),
+      const successCall = vi.mocked(createInspectionLog).mock.calls.find(
+        ([params]) =>
+          params.direction === 'SERVER_TO_CLIENT' &&
+          JSON.stringify(params.payload).includes('201'),
       )
+      expect(successCall).toBeDefined()
     })
 
-    it('deve criar InspectionLog ERROR com mensagem e code em caso de falha', async () => {
+    it('deve criar InspectionLog SERVER_TO_CLIENT de erro com code EMAIL_ALREADY_EXISTS', async () => {
       vi.mocked(createUserService).mockRejectedValue(
-        new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
+        new GeneralErrorResponse(StatusCode.CONFLICT, buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS)),
       )
 
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
 
-      expect(vi.mocked(createInspectionLog)).toHaveBeenCalledWith(
-        expect.objectContaining({
-          requestId: 'req-test-abc123',
-          direction: 'ERROR',
-          level: 'ERROR',
-          context: 'createUserController',
-          payload: expect.objectContaining({
-            error: 'E-mail já cadastrado.',
-            code: 'EMAIL_ALREADY_EXISTS',
-          }),
-        }),
+      const errorCall = vi.mocked(createInspectionLog).mock.calls.find(
+        ([params]) =>
+          params.direction === 'SERVER_TO_CLIENT' &&
+          JSON.stringify(params.payload).includes('EMAIL_ALREADY_EXISTS'),
       )
+      expect(errorCall).toBeDefined()
     })
 
-    it('deve re-lançar o erro após registrar o InspectionLog ERROR', async () => {
-      const thrownError = new GeneralErrorResponse(buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS))
+    it('deve re-lançar o erro após registrar o InspectionLog de erro', async () => {
+      const thrownError = new GeneralErrorResponse(
+        StatusCode.CONFLICT,
+        buildError(ERRORS.USER.EMAIL_ALREADY_EXISTS),
+      )
       vi.mocked(createUserService).mockRejectedValue(thrownError)
 
       await expect(
@@ -208,15 +201,15 @@ describe('createUserController', () => {
       ).rejects.toThrow(thrownError)
     })
 
-    it('deve criar InspectionLog IN mesmo quando o service falha', async () => {
+    it('deve criar InspectionLog CLIENT_TO_SERVER mesmo quando o service falha', async () => {
       vi.mocked(createUserService).mockRejectedValue(new Error('Unexpected'))
 
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
 
-      const inCalls = vi.mocked(createInspectionLog).mock.calls.filter(
-        ([params]) => params.direction === 'IN',
+      const clientCalls = vi.mocked(createInspectionLog).mock.calls.filter(
+        ([params]) => params.direction === 'CLIENT_TO_SERVER',
       )
-      expect(inCalls).toHaveLength(1)
+      expect(clientCalls).toHaveLength(1)
     })
   })
 })

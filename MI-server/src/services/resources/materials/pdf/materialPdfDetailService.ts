@@ -1,5 +1,5 @@
 // src/services/resources/materials/pdf/materialPdfDetailService.ts
-import type { PendingMaterialDTO } from '../../../../@types/resources/materials/pdf'
+import type { IPendingMaterial } from '../../../../@types/resources/materials/pdf'
 import { findMaterialDetailById } from '../../../../repositories/resources/materials/pdf/materialPdfViewRepository'
 import { validateRequest } from '../../../../utils/validateRequest'
 import { materialPdfPresignedUrlSchema } from '../../../../schemas/resources/materials/pdf/materialPdfPresignedUrlSchema'
@@ -16,8 +16,8 @@ import { logger } from '../../../../lib/logger'
  */
 export async function materialPdfDetailService(
   input: unknown,
-  accessPolicy?: (material: PendingMaterialDTO) => void,
-): Promise<PendingMaterialDTO> {
+  accessPolicy?: (material: IPendingMaterial) => void,
+): Promise<IPendingMaterial> {
   logger.info('IN - materialPdfDetailService')
 
   const { materialId } = validateRequest(input, materialPdfPresignedUrlSchema)

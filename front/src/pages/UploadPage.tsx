@@ -7,11 +7,13 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
+  Users,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { canUploadMaterials } from '../lib/permissions'
 import { useUploadMaterial } from '../features/materials/hooks/useUploadMaterial'
+import { useMyOrganizations } from '../features/organizations/hooks/useMyOrganizations'
 import { getApiErrorCode, getApiErrorMessage } from '../lib/apiError'
 import type { UploadedMI } from '../features/materials/api/materialsApi'
 
@@ -208,6 +210,7 @@ export function UploadPage() {
   const [title, setTitle] = useState('')
   const [habilidadesBncc, setHabilidadesBncc] = useState<string[]>([])
   const [habilidadeInput, setHabilidadeInput] = useState('')
+  const [selectedOrgId, setSelectedOrgId] = useState('')
 
   function addHabilidade() {
     const value = habilidadeInput.trim()
@@ -221,6 +224,9 @@ export function UploadPage() {
   }
 
   const { mutate, isPending, isSuccess, data: uploadedMaterial, error, reset } = useUploadMaterial()
+  const { data: orgs } = useMyOrganizations()
+
+  const activeOrgs = orgs?.filter((o) => o.status === 'ACTIVE') ?? []
 
   function handleFileSelect(selected: File) {
     setFile(selected)
@@ -240,6 +246,7 @@ export function UploadPage() {
       file,
       title: title.trim() || undefined,
       habilidadesBncc: habilidadesBncc.length ? habilidadesBncc : undefined,
+      organizationId: selectedOrgId || undefined,
     })
   }
 
@@ -248,6 +255,7 @@ export function UploadPage() {
     setTitle('')
     setHabilidadesBncc([])
     setHabilidadeInput('')
+    setSelectedOrgId('')
     reset()
   }
 
@@ -405,6 +413,41 @@ export function UploadPage() {
                     Pressione Enter ou clique em Adicionar para incluir cada habilidade.
                   </p>
                 </div>
+
+                {/* Projeto de destino */}
+                {activeOrgs.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label htmlFor="mi-org" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <span className="flex items-center gap-1.5">
+                        <Users size={14} className="text-gray-400 dark:text-gray-500" />
+                        Destinar a um projeto
+                        <span className="text-xs text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
+                      </span>
+                    </label>
+                    <select
+                      id="mi-org"
+                      value={selectedOrgId}
+                      onChange={(e) => setSelectedOrgId(e.target.value)}
+                      disabled={isUploading || !canUpload}
+                      className="w-full rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm
+                                 text-gray-900 dark:text-gray-100
+                                 bg-white dark:bg-gray-800
+                                 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30
+                                 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
+                                 transition-colors"
+                    >
+                      <option value="">Nenhum (publicação geral)</option>
+                      {activeOrgs.map((org) => (
+                        <option key={org.id} value={org.id}>{org.name}</option>
+                      ))}
+                    </select>
+                    {selectedOrgId && (
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400">
+                        O material será enviado para revisão dentro do projeto selecionado.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Mensagem de erro */}
                 {error && (

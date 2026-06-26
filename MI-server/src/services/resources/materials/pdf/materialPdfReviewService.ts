@@ -1,5 +1,5 @@
 // src/services/resources/materials/pdf/materialPdfReviewService.ts
-import type { UploadedMIDTO } from '../../../../@types/resources/materials/pdf'
+import type { IUploadedMI } from '../../../../@types/resources/materials/pdf'
 import { findMaterialById } from '../../../../repositories/resources/materials/pdf/materialPdfViewRepository'
 import { updateMaterialStatus } from '../../../../repositories/resources/materials/pdf/materialPdfReviewRepository'
 import { createAuditLog } from '../../../../repositories/audit/auditRepository'
@@ -8,10 +8,11 @@ import { materialPdfReviewSchema } from '../../../../schemas/resources/materials
 import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
+import { vectorizeQueue } from '../../../../lib/queue'
 import { PROFESSOR, ADMIN } from '../../../../constants/roles'
 import { logger } from '../../../../lib/logger'
 
-export async function materialPdfReviewService(input: unknown): Promise<UploadedMIDTO> {
+export async function materialPdfReviewService(input: unknown): Promise<IUploadedMI> {
   logger.info('IN - materialPdfReviewService')
 
   const { materialId, decision, reviewerId } = validateRequest(input, materialPdfReviewSchema)
@@ -27,6 +28,10 @@ export async function materialPdfReviewService(input: unknown): Promise<Uploaded
   }
 
   const updated = await updateMaterialStatus(materialId, decision)
+
+  if (decision === 'APPROVED') {
+    await vectorizeQueue.add('vectorize', { materialId, storageKey: material.storageKey })
+  }
 
   await createAuditLog({
     actorId:   reviewerId,

@@ -12,6 +12,11 @@ import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { AdminLogsPage } from '../pages/AdminLogsPage'
 import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
 import { AllMaterialsPage } from '../pages/AllMaterialsPage'
+import { CreateOrganizationPage }    from '../pages/CreateOrganizationPage'
+import { OrganizationsListPage }     from '../pages/OrganizationsListPage'
+import { OrganizationDetailPage }    from '../pages/OrganizationDetailPage'
+import { InvitesPage }               from '../pages/InvitesPage'
+import { MaterialChatPage } from '../pages/MaterialChatPage'
 import { VerifyEmailSentPage } from '../pages/VerifyEmailSentPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 
@@ -34,6 +39,14 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth()
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+/** Redireciona para "/" se o usuário não for PROFESSOR ou ADMIN */
+function ProfessorRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (user?.role !== 'PROFESSOR' && user?.role !== 'ADMIN') return <Navigate to="/" replace />
   return <>{children}</>
 }
 
@@ -94,6 +107,14 @@ export function Router() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/materials/:materialId/chat"
+          element={
+            <PrivateRoute>
+              <MaterialChatPage />
+            </PrivateRoute>
+          }
+        />
 
         {/* Exclusivas do ADMIN (sysadmin) */}
         <Route
@@ -110,6 +131,42 @@ export function Router() {
             <AdminRoute>
               <AllMaterialsPage />
             </AdminRoute>
+          }
+        />
+
+        {/* Organizações — acessível para qualquer usuário autenticado */}
+        <Route
+          path="/organizations"
+          element={
+            <PrivateRoute>
+              <OrganizationsListPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/organizations/:orgId"
+          element={
+            <PrivateRoute>
+              <OrganizationDetailPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invites"
+          element={
+            <PrivateRoute>
+              <InvitesPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Exclusivas de PROFESSOR e ADMIN */}
+        <Route
+          path="/organizations/create"
+          element={
+            <ProfessorRoute>
+              <CreateOrganizationPage />
+            </ProfessorRoute>
           }
         />
 

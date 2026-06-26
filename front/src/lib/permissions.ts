@@ -22,6 +22,12 @@ export function canUploadMaterials(user: AuthUser | null): boolean {
   )
 }
 
+/** Pode interagir com a IA (chat de materiais)? */
+export function canUseAiChat(user: AuthUser | null): boolean {
+  if (!user) return false
+  return user.role === 'INSTITUTIONALIZED' || user.role === 'PROFESSOR' || user.role === 'ADMIN'
+}
+
 /** É administrador do sistema (sysadmin)? */
 export function isSysAdmin(user: AuthUser | null): boolean {
   return user?.role === 'ADMIN'

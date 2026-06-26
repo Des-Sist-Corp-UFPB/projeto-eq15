@@ -1,7 +1,7 @@
 // src/repositories/resources/materials/pdf/materialPdfAllListRepository.ts
 import { Prisma, type MIStatus } from '@prisma/client'
 import { prisma } from '../../../../database/prisma'
-import type { PendingMaterialDTO } from '../../../../@types/resources/materials/pdf'
+import type { IPendingMaterial } from '../../../../@types/resources/materials/pdf'
 
 export interface AllMaterialsParams {
   status?:  MIStatus
@@ -14,7 +14,7 @@ export interface AllMaterialsParams {
 }
 
 export interface AllMaterialsResult {
-  materials: PendingMaterialDTO[]
+  materials: IPendingMaterial[]
   total:     number
   page:      number
   perPage:   number
@@ -34,6 +34,13 @@ const MI_SELECT = {
   updatedAt:        true,
   uploadedBy: {
     select: { name: true, email: true },
+  },
+  organizations: {
+    select: {
+      organization: {
+        select: { id: true, name: true },
+      },
+    },
   },
 } as const
 

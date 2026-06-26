@@ -10,16 +10,17 @@ export interface UploadMIInput {
   /** Habilidades BNCC — opcional; quando ausente assume-se lista vazia */
   habilidadesBncc?: string[]
   uploadedById: string
+  organizationIds?: string[]
 }
 
-/** DTO de resposta da URL pré-assinada para visualização temporária */
-export interface MaterialPresignedUrlDTO {
+/** URL pré-assinada para visualização temporária */
+export interface IMaterialPresignedUrl {
   url: string
   expiresInSeconds: number
 }
 
-/** DTO de material pendente — inclui dados do autor para exibição no painel do professor */
-export interface PendingMaterialDTO {
+/** Material pendente — inclui dados do autor para exibição no painel do professor */
+export interface IPendingMaterial {
   id: string
   title: string
   originalFileName: string
@@ -30,12 +31,28 @@ export interface PendingMaterialDTO {
   habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
+  organizations: { organization: { id: string; name: string } }[]
   createdAt: Date
   updatedAt: Date
 }
 
-/** DTO de resposta — nunca expõe campos internos desnecessários */
-export interface UploadedMIDTO {
+/** Uso de tokens OpenAI registrado por operação para observabilidade de custos */
+export interface ITokenUsage {
+  embeddingTokens:  number  // tokens gastos no embedding da pergunta
+  promptTokens:     number  // tokens do prompt enviado ao modelo de chat
+  completionTokens: number  // tokens gerados pelo modelo
+  totalTokens:      number  // soma prompt + completion
+}
+
+/** Resposta do endpoint de chat RAG com IA */
+export interface IMaterialChatResponse {
+  answer:     string
+  chunksUsed: number
+  tokenUsage: ITokenUsage
+}
+
+/** Material Instrucional — nunca expõe campos internos desnecessários */
+export interface IUploadedMI {
   id: string
   title: string
   originalFileName: string

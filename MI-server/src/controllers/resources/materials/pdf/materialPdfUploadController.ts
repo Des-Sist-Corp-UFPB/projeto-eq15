@@ -25,6 +25,7 @@ interface ParsedMultipart {
   mimeType:         string | null
   title:            string | undefined
   habilidadesBncc:  string[]
+  organizationIds:  string[]
 }
 
 async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipart> {
@@ -33,6 +34,7 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
   let mimeType:         string | null = null
   let title:            string | undefined
   const habilidadesBncc: string[] = []
+  const organizationIds: string[] = []
 
   for await (const part of request.parts()) {
     if (part.type === 'field') {
@@ -53,6 +55,8 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
         } else if (raw) {
           habilidadesBncc.push(raw)
         }
+      } else if (part.fieldname === 'organizationIds[]') {
+        organizationIds.push(String(part.value).trim())
       }
     } else {
       if (part.fieldname === 'file') {
@@ -69,7 +73,7 @@ async function parsePdfMultipart(request: FastifyRequest): Promise<ParsedMultipa
   // Remove vazios e duplicados, preservando a ordem de envio
   const normalizedHabilidades = [...new Set(habilidadesBncc.filter(Boolean))]
 
-  return { fileBuffer, originalFileName, mimeType, title, habilidadesBncc: normalizedHabilidades }
+  return { fileBuffer, originalFileName, mimeType, title, habilidadesBncc: normalizedHabilidades, organizationIds }
 }
 
 function resolveTitle(title: string | undefined, originalFileName: string): string {
@@ -97,19 +101,20 @@ export async function materialPdfUploadController(
   logger.info(`IN - ${ctx}`)
 
   try {
-    const { fileBuffer, originalFileName, mimeType, title, habilidadesBncc } = await parsePdfMultipart(request)
+    const { fileBuffer, originalFileName, mimeType, title, habilidadesBncc, organizationIds } = await parsePdfMultipart(request)
 
     if (!fileBuffer || !originalFileName || !mimeType) {
       throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
     }
 
     const mi = await materialPdfUploadService({
-      title:        resolveTitle(title, originalFileName),
-      buffer:       fileBuffer,
+      title:           resolveTitle(title, originalFileName),
+      buffer:          fileBuffer,
       originalFileName,
       mimeType,
       habilidadesBncc,
-      uploadedById: request.user.sub,
+      uploadedById:    request.user.sub,
+      organizationIds,
     })
 
     httpResponse({ reply, statusCode: StatusCode.CREATED, data: mi, context: ctx })

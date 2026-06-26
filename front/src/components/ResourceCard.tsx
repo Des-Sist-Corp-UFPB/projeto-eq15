@@ -1,9 +1,10 @@
 // src/components/ResourceCard.tsx
 // Card de material no estilo MEC RED: miniatura quadrada + título + autor + meta.
+// O card inteiro navega para a tela de detalhe ao ser clicado.
 // A miniatura usa um placeholder gerado por gradiente; quando o back-end fornecer
 // uma URL de thumbnail (`thumbnailUrl`), ela é exibida automaticamente.
-import { Link } from 'react-router-dom'
-import { FileText, ArrowRight, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { FileText, ArrowRight, CheckCircle2, Clock, XCircle, Building2, MessageSquare } from 'lucide-react'
 import { HabilidadesBncc } from './HabilidadesBncc'
 import type { MIStatus } from '../features/materials/api/materialsApi'
 
@@ -48,22 +49,30 @@ export interface ResourceCardProps {
   status?: MIStatus
   /** Habilidades BNCC associadas ao material */
   habilidades?: string[]
+  /** Nome da organização/projeto ao qual este material pertence */
+  organizationName?: string
   /** Rota da tela de detalhe — o card inteiro navega para cá ao ser clicado */
   detailTo: string
   /** URL de miniatura quando disponível via back-end */
   thumbnailUrl?: string
+  /** Navega para o chat de IA sobre este material (opcional) */
+  onChat?: () => void
 }
 
 export function ResourceCard({
-  id, title, authorName, sizeBytes, createdAt, status, habilidades, detailTo, thumbnailUrl,
+  id, title, authorName, sizeBytes, createdAt, status, habilidades, organizationName, detailTo, thumbnailUrl, onChat,
 }: ResourceCardProps) {
+  const navigate = useNavigate()
   const statusInfo = status ? STATUS_BADGE[status] : null
 
   return (
-    <Link
-      to={detailTo}
+    <div
+      onClick={() => navigate(detailTo)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(detailTo) } }}
       aria-label={`Ver detalhes de ${title}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800
                  bg-white dark:bg-gray-900 transition-all hover:-translate-y-0.5 hover:shadow-lg
                  hover:border-indigo-300 dark:hover:border-indigo-700
                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
@@ -106,6 +115,14 @@ export function ResourceCard({
           {title}
         </p>
 
+        {organizationName && (
+          <span className="inline-flex items-center gap-1 self-start rounded-full border border-indigo-200 dark:border-indigo-800
+                           bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
+            <Building2 size={10} className="shrink-0" />
+            <span className="truncate max-w-[140px]">{organizationName}</span>
+          </span>
+        )}
+
         {habilidades && habilidades.length > 0 && <HabilidadesBncc habilidades={habilidades} />}
 
         {authorName && (
@@ -120,7 +137,21 @@ export function ResourceCard({
           {sizeBytes != null && createdAt && <span aria-hidden>•</span>}
           {createdAt && <span>{formatDate(createdAt)}</span>}
         </div>
+
+        {onChat && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onChat() }}
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-lg
+                       border border-indigo-200 dark:border-indigo-800 bg-indigo-50
+                       dark:bg-indigo-950 py-1.5 text-xs font-semibold text-indigo-700
+                       dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900
+                       transition-colors"
+          >
+            <MessageSquare size={12} />
+            Conversar com IA
+          </button>
+        )}
       </div>
-    </Link>
+    </div>
   )
 }

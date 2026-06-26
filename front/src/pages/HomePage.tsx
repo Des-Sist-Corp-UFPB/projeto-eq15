@@ -4,11 +4,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  SlidersHorizontal, AlertCircle, RefreshCw, Loader2, Library, LogIn, GraduationCap, X,
+  AlertCircle, RefreshCw, Loader2, Library, LogIn,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { ResourceCard } from '../components/ResourceCard'
+import { HabilidadeFilter } from '../components/HabilidadeFilter'
 import { usePublicMaterials } from '../features/materials/hooks/usePublicMaterials'
 import { useHabilidades } from '../features/materials/hooks/useHabilidades'
 import { getApiErrorMessage } from '../lib/apiError'
@@ -147,12 +148,8 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Tabs de filtro/ordenação */}
+        {/* Tabs de ordenação */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-sm font-semibold text-white">
-            <SlidersHorizontal size={15} />
-            Filtros
-          </span>
           {TABS.map((tab) => {
             const active = tabLabel === tab.label
             return (
@@ -172,60 +169,16 @@ export function HomePage() {
           })}
         </div>
 
-        {/* Filtro por habilidade BNCC */}
+        {/* Filtro por habilidade BNCC (busca + autocomplete) */}
         {isAuthenticated && (habilidadesDisponiveis.length > 0 || hasActiveFilters) && (
-          <div className="space-y-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                <GraduationCap size={15} className="text-indigo-500" />
-                Filtrar por habilidade BNCC
-              </span>
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  <X size={12} /> Limpar filtros
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {/* Sem habilidade */}
-              <button
-                onClick={toggleSemHabilidade}
-                aria-pressed={semHabilidade}
-                className={[
-                  'rounded-lg border px-3 py-1 text-xs font-medium transition-colors',
-                  semHabilidade
-                    ? 'border-indigo-600 bg-indigo-600 text-white'
-                    : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-                ].join(' ')}
-              >
-                Sem habilidade
-              </button>
-
-              {/* Cada habilidade existente */}
-              {habilidadesDisponiveis.map((habilidade) => {
-                const active = selectedHabilidades.includes(habilidade)
-                return (
-                  <button
-                    key={habilidade}
-                    onClick={() => toggleHabilidade(habilidade)}
-                    aria-pressed={active}
-                    className={[
-                      'rounded-lg border px-3 py-1 text-xs font-medium transition-colors',
-                      active
-                        ? 'border-indigo-600 bg-indigo-600 text-white'
-                        : 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900',
-                    ].join(' ')}
-                  >
-                    {habilidade}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <HabilidadeFilter
+            available={habilidadesDisponiveis}
+            selected={selectedHabilidades}
+            semHabilidade={semHabilidade}
+            onToggleHabilidade={toggleHabilidade}
+            onToggleSemHabilidade={toggleSemHabilidade}
+            onClear={clearFilters}
+          />
         )}
 
         {/* Título da seção */}

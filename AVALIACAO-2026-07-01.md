@@ -30,7 +30,9 @@ _Detectado no código, mas **não documentado** no README (não pontua até ser 
 
 ## 3. Cobertura de Testes (≥ 85%)
 
-✅ **Atendido** — 86.56% (JS) backend, 87.14% (JS) frontend (relatório em `cobertura/`, 271 arquivo(s)).
+✅ **Atendido** — backend linhas 86.56% (JS); frontend linhas 87.14% (JS) (relatório em `cobertura/`, 271 arquivo(s)).
+
+> Critério: **cobertura de linhas** ≥ 85% (conforme a orientação). As demais métricas (instruções/ramos) são informativas.
 
 > Observação: a cobertura é lida do relatório commitado pela equipe; não é recalculada nesta avaliação.
 

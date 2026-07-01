@@ -6,6 +6,9 @@ import { GeneralErrorResponse } from './GeneralErrorResponse'
 // Códigos de erro injetados por @fastify/multipart
 const MULTIPART_FILE_TOO_LARGE = 'FST_REQ_FILE_TOO_LARGE'
 
+// Código de erro de validação de schema no nível da rota (@fastify/type-provider-zod)
+const FST_VALIDATION_ERROR = 'FST_ERR_VALIDATION'
+
 export function errorHandler(
   error: Error & { code?: string; statusCode?: number },
   _request: FastifyRequest,
@@ -35,6 +38,17 @@ export function errorHandler(
       status: 'error',
       message: 'O arquivo excede o tamanho máximo permitido.',
       code: 'FILE_TOO_LARGE',
+    })
+    return
+  }
+
+  // Falha de validação de schema no nível da rota (body/params/query) —
+  // tratada como erro de entrada (422), mesmo padrão do ZodError acima.
+  if (error.code === FST_VALIDATION_ERROR) {
+    reply.status(422).send({
+      status: 'error',
+      message: 'Validation error',
+      issues: (error as Error & { validation?: unknown }).validation,
     })
     return
   }

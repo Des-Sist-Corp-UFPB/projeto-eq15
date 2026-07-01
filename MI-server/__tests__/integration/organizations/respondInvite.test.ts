@@ -38,9 +38,12 @@ async function createUserAndLogin(email: string, role: 'ADMIN' | 'PROFESSOR' | '
     payload: { name: 'Test User', email, password },
   })
 
-  if (role !== 'COMMON') {
-    await prisma.user.update({ where: { email }, data: { role } })
-  }
+  // Ajusta o papel e garante e-mail verificado — usuários institucionais
+  // (@dcx.ufpb.br) nascem com emailVerified=false (RF02) e não conseguiriam logar.
+  await prisma.user.update({
+    where: { email },
+    data:  role !== 'COMMON' ? { role, emailVerified: true } : { emailVerified: true },
+  })
 
   const loginRes = await app.inject({
     method:  'POST',

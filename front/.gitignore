@@ -14,6 +14,9 @@ node_modules
 dist
 dist-ssr
 
+# Testes — relatório de cobertura gerado
+coverage
+
 # Environment — NUNCA versionar arquivos com valores reais
 .env.local
 .env.*.local

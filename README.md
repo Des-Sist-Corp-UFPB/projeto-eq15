@@ -12,9 +12,12 @@
 4. [Perfis e Permissões](#4-perfis-e-permissões)
 5. [Inteligência Pedagógica e IA](#5-inteligência-pedagógica-e-ia)
 6. [Gestão e Auditoria](#6-gestão-e-auditoria)
-7. [Como Executar — Desenvolvimento](#7-como-executar--desenvolvimento)
-8. [Como Executar — Produção](#8-como-executar--produção)
-9. [CI/CD](#9-cicd)
+7. [Log de Auditoria](#log-de-auditoria)
+8. [Integração com Serviço Externo](#integração-com-serviço-externo)
+9. [Cobertura de Testes](#cobertura-de-testes)
+10. [Como Executar — Desenvolvimento](#7-como-executar--desenvolvimento)
+11. [Como Executar — Produção](#8-como-executar--produção)
+12. [CI/CD](#9-cicd)
 
 ---
 
@@ -38,8 +41,9 @@ Esta plataforma centraliza, gerencia e dissemina **Materiais Instrucionais (MIs)
 | **ORM**             | Prisma                               |
 | **Banco de dados**  | PostgreSQL 16                        |
 | **Filas / Jobs**    | BullMQ + Redis 7                     |
-| **Busca Semântica** | Qdrant (Vector Database) — planejado |
-| **Armazenamento**   | MinIO (dev) / AWS S3 (prod) — planejado |
+| **Busca Semântica** | Qdrant (Vector Database)             |
+| **Armazenamento**   | MinIO (dev) / AWS S3 (prod)          |
+| **IA**              | OpenAI (moderação, embeddings, chat) |
 | **Conteinerização** | Docker + Docker Compose              |
 | **CI/CD**           | GitHub Actions + GHCR                |
 | **Proxy (frontend)**| Nginx                                |
@@ -56,9 +60,9 @@ Internet
         └── Redis (interno via Docker)
 ```
 
-- **Processamento Assíncrono:** Tarefas pesadas (tradução, vetorização, OCR) são delegadas a **Background Jobs** gerenciados com **BullMQ + Redis**, mantendo a API responsiva.
-- **Busca Semântica (planejado):** **Qdrant** realizará indexação vetorial dos documentos, habilitando buscas por significado e contexto.
-- **Armazenamento de arquivos (planejado):** **MinIO** no desenvolvimento com transição transparente para **AWS S3** em produção.
+- **Processamento Assíncrono:** Tarefas pesadas (vetorização de PDFs) são delegadas a **Background Jobs** gerenciados com **BullMQ + Redis** (`src/workers/vectorizeWorker.ts`), mantendo a API responsiva.
+- **Busca Semântica:** **Qdrant** faz a indexação vetorial dos documentos (`src/lib/qdrant.ts`), habilitando buscas por significado e contexto no chat de IA sobre os materiais.
+- **Armazenamento de arquivos:** **MinIO** no desenvolvimento com transição transparente para **AWS S3** em produção (`src/lib/minio.ts`).
 
 ---
 
@@ -87,6 +91,94 @@ Internet
 - **Fluxo de Aprovação Docente:** Revisão obrigatória por professores para todo material submetido por perfis institucionalizados.
 - **Auditabilidade Total:** Logs completos — quem enviou, quem aprovou, quando e o que foi alterado.
 - **Métricas de Engajamento:** Dashboard com estatísticas de consumo, termos mais buscados e ranking de MIs mais acessados.
+
+---
+
+## Log de Auditoria
+
+O sistema mantém uma trilha de auditoria das ações sensíveis dos usuários.
+
+- **O que é auditado** — ações relevantes de negócio, registradas explicitamente nos services:
+  | Ação (`action`)              | Quando ocorre                                  |
+  | :--------------------------- | :--------------------------------------------- |
+  | `USER_REGISTERED`            | Cadastro de novo usuário                       |
+  | `USER_LOGGED_IN`             | Login bem-sucedido                             |
+  | `USER_PROMOTED_TO_PROFESSOR` | Admin promove usuário a Professor              |
+  | `ORGANIZATION_CREATED`       | Criação de um projeto/organização              |
+  | `MI_APPROVED` / `MI_REJECTED`| Revisão docente de um material instrucional    |
+
+- **Onde fica armazenado** — tabela **`AuditLog`** no PostgreSQL (via Prisma). Campos principais:
+  `id`, `actorId` (quem fez), `actorRole`, `targetId` (alvo da ação), `action`, `metadata` (JSON com contexto), `createdAt`.
+  Definição em [`MI-server/prisma/schema.prisma`](MI-server/prisma/schema.prisma) (`model AuditLog`).
+
+- **Como foi implementado** — **service dedicado** (`createAuditLog`), invocado explicitamente dentro de cada service de negócio após a operação (não é um interceptor global). Isso garante que apenas ações significativas — e com o contexto correto (ator, alvo, metadados) — sejam registradas.
+
+- **Classes/arquivos participantes:**
+  - [`MI-server/src/repositories/audit/auditRepository.ts`](MI-server/src/repositories/audit/auditRepository.ts) — `createAuditLog`
+  - [`MI-server/src/services/auth/authService.ts`](MI-server/src/services/auth/authService.ts) — login
+  - [`MI-server/src/services/users/usersService.ts`](MI-server/src/services/users/usersService.ts) — cadastro
+  - [`MI-server/src/services/users/setUserAsProfessorService.ts`](MI-server/src/services/users/setUserAsProfessorService.ts) — promoção
+  - [`MI-server/src/services/organizations/createOrganizationService.ts`](MI-server/src/services/organizations/createOrganizationService.ts) — criação de projeto
+  - [`MI-server/src/services/resources/materials/pdf/materialPdfReviewService.ts`](MI-server/src/services/resources/materials/pdf/materialPdfReviewService.ts) — aprovação/rejeição
+
+> Complementarmente, há o **`InspectionLog`** (`model InspectionLog`) que rastreia o ciclo de vida das requisições HTTP (cliente→API→cliente), visível na tela administrativa `/admin/logs` do frontend.
+
+---
+
+## Integração com Serviço Externo
+
+O sistema integra-se com **serviços externos reais** via SDK, todos configurados por variáveis de ambiente (nenhum segredo versionado).
+
+### OpenAI (principal)
+
+- **Para que é usado** — enriquecimento de conteúdo e chat com IA (RAG) sobre os PDFs dos materiais: **moderação** de conteúdo da pergunta, geração de **embeddings** (`text-embedding-3-small`) e **chat completions** para gerar a resposta a partir dos trechos recuperados.
+- **Arquivos participantes:**
+  - [`MI-server/src/lib/openai.ts`](MI-server/src/lib/openai.ts) — `new OpenAI({ apiKey })` (SDK `openai`)
+  - [`MI-server/src/services/resources/materials/pdf/materialPdfChatService.ts`](MI-server/src/services/resources/materials/pdf/materialPdfChatService.ts) — `openai.moderations.create`, `openai.embeddings.create`, `openai.chat.completions.create`
+- **Configuração (env):** `OPENAI_API_KEY`
+
+### MinIO / AWS S3 (armazenamento de objetos)
+
+- **Para que é usado** — armazenamento dos arquivos PDF dos materiais e geração de URLs pré-assinadas para download.
+- **Arquivos participantes:**
+  - [`MI-server/src/lib/minio.ts`](MI-server/src/lib/minio.ts) — `new Client({ endPoint, ... })` (SDK `minio`)
+  - [`MI-server/src/services/resources/materials/pdf/materialPdfUploadService.ts`](MI-server/src/services/resources/materials/pdf/materialPdfUploadService.ts) — `minioClient.putObject`
+  - [`MI-server/src/services/resources/materials/pdf/materialPdfPresignedUrlService.ts`](MI-server/src/services/resources/materials/pdf/materialPdfPresignedUrlService.ts) — `minioPublicClient.presignedGetObject`
+- **Configuração (env):** `MINIO_ENDPOINT`, `MINIO_PORT`, `MINIO_USE_SSL`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET`, `MINIO_REGION` (+ `MINIO_PUBLIC_*` para URLs públicas)
+
+### Qdrant (banco vetorial)
+
+- **Para que é usado** — indexação vetorial dos trechos dos PDFs e busca semântica por similaridade que alimenta o RAG.
+- **Arquivos participantes:**
+  - [`MI-server/src/lib/qdrant.ts`](MI-server/src/lib/qdrant.ts) — `new QdrantClient({ url, apiKey })` (SDK `@qdrant/js-client-rest`)
+  - [`MI-server/src/services/resources/materials/pdf/materialPdfChatService.ts`](MI-server/src/services/resources/materials/pdf/materialPdfChatService.ts) — `qdrant.search`
+  - [`MI-server/src/workers/vectorizeWorker.ts`](MI-server/src/workers/vectorizeWorker.ts) — `qdrant.upsert` / `qdrant.delete`
+- **Configuração (env):** `QDRANT_URL`, `QDRANT_API_KEY`
+
+> O **PostgreSQL** não é contabilizado aqui por ser infraestrutura básica do projeto.
+
+---
+
+## Cobertura de Testes
+
+Relatórios de cobertura HTML commitados na pasta [`cobertura/`](cobertura/) (gerados com **Vitest + @vitest/coverage-v8**):
+
+| Módulo       | Statements | Lines      | Relatório                                                  |
+| :----------- | :--------- | :--------- | :--------------------------------------------------------- |
+| **Backend**  | **86,22%** | **86,56%** | [`cobertura/backend/index.html`](cobertura/backend/index.html)   |
+| **Frontend** | **85,12%** | **87,14%** | [`cobertura/frontend/index.html`](cobertura/frontend/index.html) |
+
+Ambos os módulos atendem à meta de **≥ 85%**. Para regenerar:
+
+```bash
+# Backend (unit + integração — requer a infra Docker no ar)
+cd MI-server && npx vitest run --config vitest.config.ts --coverage
+cp -r coverage ../cobertura/backend
+
+# Frontend
+cd front && npx vitest run --coverage
+cp -r coverage ../cobertura/frontend
+```
 
 ---
 

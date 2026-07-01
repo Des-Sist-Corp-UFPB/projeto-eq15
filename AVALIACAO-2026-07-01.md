@@ -18,9 +18,10 @@
 
 - ✅ **OpenAI** — declarado no README e comprovado no código (35 ocorrência(s)).
   - Evidência: `MI-server/src/@types/resources/materials/pdf/index.ts:39:/** Uso de tokens OpenAI registrado por operação para observabilidade de custos */`
-- ❌ **AWS S3** — **declarado no README, mas SEM evidência no código.**
-- ✅ **MinIO** — declarado no README e comprovado no código (63 ocorrência(s)).
+- ✅ **Object Storage (S3/MinIO)** — declarado no README e comprovado no código (64 ocorrência(s)).
   - Evidência: `MI-server/docker-compose.yml:7:# Console MinIO:     http://localhost:9001  (minioadmin / minioadmin)`
+- ✅ **Qdrant** — declarado no README e comprovado no código (82 ocorrência(s)).
+  - Evidência: `MI-server/docker-compose.yml:67:  # ── Qdrant (banco de vetores para RAG) ─────────────────────────────────────`
 
 _Detectado no código, mas **não documentado** no README (não pontua até ser descrito):_
 - ℹ️ SMTP / e-mail

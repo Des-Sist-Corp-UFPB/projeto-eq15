@@ -9,7 +9,7 @@ jobs:
   build-and-deploy:
     name: Build, push e deploy
     runs-on: [self-hosted, dsc-selfhosted]
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
       packages: write

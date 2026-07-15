@@ -7,7 +7,7 @@ describe('App health', () => {
     await closeTestApp()
   })
 
-  it('GET /health deve retornar 200 com status ok', async () => {
+  it('GET /health deve retornar 200 com status ok e banco disponível', async () => {
     const app = await getTestApp()
 
     const response = await app.inject({
@@ -19,6 +19,7 @@ describe('App health', () => {
     expect(response.json()).toMatchObject({
       status: 'ok',
       service: 'MI-server',
+      database: 'ok',
     })
   })
 

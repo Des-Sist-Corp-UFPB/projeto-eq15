@@ -11,6 +11,8 @@ import {
   type ZodTypeProvider,
 } from '@fastify/type-provider-zod'
 import { env } from './env'
+import { prisma } from './database/prisma'
+import { logger } from './lib/logger'
 import { errorHandler } from './errors/errorHandler'
 import { authRoutes } from './routes/auth/authRoutes'
 import { usersRoutes } from './routes/users/usersRoutes'
@@ -72,11 +74,30 @@ export function buildApp() {
   })
 
   // ── Rotas de health ──────────────────────────────────────────────────────────
-  app.get('/health', async () => ({
-    status: 'ok',
-    service: 'MI-server',
-    timestamp: new Date().toISOString(),
-  }))
+  app.get('/health', async (_request, reply) => {
+    const timestamp = new Date().toISOString()
+
+    try {
+      // Checagem de conectividade com o banco (Postgres via Prisma)
+      await prisma.$queryRaw`SELECT 1`
+
+      return reply.status(200).send({
+        status:    'ok',
+        service:   'MI-server',
+        database:  'ok',
+        timestamp,
+      })
+    } catch (error) {
+      logger.error({ err: error }, '/health: database check failed')
+
+      return reply.status(503).send({
+        status:    'error',
+        service:   'MI-server',
+        database:  'down',
+        timestamp,
+      })
+    }
+  })
 
   app.get('/ping', async () => ({
     status:    'ok',

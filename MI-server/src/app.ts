@@ -99,11 +99,30 @@ export function buildApp() {
     }
   })
 
-  app.get('/ping', async () => ({
-    status:    'ok',
-    service:   'eq15',
-    timestamp: new Date().toISOString(),
-  }))
+  app.get('/ping', async (_request, reply) => {
+    const timestamp = new Date().toISOString()
+
+    try {
+      // Checagem de conectividade com o banco (Postgres via Prisma)
+      await prisma.$queryRaw`SELECT 1`
+
+      return reply.status(200).send({
+        status:    'ok',
+        service:   'eq15',
+        database:  'ok',
+        timestamp,
+      })
+    } catch (error) {
+      logger.error({ err: error }, '/ping: database check failed')
+
+      return reply.status(503).send({
+        status:    'error',
+        service:   'eq15',
+        database:  'down',
+        timestamp,
+      })
+    }
+  })
 
   // ── Rotas de domínio ─────────────────────────────────────────────────────────
   app.register(authRoutes, { prefix: '/auth' })

@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Search, UploadCloud, Bell, LogOut, LogIn, Home, FileText,
   ClipboardCheck, Library, ShieldCheck, ScrollText, ChevronDown,
-  Users, Mail,
+  Users, Mail, Menu, X,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from './ThemeToggle'
@@ -83,6 +83,79 @@ function Sidebar({ user }: { user: AuthUser | null }) {
   )
 }
 
+// ── Drawer mobile ───────────────────────────────────────────────────────────────
+// Substitui a sidebar em telas < sm: painel deslizante com backdrop, fechado por
+// toque fora, botão X, tecla Escape ou navegação.
+
+function MobileDrawer({ user, open, onClose }: { user: AuthUser | null; open: boolean; onClose: () => void }) {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    if (!open) return
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      document.body.style.overflow = ''
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  const items = NAV_ITEMS.filter((item) => item.show(user))
+
+  return (
+    <div className="fixed inset-0 z-50 sm:hidden">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} aria-hidden="true" />
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu de navegação"
+        className="absolute inset-y-0 left-0 w-64 max-w-[80vw] flex flex-col
+                   bg-white dark:bg-gray-900 shadow-xl"
+      >
+        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+          <Logo compact />
+          <button
+            onClick={onClose}
+            aria-label="Fechar menu"
+            className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800
+                       transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-1">
+          {items.map(({ label, icon: Icon, to }) => {
+            const active = to === '/' ? pathname === '/' : pathname.startsWith(to)
+            return (
+              <button
+                key={to}
+                onClick={() => { navigate(to); onClose() }}
+                aria-current={active ? 'page' : undefined}
+                className={[
+                  'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors text-left',
+                  active
+                    ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200',
+                ].join(' ')}
+              >
+                <Icon size={20} className="shrink-0" />
+                {label}
+              </button>
+            )
+          })}
+        </nav>
+      </aside>
+    </div>
+  )
+}
+
 // ── Menu do usuário ─────────────────────────────────────────────────────────────
 
 function UserMenu({ name, role, onLogout }: { name: string; role: Role; onLogout: () => void }) {
@@ -152,6 +225,7 @@ export function AppShell({ children, searchValue, onSearchChange, onSearchSubmit
   const { user, clearSession } = useAuth()
   const navigate = useNavigate()
   const [internalSearch, setInternalSearch] = useState('')
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const value = searchValue ?? internalSearch
   const handleChange = onSearchChange ?? setInternalSearch
@@ -171,11 +245,24 @@ export function AppShell({ children, searchValue, onSearchChange, onSearchSubmit
 
   return (
     <div className="min-h-screen flex flex-col">
+      <MobileDrawer user={user} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
       {/* ── Cabeçalho ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-gray-200 dark:border-gray-800
                          bg-white/90 dark:bg-gray-900/90 backdrop-blur">
-        <div className="flex items-center gap-3 sm:gap-5 px-4 sm:px-6 h-16">
-          <button onClick={() => navigate('/')} aria-label="Ir para o início" className="shrink-0">
+        <div className="flex items-center gap-2 sm:gap-5 px-3 sm:px-6 h-16">
+          {/* Hambúrguer — abre o drawer de navegação no mobile */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Abrir menu"
+            className="sm:hidden shrink-0 rounded-lg p-2 text-gray-600 dark:text-gray-300
+                       hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          >
+            <Menu size={22} />
+          </button>
+
+          <button onClick={() => navigate('/')} aria-label="Ir para o início" className="shrink-0 hidden sm:block">
             <Logo compact />
           </button>
 
@@ -226,7 +313,7 @@ export function AppShell({ children, searchValue, onSearchChange, onSearchSubmit
               <>
                 <button
                   aria-label="Notificações"
-                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
+                  className="hidden sm:block rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
                              focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <Bell size={18} />
@@ -251,7 +338,7 @@ export function AppShell({ children, searchValue, onSearchChange, onSearchSubmit
       {/* ── Corpo: sidebar + conteúdo ─────────────────────────────────────────── */}
       <div className="flex flex-1 min-h-0">
         <Sidebar user={user} />
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 min-w-0 px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
           {children}
         </main>
       </div>

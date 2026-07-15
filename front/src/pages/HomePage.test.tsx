@@ -56,19 +56,28 @@ describe('HomePage', () => {
     expect(screen.getByText('Recursos disponíveis')).toBeInTheDocument()
   })
 
-  it('filtra pela busca do cabeçalho', async () => {
+  it('envia a busca do cabeçalho ao servidor e exibe o resultado filtrado', async () => {
     setSession()
-    mockMaterials([
-      material('m1', 'Álgebra Linear', '2026-01-01T00:00:00Z'),
-      material('m2', 'Cálculo I', '2026-02-01T00:00:00Z'),
-    ])
+    const all      = [material('m1', 'Álgebra Linear', '2026-01-01T00:00:00Z'), material('m2', 'Cálculo I', '2026-02-01T00:00:00Z')]
+    const filtered = [material('m2', 'Cálculo I', '2026-02-01T00:00:00Z')]
+    mockApi.get.mockImplementation((url: string) => {
+      if (url.includes('/mis/habilidades')) return Promise.resolve({ data: [] })
+      const list = url.includes('search=') ? filtered : all
+      return Promise.resolve({ data: { materials: list, total: list.length, page: 1, perPage: 25 } })
+    })
     const user = userEvent.setup()
     renderWithProviders(<HomePage />)
 
     await screen.findByText('Álgebra Linear')
     await user.type(screen.getByLabelText(/Pesquisar materiais/i), 'Cálculo')
 
-    expect(screen.queryByText('Álgebra Linear')).not.toBeInTheDocument()
+    // Após o debounce, a busca vai ao servidor (acervo inteiro, não só a página atual)
+    await waitFor(() =>
+      expect(
+        mockApi.get.mock.calls.some((c) => String(c[0]).includes(`search=${encodeURIComponent('Cálculo')}`)),
+      ).toBe(true),
+    )
+    await waitFor(() => expect(screen.queryByText('Álgebra Linear')).not.toBeInTheDocument())
     expect(screen.getByText('Cálculo I')).toBeInTheDocument()
   })
 

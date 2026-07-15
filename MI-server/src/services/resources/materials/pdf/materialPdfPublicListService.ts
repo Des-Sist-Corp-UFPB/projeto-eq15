@@ -17,17 +17,25 @@ const publicListQuerySchema = z.object({
     .union([z.literal('true'), z.literal('false')])
     .optional()
     .transform((v) => v === 'true'),
+  // Busca por termo no título ou autor; string vazia é tratada como ausente
+  search: z
+    .string()
+    .trim()
+    .max(200)
+    .optional()
+    .transform((v) => (v ? v : undefined)),
 })
 
 export async function materialPdfPublicListService(input: unknown): Promise<AllMaterialsResult> {
   logger.info('IN - materialPdfPublicListService')
-  const { page, perPage, habilidades, semHabilidade } = validateRequest(input, publicListQuerySchema)
+  const { page, perPage, habilidades, semHabilidade, search } = validateRequest(input, publicListQuerySchema)
   const result = await findAllMaterials({
     status:               'APPROVED',
     page,
     perPage,
     habilidades,
     includeSemHabilidade: semHabilidade,
+    search,
   })
   logger.info('OUT - materialPdfPublicListService')
   return result

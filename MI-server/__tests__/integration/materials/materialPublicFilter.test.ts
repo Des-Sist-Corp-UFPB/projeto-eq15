@@ -85,3 +85,64 @@ describe('GET /mis/public — Filtro por habilidade', () => {
     expect(res.json().total).toBe(0)
   })
 })
+
+describe('GET /mis/public — Busca por termo (search)', () => {
+  /** 3 materiais APPROVED com títulos distintos + 1 PENDING que casa com a busca. */
+  async function seedSearchScenario() {
+    const owner = await createUserAndLogin('owner@test.com', 'INSTITUTIONALIZED')
+    await createMaterial({ uploadedById: owner.userId, title: 'Cálculo I',       status: 'APPROVED' })
+    await createMaterial({ uploadedById: owner.userId, title: 'Álgebra Linear',  status: 'APPROVED', habilidadesBncc: ['EF15LP01'] })
+    await createMaterial({ uploadedById: owner.userId, title: 'Física Básica',   status: 'APPROVED' })
+    await createMaterial({ uploadedById: owner.userId, title: 'Cálculo Avançado', status: 'PENDING_REVIEW' })
+    const viewer = await createUserAndLogin('viewer@test.com', 'COMMON')
+    return viewer.accessToken
+  }
+
+  it('search deve filtrar por título (case-insensitive) e ignorar não-APPROVED', async () => {
+    const token = await seedSearchScenario()
+    const res = await fetchPublic(`/mis/public?search=${encodeURIComponent('cálculo')}`, token)
+
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.total).toBe(1)
+    expect(body.materials[0].title).toBe('Cálculo I')
+  })
+
+  it('search deve encontrar pelo nome do autor', async () => {
+    const token = await seedSearchScenario()
+    // Todos os usuários de teste chamam-se "Test User"
+    const res = await fetchPublic('/mis/public?search=test%20user', token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().total).toBe(3)
+  })
+
+  it('search sem correspondência deve retornar total 0', async () => {
+    const token = await seedSearchScenario()
+    const res = await fetchPublic('/mis/public?search=inexistente', token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().total).toBe(0)
+  })
+
+  it('search deve combinar (AND) com o filtro de habilidades', async () => {
+    const token = await seedSearchScenario()
+    const res = await fetchPublic(
+      `/mis/public?habilidades=EF15LP01&search=${encodeURIComponent('álgebra')}`,
+      token,
+    )
+
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.total).toBe(1)
+    expect(body.materials[0].title).toBe('Álgebra Linear')
+  })
+
+  it('search vazio deve ser ignorado (retorna todos os APPROVED)', async () => {
+    const token = await seedSearchScenario()
+    const res = await fetchPublic('/mis/public?search=', token)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().total).toBe(3)
+  })
+})

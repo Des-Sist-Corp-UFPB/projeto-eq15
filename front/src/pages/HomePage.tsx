@@ -1,7 +1,7 @@
 // src/pages/HomePage.tsx
 // Tela inicial no estilo MEC RED: grade de recursos (materiais aprovados) com
 // miniatura, filtros e busca, dentro do layout AppShell.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertCircle, RefreshCw, Loader2, Library, LogIn,
@@ -70,16 +70,30 @@ export function HomePage() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sort, setSort] = useState<SortKey>('recent')
   const [tabLabel, setTabLabel] = useState(TABS[0].label)
   const [mode, setMode] = useState<'resources' | 'collections'>('resources')
   const [selectedHabilidades, setSelectedHabilidades] = useState<string[]>([])
   const [semHabilidade, setSemHabilidade] = useState(false)
 
+  // A busca é enviada ao servidor (cobre o acervo inteiro, não só a página atual).
+  // Debounce para não disparar uma requisição a cada tecla.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 350)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  // Mudou o termo efetivo da busca → volta para a primeira página
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
   const { data: habilidadesDisponiveis = [] } = useHabilidades(isAuthenticated)
   const { data, isLoading, isError, error, refetch } = usePublicMaterials(page, {
     habilidades: selectedHabilidades,
     semHabilidade,
+    search: debouncedSearch,
   })
 
   const hasActiveFilters = selectedHabilidades.length > 0 || semHabilidade
@@ -106,17 +120,7 @@ export function HomePage() {
   const total = data?.total ?? 0
   const totalPages = Math.ceil(total / 25)
 
-  const visible = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    const filtered = term
-      ? materials.filter(
-          (m) =>
-            m.title.toLowerCase().includes(term) ||
-            m.uploadedBy?.name?.toLowerCase().includes(term),
-        )
-      : materials
-    return sortMaterials(filtered, sort)
-  }, [materials, search, sort])
+  const visible = useMemo(() => sortMaterials(materials, sort), [materials, sort])
 
   return (
     <AppShell searchValue={search} onSearchChange={setSearch}>
@@ -270,7 +274,7 @@ export function HomePage() {
               </div>
 
               {/* Paginação */}
-              {totalPages > 1 && !search && (
+              {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 pt-4">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}

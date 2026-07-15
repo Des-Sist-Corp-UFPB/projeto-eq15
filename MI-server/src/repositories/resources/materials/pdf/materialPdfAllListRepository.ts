@@ -9,6 +9,8 @@ export interface AllMaterialsParams {
   habilidades?: string[]
   /** Inclui também materiais sem nenhuma habilidade (lista vazia) */
   includeSemHabilidade?: boolean
+  /** Busca por termo no título ou no nome de quem enviou (case-insensitive) */
+  search?: string
   page:     number
   perPage:  number
 }
@@ -47,7 +49,7 @@ const MI_SELECT = {
 export async function findAllMaterials(
   params: AllMaterialsParams,
 ): Promise<AllMaterialsResult> {
-  const { status, habilidades, includeSemHabilidade, page, perPage } = params
+  const { status, habilidades, includeSemHabilidade, search, page, perPage } = params
 
   const where: Prisma.MaterialInstrucionalWhereInput = {}
   if (status) where.status = status
@@ -64,6 +66,19 @@ export async function findAllMaterials(
     Object.assign(where, habilidadeConditions[0])
   } else if (habilidadeConditions.length > 1) {
     where.OR = habilidadeConditions
+  }
+
+  // Busca por termo: título OU nome do autor. Vai em `AND` para não colidir com o
+  // `OR` das habilidades (chaves de topo do where são combinadas com AND pelo Prisma).
+  if (search) {
+    where.AND = [
+      {
+        OR: [
+          { title:      { contains: search, mode: 'insensitive' } },
+          { uploadedBy: { name: { contains: search, mode: 'insensitive' } } },
+        ],
+      },
+    ]
   }
 
   const [materials, total] = await prisma.$transaction([

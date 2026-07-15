@@ -69,6 +69,15 @@ describe('materialsApi', () => {
     expect(url).toContain('semHabilidade=true')
   })
 
+  it('listPublicMaterialsRequest inclui search na query e ignora termo vazio', async () => {
+    mockApi.get.mockResolvedValue({ data: { materials: [], total: 0, page: 1, perPage: 25 } })
+    await listPublicMaterialsRequest({ search: '  cálculo ' })
+    expect(mockApi.get.mock.calls[0][0]).toContain(`search=${encodeURIComponent('cálculo')}`)
+
+    await listPublicMaterialsRequest({ search: '   ' })
+    expect(mockApi.get.mock.calls[1][0]).not.toContain('search=')
+  })
+
   it('listAllMaterialsRequest filtra por status', async () => {
     mockApi.get.mockResolvedValue({ data: { materials: [], total: 0, page: 1, perPage: 10 } })
     await listAllMaterialsRequest({ status: 'APPROVED' })

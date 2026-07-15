@@ -94,6 +94,7 @@ export async function listPublicMaterialsRequest(params?: {
   perPage?:       number
   habilidades?:   string[]
   semHabilidade?: boolean
+  search?:        string
 }): Promise<AllMaterialsResponse> {
   const query = new URLSearchParams()
   if (params?.page)    query.append('page',    String(params.page))
@@ -102,6 +103,7 @@ export async function listPublicMaterialsRequest(params?: {
     for (const habilidade of params.habilidades) query.append('habilidades', habilidade)
   }
   if (params?.semHabilidade) query.append('semHabilidade', 'true')
+  if (params?.search?.trim()) query.append('search', params.search.trim())
   const { data } = await api.get<AllMaterialsResponse>(`/mis/public?${query}`)
   return data
 }

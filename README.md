@@ -15,9 +15,10 @@
 7. [Log de Auditoria](#log-de-auditoria)
 8. [Integração com Serviço Externo](#integração-com-serviço-externo)
 9. [Cobertura de Testes](#cobertura-de-testes)
-10. [Como Executar — Desenvolvimento](#7-como-executar--desenvolvimento)
-11. [Como Executar — Produção](#8-como-executar--produção)
-12. [CI/CD](#9-cicd)
+10. [Observabilidade (OpenTelemetry)](#observabilidade-opentelemetry)
+11. [Como Executar — Desenvolvimento](#7-como-executar--desenvolvimento)
+12. [Como Executar — Produção](#8-como-executar--produção)
+13. [CI/CD](#9-cicd)
 
 ---
 
@@ -179,6 +180,99 @@ cp -r coverage ../cobertura/backend
 cd front && npx vitest run --coverage
 cp -r coverage ../cobertura/frontend
 ```
+
+---
+
+## Observabilidade (OpenTelemetry)
+
+A aplicação emite os três sinais de telemetria — **traces**, **métricas** e **logs** — via **OTLP**, para um backend **Grafana LGTM** rodando localmente em container.
+
+### Backend de telemetria
+
+O serviço `otel-lgtm` (imagem `grafana/otel-lgtm`) está no [`MI-server/docker-compose.yml`](MI-server/docker-compose.yml) e reúne, num único container, o coletor OTLP + Tempo (traces) + Loki (logs) + Prometheus (métricas) + Grafana.
+
+```bash
+cd MI-server && docker compose up -d otel-lgtm
+```
+
+| Porta  | Serviço                                       |
+| :----- | :-------------------------------------------- |
+| `3000` | Grafana — **http://127.0.0.1:3000** (`admin` / `admin`) |
+| `4317` | OTLP via gRPC                                 |
+| `4318` | OTLP via HTTP — usado pela aplicação          |
+
+> ⚠️ Use **`127.0.0.1:3000`**, não `localhost:3000`. O `localhost` resolve primeiro para IPv6 (`::1`), onde o relay do Docker Desktop no Windows devolve resposta vazia.
+
+### Instrumentação automática (zero-code)
+
+Nenhum arquivo de `src/` precisa ser alterado para gerar spans de biblioteca: o módulo de registro do OTel é carregado **antes** da aplicação, por flag de runtime.
+
+```bash
+npm run dev:otel      # API com auto-instrumentação (tsx watch)
+npm run worker:otel   # worker de vetorização com auto-instrumentação
+npm run start:otel    # produção — build compilado (dist/server.js)
+```
+
+Os scripts `dev`, `worker` e `start` originais continuam **sem** OTel — a telemetria é opt-in.
+
+São instrumentados automaticamente: servidor HTTP (Fastify), driver `pg` (todas as queries do Prisma viram spans), Redis/BullMQ, clientes HTTP de saída (OpenAI, Qdrant, MinIO) e o logger Pino (cada log sai com `trace_id`/`span_id`, permitindo pular do log direto para o trace no Grafana).
+
+### Configuração (env)
+
+Todas as variáveis ficam no `.env` (modelo em [`MI-server/.env.example`](MI-server/.env.example)):
+
+| Variável                        | Valor em dev                    |
+| :------------------------------ | :------------------------------ |
+| `OTEL_SERVICE_NAME`             | `eq15-computeca`                |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`   | `http://localhost:4318`         |
+| `OTEL_EXPORTER_OTLP_PROTOCOL`   | `http/protobuf`                 |
+| `OTEL_TRACES_EXPORTER`          | `otlp`                          |
+| `OTEL_METRICS_EXPORTER`         | `otlp`                          |
+| `OTEL_LOGS_EXPORTER`            | `otlp`                          |
+| `OTEL_NODE_RESOURCE_DETECTORS`  | `host,os,process,serviceinstance,container,env` |
+
+Dois detalhes que custam tempo se descobertos do jeito difícil:
+
+- **`OTEL_EXPORTER_OTLP_ENDPOINT`** aponta para `localhost` porque em dev a API roda na máquina, fora do compose. Se a API for rodar **dentro** da rede do compose, troque para `http://otel-lgtm:4318`.
+- **A ordem em `OTEL_NODE_RESOURCE_DETECTORS` importa — o último vence.** O `env` precisa ficar por último: se o `process` vier depois, ele sobrescreve o `service.name` com `unknown_service:node.exe` e os traces somem do filtro no Grafana. Os detectores de nuvem (GCP/AWS/Azure) foram omitidos de propósito — eles travam o boot tentando alcançar `metadata.google.internal` até dar timeout.
+
+### Instrumentação manual (spans de negócio)
+
+A auto-instrumentação enxerga bibliotecas, não regra de negócio. Os spans de negócio são criados pelos helpers `withSpan` / `withSpanSync` de [`MI-server/src/lib/tracing.ts`](MI-server/src/lib/tracing.ts), que também registram exceções e marcam o span como erro (aparece em vermelho na cascata).
+
+A API do OTel é **no-op quando o SDK não está carregado** — rodar `npm run dev` ou os testes não tem custo nem efeito colateral.
+
+| Fluxo                    | Spans                                                                                                                       |
+| :----------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
+| **Upload de MI**         | `mi.upload` › `validar_pdf`, `minio_put`, `validar_vinculo_orgs`, `persistir_metadados`                                     |
+| **Vetorização** (worker) | `mi.vetorizacao` › `download_pdf`, `extrair_texto`, `chunking`, `embedding_batch`, `qdrant_upsert`                          |
+| **Busca semântica (RAG)**| `mi.chat.rag` › `guardrail_injection`, `guardrail_moderacao`, `embedding_pergunta`, `busca_semantica`, `geracao_resposta`   |
+
+Atributos de negócio anexados aos spans: `mi.id`, `usuario.id`, `mi.tamanho_bytes`, `mi.paginas`, `mi.chunks_gerados`, `busca.trechos_usados`, `busca.melhor_score`, `guardrail.bloqueado` e a família `ia.*` (`ia.modelo`, `ia.tokens_prompt`, `ia.tokens_completion`, `ia.tokens_total`) — que atende ao requisito de rastreio de consumo de tokens por usuário e por operação, permitindo agregar custo de IA por `usuario.id` no Grafana.
+
+### Como visualizar
+
+1. Suba o `otel-lgtm`, a API (`npm run dev:otel`) e o worker (`npm run worker:otel`).
+2. Use o sistema — faça upload de um MI, aprove-o, faça uma pergunta no chat.
+3. Abra o Grafana em **http://127.0.0.1:3000** → **Explore** → datasource **Tempo** → **Search** por `service.name = eq15-computeca`.
+4. Clique num trace para abrir a cascata.
+
+Exemplo real da cascata de vetorização de um PDF de 5 páginas (24k caracteres, 31 chunks):
+
+```
+mi.vetorizacao  [11337 ms]  {mi.chunks_gerados: 31, job.id: 17}
+├─ mi.vetorizacao.qdrant_upsert      3943 ms   ← gargalo dominante
+├─ mi.vetorizacao.embedding_batch    2624 ms   {ia.tokens_embedding: 9211}
+├─ mi.vetorizacao.download_pdf        129 ms
+├─ mi.vetorizacao.extrair_texto       124 ms   {mi.paginas: 5, mi.caracteres: 24176}
+└─ mi.vetorizacao.chunking              0 ms
+```
+
+> **Limitação conhecida:** os spans HTTP saem nomeados apenas `GET`/`POST`, sem o atributo `http.route` — o `instrumentation-fastify` não enriquece os spans sob o loader ESM do `tsx`. Os spans manuais compensam, mas agrupar por rota no Grafana fica limitado em dev.
+
+### Produção
+
+A telemetria **não** está ligada em produção: nem o `start.sh` nem o `docker-compose.prod.yml` definem as flags do OTel, então o SDK sequer é carregado. Habilitar exigiria expor um coletor acessível pelo servidor de produção.
 
 ---
 

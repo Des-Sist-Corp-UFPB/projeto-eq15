@@ -10,6 +10,7 @@ import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
 import { env } from '../../../../env'
+import { withSpan, withSpanSync } from '../../../../lib/tracing'
 import type { UploadMIInput, IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 // ── Constantes de validação ────────────────────────────────────────────────────
@@ -45,57 +46,90 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<IU
   const { title, buffer, originalFileName, mimeType, uploadedById, organizationIds = [] } = input
   const habilidadesBncc = habilidadesBnccSchema.parse(input.habilidadesBncc)
 
-  if (mimeType !== ALLOWED_MIME_TYPE) {
-    throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
-  }
-
-  const uploader = await findUserById(uploadedById)
-  if (!uploader) {
-    throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.GENERAL.INTERNAL_ERROR))
-  }
-
-  validatePDFBuffer(buffer)
-
-  const sanitizedName = sanitizeForStorageKey(uploader.name)
-  const storageKey = `${sanitizedName}_${uploadedById}_${randomUUID()}.pdf`
-
-  try {
-    await minioClient.putObject(
-      MINIO_BUCKET,
-      storageKey,
-      buffer,
-      buffer.length,
-      { 'Content-Type': ALLOWED_MIME_TYPE },
-    )
-  } catch (cause) {
-    throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_FAILED))
-  }
-
-  // Validate uploader is a member of each specified org before linking
-  if (organizationIds.length > 0) {
-    for (const orgId of organizationIds) {
-      const membership = await findMembership(orgId, uploadedById)
-      if (!membership) {
-        throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ORG.ORG_NOT_MEMBER))
+  return withSpan(
+    'mi.upload',
+    {
+      'usuario.id':              uploadedById,
+      'mi.tamanho_bytes':        buffer.length,
+      'mi.mime_type':            mimeType,
+      'mi.habilidades_bncc':     habilidadesBncc.length,
+      'mi.organizacoes_vinculadas': organizationIds.length,
+    },
+    async (spanUpload) => {
+      if (mimeType !== ALLOWED_MIME_TYPE) {
+        throw new GeneralErrorResponse(StatusCode.UNSUPPORTED_MEDIA_TYPE, buildError(ERRORS.ERRORS_RESOURCES.INVALID_FILE_TYPE))
       }
-    }
-  }
 
-  const mi = await createMaterialPdf({
-    title,
-    originalFileName,
-    storageKey,
-    mimeType,
-    sizeBytes: buffer.length,
-    habilidadesBncc,
-    uploadedById,
-  })
+      const uploader = await findUserById(uploadedById)
+      if (!uploader) {
+        throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.GENERAL.INTERNAL_ERROR))
+      }
 
-  if (organizationIds.length > 0) {
-    await linkMaterialToOrgs(mi.id, organizationIds)
-  }
+      // Validação de conteúdo (magic bytes + tamanho) — puro CPU, sem I/O.
+      withSpanSync('mi.upload.validar_pdf', { 'mi.tamanho_bytes': buffer.length }, () => {
+        validatePDFBuffer(buffer)
+      })
 
-  return mi
+      const sanitizedName = sanitizeForStorageKey(uploader.name)
+      const storageKey = `${sanitizedName}_${uploadedById}_${randomUUID()}.pdf`
+      spanUpload.setAttribute('mi.storage_key', storageKey)
+
+      // Escrita no object storage — costuma ser a etapa mais cara do fluxo.
+      await withSpan(
+        'mi.upload.minio_put',
+        { 'mi.storage_key': storageKey, 'mi.tamanho_bytes': buffer.length, 'storage.bucket': MINIO_BUCKET },
+        async () => {
+          try {
+            await minioClient.putObject(
+              MINIO_BUCKET,
+              storageKey,
+              buffer,
+              buffer.length,
+              { 'Content-Type': ALLOWED_MIME_TYPE },
+            )
+          } catch (cause) {
+            throw new GeneralErrorResponse(StatusCode.INTERNAL_SERVER_ERROR, buildError(ERRORS.ERRORS_RESOURCES.UPLOAD_FAILED))
+          }
+        },
+      )
+
+      // Validate uploader is a member of each specified org before linking
+      if (organizationIds.length > 0) {
+        await withSpan(
+          'mi.upload.validar_vinculo_orgs',
+          { 'mi.organizacoes_vinculadas': organizationIds.length },
+          async () => {
+            for (const orgId of organizationIds) {
+              const membership = await findMembership(orgId, uploadedById)
+              if (!membership) {
+                throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.ORG.ORG_NOT_MEMBER))
+              }
+            }
+          },
+        )
+      }
+
+      const mi = await withSpan('mi.upload.persistir_metadados', { 'mi.titulo': title }, async () =>
+        createMaterialPdf({
+          title,
+          originalFileName,
+          storageKey,
+          mimeType,
+          sizeBytes: buffer.length,
+          habilidadesBncc,
+          uploadedById,
+        }),
+      )
+
+      spanUpload.setAttribute('mi.id', mi.id)
+
+      if (organizationIds.length > 0) {
+        await linkMaterialToOrgs(mi.id, organizationIds)
+      }
+
+      return mi
+    },
+  )
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

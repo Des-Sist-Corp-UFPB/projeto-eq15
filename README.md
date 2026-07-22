@@ -217,6 +217,8 @@ Os scripts `dev`, `worker` e `start` originais continuam **sem** OTel — a tele
 
 São instrumentados automaticamente: servidor HTTP (Fastify), driver `pg` (todas as queries do Prisma viram spans), Redis/BullMQ, clientes HTTP de saída (OpenAI, Qdrant, MinIO) e o logger Pino (cada log sai com `trace_id`/`span_id`, permitindo pular do log direto para o trace no Grafana).
 
+> **Pino e o `pino-pretty`:** o transport `pino-pretty` roda numa worker thread, e a instrumentação do OTel só enxerga o que passa pela stream do processo principal — com ele ativo, **nenhum log chega ao Loki**. Por isso o logger desliga o transport quando `OTEL_LOGS_EXPORTER` está configurado ([`logger.ts`](MI-server/src/lib/logger.ts) e [`app.ts`](MI-server/src/app.ts)): em modo observabilidade abre-se mão do log colorido para não perder um dos três sinais.
+
 ### Configuração (env)
 
 Todas as variáveis ficam no `.env` (modelo em [`MI-server/.env.example`](MI-server/.env.example)):
@@ -231,7 +233,9 @@ Todas as variáveis ficam no `.env` (modelo em [`MI-server/.env.example`](MI-ser
 | `OTEL_LOGS_EXPORTER`            | `otlp`                          |
 | `OTEL_NODE_RESOURCE_DETECTORS`  | `host,os,process,serviceinstance,container,env` |
 
-Dois detalhes que custam tempo se descobertos do jeito difícil:
+Três detalhes que custam tempo se descobertos do jeito difícil:
+
+- **No Windows com Docker Desktop, use `127.0.0.1` e não `localhost`** em todos os endereços de serviço (Postgres, MinIO, Redis, Qdrant, OTLP). O `localhost` resolve primeiro para `::1`, e o relay IPv6 do Docker Desktop falha de forma intermitente: a conexão fica pendurada até dar timeout, **sem mensagem de erro** — o sintoma é a aplicação simplesmente parar de responder nas rotas que tocam o banco.
 
 - **`OTEL_EXPORTER_OTLP_ENDPOINT`** aponta para `localhost` porque em dev a API roda na máquina, fora do compose. Se a API for rodar **dentro** da rede do compose, troque para `http://otel-lgtm:4318`.
 - **A ordem em `OTEL_NODE_RESOURCE_DETECTORS` importa — o último vence.** O `env` precisa ficar por último: se o `process` vier depois, ele sobrescreve o `service.name` com `unknown_service:node.exe` e os traces somem do filtro no Grafana. Os detectores de nuvem (GCP/AWS/Azure) foram omitidos de propósito — eles travam o boot tentando alcançar `metadata.google.internal` até dar timeout.

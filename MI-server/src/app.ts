@@ -12,7 +12,7 @@ import {
 } from '@fastify/type-provider-zod'
 import { env } from './env'
 import { prisma } from './database/prisma'
-import { logger } from './lib/logger'
+import { logger, otelLogsAtivo } from './lib/logger'
 import { errorHandler } from './errors/errorHandler'
 import { authRoutes } from './routes/auth/authRoutes'
 import { usersRoutes } from './routes/users/usersRoutes'
@@ -23,8 +23,10 @@ import { nomearSpanHttp } from './lib/tracing'
 
 export function buildApp() {
   const app = fastify({
+    // Mesmo motivo do src/lib/logger.ts: com o transport pino-pretty ativo os
+    // logs saem por uma worker thread e não chegam ao Loki.
     logger:
-      env.NODE_ENV === 'development'
+      env.NODE_ENV === 'development' && !otelLogsAtivo
         ? {
             transport: {
               target: 'pino-pretty',

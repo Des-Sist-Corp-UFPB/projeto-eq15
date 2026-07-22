@@ -10,7 +10,7 @@
     "dev": "tsx watch src/server.ts",
     "dev:otel": "tsx watch --env-file-if-exists=.env --import @opentelemetry/auto-instrumentations-node/register src/server.ts",
     "start:otel": "node --env-file-if-exists=.env --require @opentelemetry/auto-instrumentations-node/register dist/server.js",
-    "build": "tsup src/server.ts --format cjs --out-dir dist",
+    "build": "tsup src/server.ts src/workers/vectorizeWorker.ts --format cjs --out-dir dist",
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:unit": "vitest run --config vitest.unit.config.ts",

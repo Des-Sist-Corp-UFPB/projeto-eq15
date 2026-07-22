@@ -378,6 +378,22 @@ async function runChat(
 
   logger.info({ materialId, chunksUsed: chunks.length, tokenUsage }, 'OUT - materialPdfChatService')
 
+  // Evento de negócio estruturado — consumo de IA pesquisável no Loki por
+  // usuário e por material, correlacionado ao trace pelo trace_id.
+  logger.info(
+    {
+      evento:           'rag_respondido',
+      mi_id:            materialId,
+      usuario_id:       userId,
+      ia_modelo:        CHAT_MODEL,
+      chunks_usados:    chunks.length,
+      tokens_prompt:    tokenUsage.promptTokens,
+      tokens_resposta:  tokenUsage.completionTokens,
+      tokens_total:     tokenUsage.totalTokens + tokenUsage.embeddingTokens,
+    },
+    'Busca semântica respondida',
+  )
+
   spanRag.setAttribute('ia.tokens_total', tokenUsage.totalTokens + tokenUsage.embeddingTokens)
 
   return { answer, chunksUsed: chunks.length, tokenUsage }

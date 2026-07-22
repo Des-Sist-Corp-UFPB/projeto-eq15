@@ -49,6 +49,26 @@ services:
       # ── Frontend URL (links de e-mail) ─────────────────────────────────────────
       APP_URL: ${APP_URL:-https://eq15.dsc.rodrigor.com}
 
+      # ── OpenTelemetry (observabilidade) ───────────────────────────────────────
+      # Todos os valores vêm do .env do portal — nenhum é definido aqui.
+      # Declarar as variáveis neste bloco é obrigatório: o compose só repassa
+      # para dentro do container o que está declarado, então defini-las apenas
+      # no portal não faz efeito nenhum.
+      # Sem OTEL_EXPORTER_OTLP_ENDPOINT, o start.sh não carrega o SDK.
+      OTEL_SERVICE_NAME:            ${OTEL_SERVICE_NAME:-}
+      OTEL_EXPORTER_OTLP_ENDPOINT:  ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_PROTOCOL:  ${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
+      OTEL_EXPORTER_OTLP_HEADERS:   ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_TRACES_EXPORTER:         ${OTEL_TRACES_EXPORTER:-otlp}
+      OTEL_METRICS_EXPORTER:        ${OTEL_METRICS_EXPORTER:-otlp}
+      OTEL_LOGS_EXPORTER:           ${OTEL_LOGS_EXPORTER:-otlp}
+      # A ordem importa — o último vence. `env` por último, senão o detector
+      # `process` sobrescreve o service.name com "unknown_service:node".
+      # Detectores de nuvem omitidos: travam o boot tentando alcançar
+      # metadata.google.internal / 169.254.169.254 até dar timeout.
+      OTEL_NODE_RESOURCE_DETECTORS: ${OTEL_NODE_RESOURCE_DETECTORS:-host,os,process,serviceinstance,container,env}
+      OTEL_RESOURCE_ATTRIBUTES:     ${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=production}
+
   # ── Redis (BullMQ — jobs de vetorização assíncrona) ───────────────────────────
   # Gerenciado pelo docker-compose — não precisa ser configurado no portal.
   # Dados persistidos no volume redis_data.

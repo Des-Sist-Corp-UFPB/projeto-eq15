@@ -45,6 +45,9 @@ interface HttpErrorOptions {
  * 2. Re-lança o erro para o errorHandler global do Fastify
  */
 export function httpError({ error, context }: HttpErrorOptions): never {
-  logger.error({ error }, `ERROR - ${context}`)
+  // Chave `err` (e não `error`): é o nome que o serializer padrão do Pino
+  // reconhece, e só com ele a exceção sai com tipo, mensagem e stack trace
+  // estruturados no log — inclusive no Loki, via OpenTelemetry.
+  logger.error({ err: error, evento: 'erro_tratado', contexto: context }, `ERROR - ${context}`)
   throw error
 }

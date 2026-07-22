@@ -56,6 +56,11 @@ export async function loginService(input: LoginRequest): Promise<IAuthUser> {
 
     if (!passwordMatch) {
       spanLogin.setAttribute('auth.falha', 'senha_incorreta')
+      // Sem o e-mail nem a senha — só o domínio, pelo mesmo motivo dos spans.
+      logger.warn(
+        { evento: 'login_recusado', motivo: 'senha_incorreta', usuario_id: user.id, email_dominio: emailDomain(email) },
+        'Login recusado',
+      )
       throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
     }
 
@@ -80,6 +85,16 @@ export async function loginService(input: LoginRequest): Promise<IAuthUser> {
     spanLogin.setAttribute('usuario.perfil', user.role)
 
     logger.info('OUT - loginService')
+
+    logger.info(
+      {
+        evento:         'login_efetuado',
+        usuario_id:     user.id,
+        usuario_perfil: user.role,
+        email_dominio:  emailDomain(email),
+      },
+      'Login efetuado',
+    )
 
     return {
       id: user.id,

@@ -132,7 +132,7 @@ describe('createUserController', () => {
       await createUserController(makeMockRequest(), makeMockReply()).catch(() => {})
 
       expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(GeneralErrorResponse) }),
+        expect.objectContaining({ err: expect.any(GeneralErrorResponse) }),
         'ERROR - createUserController',
       )
     })

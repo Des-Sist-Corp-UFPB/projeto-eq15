@@ -185,11 +185,15 @@ cp -r coverage ../cobertura/frontend
 
 ## Observabilidade (OpenTelemetry)
 
-A aplicação emite os três sinais de telemetria — **traces**, **métricas** e **logs** — via **OTLP**, para um backend **Grafana LGTM** rodando localmente em container.
+A aplicação emite os três sinais de telemetria — **traces**, **métricas** e **logs** — via **OTLP**.
 
 ### Backend de telemetria
 
-O serviço `otel-lgtm` (imagem `grafana/otel-lgtm`) está no [`MI-server/docker-compose.yml`](MI-server/docker-compose.yml) e reúne, num único container, o coletor OTLP + Tempo (traces) + Loki (logs) + Prometheus (métricas) + Grafana.
+**Destino oficial:** o servidor central da disciplina — a mesma URL serve para ingestão e para o painel Grafana. Não é preciso subir backend nenhum: basta preencher as variáveis de ambiente. O endpoint, o nome de serviço e o token são fornecidos pela disciplina (ver [`docs/opentelemetry.md`](docs/opentelemetry.md)) e **não são versionados** — vivem apenas no `.env` local e no `.env` do portal, em produção.
+
+> 🔒 O token **nunca** entra em commit. Ele vive no `MI-server/.env`, que está no `.gitignore`. Sem o token, a ingestão responde `401`.
+
+**Alternativa para desenvolvimento offline:** o serviço `otel-lgtm` (imagem `grafana/otel-lgtm`) no [`MI-server/docker-compose.yml`](MI-server/docker-compose.yml) sobe a stack completa — coletor OTLP + Tempo + Loki + Prometheus + Grafana — num único container.
 
 ```bash
 cd MI-server && docker compose up -d otel-lgtm
@@ -200,6 +204,8 @@ cd MI-server && docker compose up -d otel-lgtm
 | `3000` | Grafana — **http://127.0.0.1:3000** (`admin` / `admin`) |
 | `4317` | OTLP via gRPC                                 |
 | `4318` | OTLP via HTTP — usado pela aplicação          |
+
+Para usar a stack local, aponte `OTEL_EXPORTER_OTLP_ENDPOINT` para `http://127.0.0.1:4318` e comente o header do token.
 
 > ⚠️ Use **`127.0.0.1:3000`**, não `localhost:3000`. O `localhost` resolve primeiro para IPv6 (`::1`), onde o relay do Docker Desktop no Windows devolve resposta vazia.
 
@@ -223,21 +229,22 @@ São instrumentados automaticamente: servidor HTTP (Fastify), driver `pg` (todas
 
 Todas as variáveis ficam no `.env` (modelo em [`MI-server/.env.example`](MI-server/.env.example)):
 
-| Variável                        | Valor em dev                    |
+| Variável                        | Valor                           |
 | :------------------------------ | :------------------------------ |
-| `OTEL_SERVICE_NAME`             | `eq15-computeca`                |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`   | `http://localhost:4318`         |
+| `OTEL_SERVICE_NAME`             | fornecido pela disciplina — **não versionar** |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`   | fornecido pela disciplina — **não versionar** |
+| `OTEL_EXPORTER_OTLP_HEADERS`    | token de ingestão — **não versionar** |
 | `OTEL_EXPORTER_OTLP_PROTOCOL`   | `http/protobuf`                 |
 | `OTEL_TRACES_EXPORTER`          | `otlp`                          |
 | `OTEL_METRICS_EXPORTER`         | `otlp`                          |
 | `OTEL_LOGS_EXPORTER`            | `otlp`                          |
 | `OTEL_NODE_RESOURCE_DETECTORS`  | `host,os,process,serviceinstance,container,env` |
 
-Três detalhes que custam tempo se descobertos do jeito difícil:
+> ⚠️ **O `OTEL_SERVICE_NAME` precisa seguir exatamente o padrão da disciplina.** O Grafana é compartilhado entre todas as turmas, e é por esse nome que a equipe se encontra no painel. Nome fora do padrão vira "órfão" e não é localizado. O valor correto está no guia da disciplina.
 
-- **No Windows com Docker Desktop, use `127.0.0.1` e não `localhost`** em todos os endereços de serviço (Postgres, MinIO, Redis, Qdrant, OTLP). O `localhost` resolve primeiro para `::1`, e o relay IPv6 do Docker Desktop falha de forma intermitente: a conexão fica pendurada até dar timeout, **sem mensagem de erro** — o sintoma é a aplicação simplesmente parar de responder nas rotas que tocam o banco.
+Quatro detalhes que custam tempo se descobertos do jeito difícil:
 
-- **`OTEL_EXPORTER_OTLP_ENDPOINT`** aponta para `localhost` porque em dev a API roda na máquina, fora do compose. Se a API for rodar **dentro** da rede do compose, troque para `http://otel-lgtm:4318`.
+- **No Windows com Docker Desktop, use `127.0.0.1` e não `localhost`** em todos os endereços de serviço (Postgres, MinIO, Redis, Qdrant). O `localhost` resolve primeiro para `::1`, e o relay IPv6 do Docker Desktop falha de forma intermitente: a conexão fica pendurada até dar timeout, **sem mensagem de erro** — o sintoma é a aplicação simplesmente parar de responder nas rotas que tocam o banco.
 - **A ordem em `OTEL_NODE_RESOURCE_DETECTORS` importa — o último vence.** O `env` precisa ficar por último: se o `process` vier depois, ele sobrescreve o `service.name` com `unknown_service:node.exe` e os traces somem do filtro no Grafana. Os detectores de nuvem (GCP/AWS/Azure) foram omitidos de propósito — eles travam o boot tentando alcançar `metadata.google.internal` até dar timeout.
 
 ### Instrumentação manual (spans de negócio)
@@ -271,20 +278,25 @@ Isso é verificado por testes automatizados — [`authTracing.test.ts`](MI-serve
 
 ### Como visualizar
 
-1. Suba o `otel-lgtm`, a API (`npm run dev:otel`) e o worker (`npm run worker:otel`).
+1. Suba a API (`npm run dev:otel`) e o worker (`npm run worker:otel`). Se estiver usando a stack local em vez do servidor da turma, suba também o `otel-lgtm`.
 2. Use o sistema — faça upload de um MI, aprove-o, faça uma pergunta no chat.
-3. Abra o Grafana em **http://127.0.0.1:3000** → **Explore** → datasource **Tempo** → **Search** por `service.name = eq15-computeca`.
-4. Clique num trace para abrir a cascata.
+3. Abra o Grafana:
+   - **servidor da turma** → URL do painel indicada em [`docs/opentelemetry.md`](docs/opentelemetry.md) (leitura liberada, sem login)
+   - **stack local** → <http://127.0.0.1:3000> (`admin` / `admin`)
+4. **Explore** → datasource **Tempo** → **Search** por `service.name = <OTEL_SERVICE_NAME>`.
+5. Clique num trace para abrir a cascata.
+
+Para os logs, o caminho é o mesmo trocando o datasource para **Loki**, com `{service_name="<OTEL_SERVICE_NAME>"}`.
 
 Consultas TraceQL úteis (aba **TraceQL** do Explore):
 
 | Objetivo | Query |
 | :-- | :-- |
-| Todos os traces do serviço | `{resource.service.name="eq15-computeca"}` |
+| Todos os traces do serviço | `{resource.service.name="<OTEL_SERVICE_NAME>"}` |
 | Um fluxo específico | `{span.http.route="/mis"}` |
 | Vetorização (worker) | `{name=~"Vetorização.*"}` |
 | Só as falhas de autenticação | `{span.auth.falha!=""}` |
-| Operações lentas | `{resource.service.name="eq15-computeca" && duration > 3s}` |
+| Operações lentas | `{resource.service.name="<OTEL_SERVICE_NAME>" && duration > 3s}` |
 | Consumo alto de tokens de IA | `{span.ia.tokens_total > 1000}` |
 
 > O Tempo leva de 30 s a 1 min para indexar. Busca vazia logo após a requisição é atraso de indexação, não erro.
@@ -315,7 +327,25 @@ Login — POST /auth/login                           117 ms
 
 ### Produção
 
-A telemetria **não** está ligada em produção: nem o `start.sh` nem o `docker-compose.prod.yml` definem as flags do OTel, então o SDK sequer é carregado. Habilitar exigiria expor um coletor acessível pelo servidor de produção.
+A telemetria em produção é **opt-in por variável de ambiente**, e depende de duas peças além das variáveis:
+
+1. **`start.sh`** carrega o registro do OTel (`node --require …`) **apenas quando `OTEL_EXPORTER_OTLP_ENDPOINT` está definido**. Sem o `--require`, definir as variáveis `OTEL_*` não produz efeito nenhum: o SDK nunca é carregado e nada é exportado, silenciosamente.
+2. **`docker-compose.prod.yml`** precisa declarar as variáveis no bloco `environment:`. O compose só repassa para dentro do container o que está declarado ali — variáveis presentes apenas no `.env` do portal não chegam à aplicação.
+
+Com as duas peças no lugar, basta definir no `.env` do portal as quatro variáveis abaixo, com os valores fornecidos pela disciplina:
+
+```
+OTEL_SERVICE_NAME=
+OTEL_EXPORTER_OTLP_ENDPOINT=
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+OTEL_EXPORTER_OTLP_HEADERS=
+```
+
+Os demais (`OTEL_TRACES_EXPORTER`, `OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER`, `OTEL_NODE_RESOURCE_DETECTORS`, `OTEL_RESOURCE_ATTRIBUTES`) já têm valor padrão correto no compose e só precisam ser definidos para sobrescrever.
+
+O `start.sh` sobe três processos: Nginx (frontend), o **worker de vetorização** em background e a API como processo principal. Worker e API recebem a mesma flag do OTel, então ambos exportam sob o mesmo `OTEL_SERVICE_NAME`.
+
+> O worker passou a ser iniciado em produção nesta versão. Antes, o `start.sh` subia apenas Nginx e a API, e o `npm run build` compilava só `src/server.ts` — de modo que os jobs enfileirados na aprovação de um MI ficavam parados no Redis para sempre, o material nunca saía de `vectorStatus=PENDING` e o chat com IA respondia `MI_NOT_VECTORIZED` para qualquer pergunta. O build agora gera também `dist/workers/vectorizeWorker.js`.
 
 ---
 

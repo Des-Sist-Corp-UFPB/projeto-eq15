@@ -1,8 +1,10 @@
 # Entrega — Observabilidade com OpenTelemetry
 
-**Equipe:** eq15 · **Serviço:** `eq15-computeca` · **Projeto:** Computeca — Acervo de Materiais Instrucionais, Campus IV UFPB
+**Equipe:** eq15 · **Serviço:** `<OTEL_SERVICE_NAME>` · **Projeto:** Computeca — Acervo de Materiais Instrucionais, Campus IV UFPB
 
-Documento de resposta aos exercícios/entregáveis da disciplina. Os números vieram de execuções reais contra a stack `grafana/otel-lgtm` local. Os trace IDs referenciados permitem reabrir cada cascata no Grafana enquanto o Tempo mantiver os dados.
+Documento de resposta aos exercícios/entregáveis da disciplina, cobrindo os **6 entregáveis de traces** (`docs/opentelemetry.md`) e os **4 de logs** (`docs/opentelemetry-logs.md`).
+
+> ⚠️ **Sobre os números deste documento:** as medições e trace IDs abaixo vieram de execuções contra uma stack `grafana/otel-lgtm` local, usada durante o desenvolvimento. Ao gerar os prints finais no painel da turma, os trace IDs serão outros e as durações variam entre execuções — as proporções e conclusões se mantêm, mas **os valores absolutos precisam ser conferidos**.
 
 ---
 
@@ -10,9 +12,10 @@ Documento de resposta aos exercícios/entregáveis da disciplina. Os números vi
 
 | Componente | Configuração |
 | :-- | :-- |
-| Backend de telemetria | `grafana/otel-lgtm` (Collector OTLP + Tempo + Loki + Prometheus + Grafana) |
-| `OTEL_SERVICE_NAME` | `eq15-computeca` |
-| Protocolo | OTLP via HTTP (`http/protobuf`), porta 4318 |
+| Backend de telemetria | Servidor central da disciplina (endpoint em `docs/opentelemetry.md`) |
+| `OTEL_SERVICE_NAME` | `<OTEL_SERVICE_NAME>` |
+| Protocolo | OTLP via HTTP (`http/protobuf`) |
+| Autenticação | `OTEL_EXPORTER_OTLP_HEADERS=Authorization=Bearer <token>`, fora do git |
 | Sinais ativos | Traces, métricas e logs |
 | Instrumentação automática | `@opentelemetry/auto-instrumentations-node/register`, carregado por flag de runtime |
 | Instrumentação manual | 25+ spans de negócio em 7 fluxos |
@@ -23,16 +26,16 @@ A aplicação é uma API **Fastify + TypeScript + Prisma**, com PostgreSQL, MinI
 
 ## 1. Backend no ar
 
-A stack LGTM sobe como serviço `otel-lgtm` no `docker-compose.yml`, expondo Grafana em `:3000` e OTLP em `:4317`/`:4318`. A aplicação exporta os três sinais sem nenhuma alteração de código, apenas carregando o módulo de registro antes do processo:
+A aplicação aponta para o servidor central da turma e exporta os três sinais sem nenhuma alteração de código, apenas carregando o módulo de registro antes do processo:
 
 ```
 npm run dev:otel      # API
 npm run worker:otel   # worker de vetorização
 ```
 
-**Evidência:** Explore → Tempo, consulta `{resource.service.name="eq15-computeca"}`, listando os traces de todos os fluxos do sistema.
+**Evidência:** Explore → Tempo, consulta `{resource.service.name="<OTEL_SERVICE_NAME>"}`, listando os traces de todos os fluxos do sistema.
 
-> 📸 **Print 1** — lista de traces com a coluna *Service* mostrando `eq15-computeca`.
+> 📸 **Print 1** — lista de traces com a coluna *Service* mostrando `<OTEL_SERVICE_NAME>`.
 
 Os três sinais foram verificados individualmente:
 
@@ -215,16 +218,152 @@ Isso não ficou como convenção: dois arquivos de teste (`authTracing.test.ts` 
 
 ---
 
+# Parte II — Entregáveis de Logs
+
+Respostas aos exercícios de `docs/opentelemetry-logs.md`. Todos os prints saem de **Explore → Loki** no painel da turma.
+
+## L1. Log no Loki
+
+A aplicação usa **Pino** como logger. Com `OTEL_LOGS_EXPORTER=otlp`, a instrumentação `@opentelemetry/instrumentation-pino` (incluída no pacote de auto-instrumentação) faz a ponte para o OTLP — os logs sobem sem código de bridge adicional.
+
+**Consulta LogQL:**
+
+```logql
+{service_name="<OTEL_SERVICE_NAME>"}
+```
+
+> 📸 **Print L1** — linhas de log reais da aplicação filtradas por `service_name`.
+
+**Nota técnica relevante:** o guia sugere montar o `LoggerProvider` manualmente no Node, com três pacotes extras (`@opentelemetry/api-logs`, `sdk-logs`, `exporter-logs-otlp-http`). Verificamos empiricamente que **isso não é necessário**: o módulo de registro já configura o provider de logs quando `OTEL_LOGS_EXPORTER=otlp` está definido.
+
+Há, porém, uma condição que não está documentada e que fez os logs sumirem silenciosamente: **o transport `pino-pretty` impede a exportação**. Ele roda numa worker thread e a instrumentação só enxerga a stream do processo principal — o resultado é o sinal de logs vazio, sem nenhum erro. Por isso o logger desliga o `pino-pretty` quando `OTEL_LOGS_EXPORTER` está configurado (`src/lib/logger.ts` e `src/app.ts`).
+
+## L2. Log estruturado
+
+Os eventos de negócio são registrados com campos estruturados, não texto solto. Exemplo do fluxo de busca semântica (`materialPdfChatService.ts`):
+
+```typescript
+logger.info(
+  {
+    evento:          'rag_respondido',
+    mi_id:           materialId,
+    usuario_id:      userId,
+    ia_modelo:       CHAT_MODEL,
+    chunks_usados:   chunks.length,
+    tokens_prompt:   tokenUsage.promptTokens,
+    tokens_resposta: tokenUsage.completionTokens,
+    tokens_total:    tokenUsage.totalTokens + tokenUsage.embeddingTokens,
+  },
+  'Busca semântica respondida',
+)
+```
+
+Eventos estruturados disponíveis:
+
+| `evento` | Onde | Campos de negócio |
+| :-- | :-- | :-- |
+| `mi_enviado` | upload de MI | `mi_id`, `mi_tamanho_bytes`, `mi_habilidades`, `usuario_id` |
+| `mi_vetorizado` | worker | `mi_id`, `chunks_gerados`, `caracteres` |
+| `rag_respondido` | busca semântica | `mi_id`, `usuario_id`, `ia_modelo`, `chunks_usados`, `tokens_*` |
+| `login_efetuado` | login | `usuario_id`, `usuario_perfil`, `email_dominio` |
+| `login_recusado` | login (WARN) | `motivo`, `usuario_id`, `email_dominio` |
+| `falha_vetorizacao` | worker (ERROR) | `mi_id` + exceção |
+| `erro_tratado` | qualquer controller (ERROR) | `contexto` + exceção |
+
+**Consultas LogQL:**
+
+```logql
+{service_name="<OTEL_SERVICE_NAME>"} | json | evento="rag_respondido"
+{service_name="<OTEL_SERVICE_NAME>"} | json | tokens_total > 1000
+{service_name="<OTEL_SERVICE_NAME>"} | json | evento="mi_vetorizado" | line_format "{{.mi_id}} → {{.chunks_gerados}} chunks"
+```
+
+> 📸 **Print L2** — resultado de `| json | evento="rag_respondido"`, com os campos parseados visíveis.
+
+O campo `tokens_total` é o mesmo dado que vai para o atributo de span `ia.tokens_total` (entregável 6). Ter nos dois sinais é deliberado: no trace serve para ver o custo **daquela requisição**; no log serve para **agregar** consumo por usuário ao longo do tempo.
+
+## L3. Correlação log ↔ trace
+
+Cada linha de log carrega `trace_id`, `span_id` e `trace_flags`, injetados automaticamente pela instrumentação do Pino. Exemplo real da saída da aplicação:
+
+```json
+{
+  "level": 30,
+  "trace_id": "79d6917ba19d363ecb1d76262210a691",
+  "span_id": "033242fdc71e22d0",
+  "trace_flags": "01",
+  "evento": "rag_respondido",
+  "msg": "Busca semântica respondida"
+}
+```
+
+No Grafana, clicar numa linha de log que tenha `trace_id` oferece o botão para pular direto para a cascata correspondente no Tempo.
+
+**Consulta LogQL:**
+
+```logql
+{service_name="<OTEL_SERVICE_NAME>"} | trace_id != ""
+```
+
+> 📸 **Print L3** — linha de log expandida mostrando o `trace_id` e o botão de salto para o Tempo. Idealmente, um segundo print mostrando a cascata que abriu a partir dele.
+
+Esse é o ganho concreto de ter os três sinais no mesmo lugar: do evento de negócio (*o quê*) para a cascata (*onde e quanto tempo*) em um clique, sem procurar por timestamp.
+
+## L4. Log de erro
+
+Erros tratados são registrados com `logger.error` e a exceção sob a chave **`err`** — que é a chave reconhecida pelo serializer padrão do Pino, e a única que faz o tipo, a mensagem e o *stack trace* saírem estruturados.
+
+Dois caminhos de erro instrumentados:
+
+**1. Erro de requisição** (`src/utils/http.ts`) — todo controller passa por aqui:
+
+```typescript
+logger.error({ err: error, evento: 'erro_tratado', contexto: context }, `ERROR - ${context}`)
+```
+
+**2. Falha na vetorização** (`src/workers/vectorizeWorker.ts`) — antes de marcar o material como `FAILED`:
+
+```typescript
+logger.error(
+  { err, evento: 'falha_vetorizacao', mi_id: materialId },
+  'Falha ao vetorizar Material Instrucional',
+)
+```
+
+**Como provocar:** o caminho mais simples é enviar um PDF corrompido — o `pdf-parse` lança `FormatError: bad XRef entry` e o log sai com a exceção completa. Um login com senha errada também gera `evento: 'login_recusado'` em nível WARN.
+
+**Consultas LogQL:**
+
+```logql
+{service_name="<OTEL_SERVICE_NAME>"} | json | evento="erro_tratado"
+{service_name="<OTEL_SERVICE_NAME>"} |= "error"
+{service_name="<OTEL_SERVICE_NAME>"} | json | evento="falha_vetorizacao"
+```
+
+> 📸 **Print L4** — linha de erro expandida, mostrando o objeto `err` com tipo, mensagem e stack.
+
+### Privacidade nos logs
+
+O guia alerta: *"Nunca logue segredos"*. A mesma regra aplicada aos atributos de span vale nos logs — senha, token, código de verificação e e-mail completo ficam fora. O `login_recusado` registra `email_dominio`, não o endereço.
+
+Uma exceção consciente: `sendVerificationEmailService` loga o código de verificação em nível INFO, com prefixo `[DEV]`, para permitir testar o cadastro sem SMTP configurado. **Isso precisa ser removido antes de qualquer uso real com o servidor central**, já que o log passa a sair da máquina.
+
+---
+
 ## Resumo dos prints necessários
 
 | # | Onde | O que precisa aparecer |
 | :-- | :-- | :-- |
-| 1 | Explore → Tempo → `{resource.service.name="eq15-computeca"}` | Lista de traces com a coluna *Service* |
+| 1 | Explore → Tempo → `{resource.service.name="<OTEL_SERVICE_NAME>"}` | Lista de traces com a coluna *Service* |
 | 2 | Trace `f787d155ec6cf97bb9adb5443acd68de` | Cascata completa do RAG |
 | 3 | Trace `0f6541b669f86bef0f5344d3e1013e46` → span `pg.query:INSERT mi_db` | Painel de atributos com `db.statement` |
 | 4 | — | Atendido pelo Print 2 |
 | 5 | Trace do RAG ou `d76ea7f1ef48f86ac7e95fffefd81d8e` | O span dominante da cascata |
 | 6 | Trace do RAG → span `mi.chat.geracao_resposta` | Painel de atributos com `ia.tokens_*` |
+| L1 | Explore → Loki → `{service_name="<OTEL_SERVICE_NAME>"}` | Linhas de log da aplicação |
+| L2 | `{service_name="<OTEL_SERVICE_NAME>"} \| json \| evento="rag_respondido"` | Campos estruturados parseados |
+| L3 | Linha de log expandida → botão de salto para o Tempo | `trace_id` visível e o trace aberto a partir dele |
+| L4 | `{service_name="<OTEL_SERVICE_NAME>"} \| json \| evento="erro_tratado"` | Objeto `err` com tipo, mensagem e stack |
 
 Ao abrir um trace, vale fechar o painel de query (botão **«** no topo) para a cascata ocupar a largura toda — sem isso o nome do trace aparece cortado.
 

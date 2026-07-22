@@ -55,8 +55,12 @@ export async function sendVerificationEmailService(
         return novoCodigo
       })
 
-      // Sempre loga o código — útil em desenvolvimento sem SMTP configurado
-      logger.info(`[DEV] Código de verificação para ${userEmail}: ${code}`)
+      // O código é credencial. Em desenvolvimento é prático tê-lo no console
+      // (permite testar o cadastro sem SMTP), mas em produção os logs saem da
+      // máquina para o servidor de observabilidade — lá ele nunca pode aparecer.
+      if (env.NODE_ENV !== 'production') {
+        logger.info(`[DEV] Código de verificação para ${userEmail}: ${code}`)
+      }
 
       // Envio SMTP — I/O externo, o ponto mais lento e mais propenso a falha
       // deste fluxo. Se o servidor de e-mail cair, o span sai em vermelho.

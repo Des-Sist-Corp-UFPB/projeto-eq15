@@ -11,6 +11,7 @@ import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
 import { env } from '../../../../env'
 import { withSpan, withSpanSync } from '../../../../lib/tracing'
+import { logger } from '../../../../lib/logger'
 import type { UploadMIInput, IUploadedMI } from '../../../../@types/resources/materials/pdf'
 
 // ── Constantes de validação ────────────────────────────────────────────────────
@@ -126,6 +127,19 @@ export async function materialPdfUploadService(input: UploadMIInput): Promise<IU
       if (organizationIds.length > 0) {
         await linkMaterialToOrgs(mi.id, organizationIds)
       }
+
+      // Evento de negócio em formato estruturado: os campos viram atributos
+      // pesquisáveis no Loki (LogQL) e o log sai correlacionado com o trace.
+      logger.info(
+        {
+          evento:            'mi_enviado',
+          mi_id:             mi.id,
+          mi_tamanho_bytes:  buffer.length,
+          mi_habilidades:    habilidadesBncc.length,
+          usuario_id:        uploadedById,
+        },
+        'Material Instrucional enviado',
+      )
 
       return mi
     },

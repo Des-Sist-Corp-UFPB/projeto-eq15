@@ -153,7 +153,24 @@ async function runVectorizeJob(materialId: string, storageKey: string, spanJob: 
     })
 
     logger.info({ materialId, chunkCount: chunks.length }, 'OUT - vectorizeWorker')
+
+    logger.info(
+      {
+        evento:          'mi_vetorizado',
+        mi_id:           materialId,
+        chunks_gerados:  chunks.length,
+        caracteres:      text.length,
+      },
+      'Material Instrucional vetorizado',
+    )
   } catch (err) {
+    // Erro tratado: registra a exceção (com stack) antes de marcar o material
+    // como FAILED. A chave `err` é a que o Pino serializa como exceção.
+    logger.error(
+      { err, evento: 'falha_vetorizacao', mi_id: materialId },
+      'Falha ao vetorizar Material Instrucional',
+    )
+
     await prisma.materialInstrucional.update({
       where: { id: materialId },
       data:  { vectorStatus: 'FAILED' },

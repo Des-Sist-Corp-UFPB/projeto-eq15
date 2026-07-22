@@ -52,12 +52,41 @@ export function withSpanSync<T>(
 }
 
 /**
- * Renomeia o span HTTP raiz para `MÉTODO /rota` e anexa o atributo `http.route`.
+ * Rótulos de negócio dos fluxos principais, indexados por `MÉTODO /rota`.
+ *
+ * O nome técnico (`POST /mis`) é preciso, mas exige conhecer a API para saber
+ * o que está acontecendo. Prefixar com o nome do fluxo torna a lista de traces
+ * do Grafana legível por quem não escreveu o código — que é o público de um
+ * painel de observabilidade.
+ */
+const ROTULOS_DE_FLUXO: Record<string, string> = {
+  'POST /mis':                  'Upload de MI',
+  'PATCH /mis/:id/review':      'Aprovação de MI',
+  'POST /mis/:id/chat':         'Busca semântica (RAG)',
+  'GET /mis/:id/presigned-url': 'Download de MI',
+  'GET /mis/public':            'Listagem pública de MIs',
+  'GET /mis/pending':           'Listagem de MIs pendentes',
+  'GET /mis/:id':               'Detalhe de MI',
+  'POST /auth/login':           'Login',
+  'POST /auth/refresh':         'Refresh de sessão',
+  'POST /auth/logout':          'Logout',
+  'POST /auth/verify-email':    'Verificação de e-mail',
+  'POST /users':                'Cadastro de usuário',
+  'POST /organizations':        'Criação de organização',
+  'POST /organizations/:orgId/invites': 'Convite para organização',
+}
+
+/**
+ * Renomeia o span HTTP raiz e anexa o atributo padrão `http.route`.
  *
  * A auto-instrumentação sozinha nomeia esses spans apenas com o verbo (`POST`,
  * `GET`), porque o `instrumentation-fastify` não consegue descobrir a rota sob
  * o loader ESM do tsx. Sem isso, a lista de traces no Grafana fica ilegível:
  * dezenas de linhas chamadas "POST", sem dizer qual fluxo é qual.
+ *
+ * O nome final fica `Upload de MI — POST /mis` quando o fluxo tem rótulo, e
+ * `POST /rota` caso contrário. O `http.route` guarda sempre a rota crua, então
+ * agrupamento de métricas e consultas TraceQL continuam usando o valor padrão.
  *
  * Chamada de um hook `onRequest`, quando o roteamento já aconteceu e o span
  * do servidor HTTP ainda é o span ativo.
@@ -68,7 +97,10 @@ export function nomearSpanHttp(method: string, route?: string): void {
   const span = trace.getActiveSpan()
   if (!span) return
 
-  span.updateName(`${method} ${route}`)
+  const nomeTecnico = `${method} ${route}`
+  const rotulo      = ROTULOS_DE_FLUXO[nomeTecnico]
+
+  span.updateName(rotulo ? `${rotulo} — ${nomeTecnico}` : nomeTecnico)
   span.setAttribute('http.route', route)
 }
 

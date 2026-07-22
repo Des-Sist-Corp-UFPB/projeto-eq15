@@ -69,7 +69,7 @@ async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
   // Span raiz do job — o worker é um processo separado, então este trace não
   // tem o span HTTP do upload como pai; ele representa o trabalho assíncrono.
   return withSpan(
-    'mi.vetorizacao',
+    'Vetorização de MI — mi.vetorizacao',
     { 'mi.id': materialId, 'mi.storage_key': storageKey, 'job.id': job.id ?? '' },
     async (spanJob) => runVectorizeJob(materialId, storageKey, spanJob),
   )

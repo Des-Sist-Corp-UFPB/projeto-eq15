@@ -272,6 +272,19 @@ Isso é verificado por testes automatizados — [`authTracing.test.ts`](MI-serve
 3. Abra o Grafana em **http://127.0.0.1:3000** → **Explore** → datasource **Tempo** → **Search** por `service.name = eq15-computeca`.
 4. Clique num trace para abrir a cascata.
 
+Consultas TraceQL úteis (aba **TraceQL** do Explore):
+
+| Objetivo | Query |
+| :-- | :-- |
+| Todos os traces do serviço | `{resource.service.name="eq15-computeca"}` |
+| Um fluxo específico | `{span.http.route="/mis"}` |
+| Vetorização (worker) | `{name=~"Vetorização.*"}` |
+| Só as falhas de autenticação | `{span.auth.falha!=""}` |
+| Operações lentas | `{resource.service.name="eq15-computeca" && duration > 3s}` |
+| Consumo alto de tokens de IA | `{span.ia.tokens_total > 1000}` |
+
+> O Tempo leva de 30 s a 1 min para indexar. Busca vazia logo após a requisição é atraso de indexação, não erro.
+
 Exemplo real da cascata de vetorização de um PDF de 5 páginas (24k caracteres, 31 chunks):
 
 ```
@@ -283,7 +296,18 @@ mi.vetorizacao  [11337 ms]  {mi.chunks_gerados: 31, job.id: 17}
 └─ mi.vetorizacao.chunking              0 ms
 ```
 
-> **Nota sobre o nome dos traces:** a auto-instrumentação sozinha nomeia o span HTTP raiz apenas com o verbo (`POST`, `GET`), porque o `instrumentation-fastify` não descobre a rota sob o loader ESM do `tsx` — o que deixa a lista de traces do Grafana ilegível, com dezenas de linhas chamadas "POST". Um hook `onRequest` em [`app.ts`](MI-server/src/app.ts) resolve: renomeia o span para `POST /auth/login` e anexa o atributo padrão `http.route`, permitindo também agrupar métricas por rota.
+> **Nota sobre o nome dos traces:** a auto-instrumentação sozinha nomeia o span HTTP raiz apenas com o verbo (`POST`, `GET`), porque o `instrumentation-fastify` não descobre a rota sob o loader ESM do `tsx` — o que deixa a lista de traces do Grafana ilegível, com dezenas de linhas chamadas "POST". Um hook `onRequest` em [`app.ts`](MI-server/src/app.ts) resolve: renomeia o span para `Login — POST /auth/login`, prefixando o rótulo de negócio do fluxo (mapa `ROTULOS_DE_FLUXO` em [`tracing.ts`](MI-server/src/lib/tracing.ts)), e anexa o atributo padrão `http.route` com a rota crua — então agrupamento de métricas e consultas TraceQL continuam usando o valor convencional.
+
+Com isso a lista de traces fica autoexplicativa:
+
+```
+Vetorização de MI — mi.vetorizacao                5020 ms
+Busca semântica (RAG) — POST /mis/:id/chat        6067 ms
+Upload de MI — POST /mis                           896 ms
+Listagem pública de MIs — GET /mis/public          777 ms
+Aprovação de MI — PATCH /mis/:id/review            183 ms
+Login — POST /auth/login                           117 ms
+```
 
 ### Produção
 

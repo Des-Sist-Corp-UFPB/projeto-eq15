@@ -19,6 +19,7 @@ import { usersRoutes } from './routes/users/usersRoutes'
 import { materialPdfUploadRoutes } from './routes/resources/materials/pdf/materialPdfUploadRoutes'
 import { logsRoutes } from './routes/logs/logsRoutes'
 import { organizationsRoutes } from './routes/organizations/organizationsRoutes'
+import { nomearSpanHttp } from './lib/tracing'
 
 export function buildApp() {
   const app = fastify({
@@ -38,6 +39,13 @@ export function buildApp() {
   // ── Compiladores Zod ─────────────────────────────────────────────────────────
   app.setValidatorCompiler(validatorCompiler)
   app.setSerializerCompiler(serializerCompiler)
+
+  // ── Telemetria ───────────────────────────────────────────────────────────────
+  // Nomeia o span HTTP raiz com a rota (`POST /mis` em vez de só `POST`), para
+  // que os fluxos sejam identificáveis na lista de traces do Grafana.
+  app.addHook('onRequest', async (request) => {
+    nomearSpanHttp(request.method, request.routeOptions?.url)
+  })
 
   // ── Plugins globais ──────────────────────────────────────────────────────────
   app.register(fastifyCors, {

@@ -51,6 +51,27 @@ export function withSpanSync<T>(
   })
 }
 
+/**
+ * Renomeia o span HTTP raiz para `MÉTODO /rota` e anexa o atributo `http.route`.
+ *
+ * A auto-instrumentação sozinha nomeia esses spans apenas com o verbo (`POST`,
+ * `GET`), porque o `instrumentation-fastify` não consegue descobrir a rota sob
+ * o loader ESM do tsx. Sem isso, a lista de traces no Grafana fica ilegível:
+ * dezenas de linhas chamadas "POST", sem dizer qual fluxo é qual.
+ *
+ * Chamada de um hook `onRequest`, quando o roteamento já aconteceu e o span
+ * do servidor HTTP ainda é o span ativo.
+ */
+export function nomearSpanHttp(method: string, route?: string): void {
+  if (!route) return
+
+  const span = trace.getActiveSpan()
+  if (!span) return
+
+  span.updateName(`${method} ${route}`)
+  span.setAttribute('http.route', route)
+}
+
 /** Marca o span como erro e anexa a exceção. */
 function recordError(span: Span, error: unknown): void {
   const err = error instanceof Error ? error : new Error(String(error))

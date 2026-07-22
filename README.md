@@ -283,7 +283,7 @@ mi.vetorizacao  [11337 ms]  {mi.chunks_gerados: 31, job.id: 17}
 └─ mi.vetorizacao.chunking              0 ms
 ```
 
-> **Limitação conhecida:** os spans HTTP saem nomeados apenas `GET`/`POST`, sem o atributo `http.route` — o `instrumentation-fastify` não enriquece os spans sob o loader ESM do `tsx`. Os spans manuais compensam, mas agrupar por rota no Grafana fica limitado em dev.
+> **Nota sobre o nome dos traces:** a auto-instrumentação sozinha nomeia o span HTTP raiz apenas com o verbo (`POST`, `GET`), porque o `instrumentation-fastify` não descobre a rota sob o loader ESM do `tsx` — o que deixa a lista de traces do Grafana ilegível, com dezenas de linhas chamadas "POST". Um hook `onRequest` em [`app.ts`](MI-server/src/app.ts) resolve: renomeia o span para `POST /auth/login` e anexa o atributo padrão `http.route`, permitindo também agrupar métricas por rota.
 
 ### Produção
 

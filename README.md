@@ -242,13 +242,28 @@ A auto-instrumentação enxerga bibliotecas, não regra de negócio. Os spans de
 
 A API do OTel é **no-op quando o SDK não está carregado** — rodar `npm run dev` ou os testes não tem custo nem efeito colateral.
 
-| Fluxo                    | Spans                                                                                                                       |
-| :----------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
-| **Upload de MI**         | `mi.upload` › `validar_pdf`, `minio_put`, `validar_vinculo_orgs`, `persistir_metadados`                                     |
-| **Vetorização** (worker) | `mi.vetorizacao` › `download_pdf`, `extrair_texto`, `chunking`, `embedding_batch`, `qdrant_upsert`                          |
-| **Busca semântica (RAG)**| `mi.chat.rag` › `guardrail_injection`, `guardrail_moderacao`, `embedding_pergunta`, `busca_semantica`, `geracao_resposta`   |
+| Fluxo                        | Spans                                                                                                                     |
+| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------ |
+| **Upload de MI**             | `mi.upload` › `validar_pdf`, `minio_put`, `validar_vinculo_orgs`, `persistir_metadados`                                   |
+| **Vetorização** (worker)     | `mi.vetorizacao` › `download_pdf`, `extrair_texto`, `chunking`, `embedding_batch`, `qdrant_upsert`                        |
+| **Busca semântica (RAG)**    | `mi.chat.rag` › `guardrail_injection`, `guardrail_moderacao`, `embedding_pergunta`, `busca_semantica`, `geracao_resposta` |
+| **Login**                    | `auth.login` › `verificar_senha`                                                                                          |
+| **Refresh token**            | `auth.refresh_token`                                                                                                      |
+| **Envio de e-mail de verificação** | `auth.envio_email_verificacao` › `gerar_token`, `envio_smtp`                                                        |
+| **Verificação do código**    | `auth.verificar_email`                                                                                                    |
 
-Atributos de negócio anexados aos spans: `mi.id`, `usuario.id`, `mi.tamanho_bytes`, `mi.paginas`, `mi.chunks_gerados`, `busca.trechos_usados`, `busca.melhor_score`, `guardrail.bloqueado` e a família `ia.*` (`ia.modelo`, `ia.tokens_prompt`, `ia.tokens_completion`, `ia.tokens_total`) — que atende ao requisito de rastreio de consumo de tokens por usuário e por operação, permitindo agregar custo de IA por `usuario.id` no Grafana.
+Atributos de negócio anexados aos spans: `mi.id`, `usuario.id`, `usuario.perfil`, `mi.tamanho_bytes`, `mi.paginas`, `mi.chunks_gerados`, `busca.trechos_usados`, `busca.melhor_score`, `guardrail.bloqueado`, `auth.falha`, `auth.email_dominio` e a família `ia.*` (`ia.modelo`, `ia.tokens_prompt`, `ia.tokens_completion`, `ia.tokens_total`) — que atende ao requisito de rastreio de consumo de tokens por usuário e por operação, permitindo agregar custo de IA por `usuario.id` no Grafana.
+
+O atributo `auth.falha` classifica **por que** uma autenticação foi recusada (`usuario_inexistente`, `senha_incorreta`, `conta_suspensa`, `email_nao_verificado`, `token_expirado`, `codigo_expirado`…). Como a API devolve deliberadamente a mesma mensagem para credencial inválida — para não revelar quais e-mails existem — esse atributo é o único lugar onde a distinção fica visível para quem opera o sistema, sem vazá-la para quem chama a API.
+
+#### Privacidade dos atributos
+
+Traces são exportados para um backend de observabilidade — **não são log de auditoria e não podem carregar credencial nem PII**. A regra aplicada nos fluxos de auth:
+
+- ❌ senha, refresh token, código de verificação, e-mail completo
+- ✅ `auth.email_dominio` (só o domínio, permite separar acesso institucional de externo), `usuario.id`, `usuario.perfil`
+
+Isso é verificado por testes automatizados — [`authTracing.test.ts`](MI-server/__tests__/unit/auth/authTracing.test.ts) e [`emailVerificationTracing.test.ts`](MI-server/__tests__/unit/auth/emailVerificationTracing.test.ts) capturam todos os atributos emitidos e falham se algum valor sensível aparecer.
 
 ### Como visualizar
 

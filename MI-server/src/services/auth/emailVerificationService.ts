@@ -12,11 +12,21 @@ import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
 import { env } from '../../env'
 import { logger } from '../../lib/logger'
+import { withSpan } from '../../lib/tracing'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
+}
+
+/**
+ * Só o domínio do e-mail vai para os spans — o endereço completo é PII e o
+ * código de verificação é credencial. Nenhum dos dois pode ser exportado
+ * para o backend de telemetria.
+ */
+function emailDomain(email: string): string {
+  return email.split('@')[1] ?? 'desconhecido'
 }
 
 // ── Service ───────────────────────────────────────────────────────────────────
@@ -26,42 +36,67 @@ export async function sendVerificationEmailService(
   userEmail: string,
   userName: string,
 ): Promise<void> {
-  await deleteAllEmailVerificationTokensForUser(userId)
+  return withSpan(
+    'auth.envio_email_verificacao',
+    {
+      'usuario.id':               userId,
+      'auth.email_dominio':       emailDomain(userEmail),
+      'auth.token_expira_horas':  env.EMAIL_VERIFICATION_EXPIRES_HOURS,
+    },
+    async () => {
+      // Invalida códigos anteriores e emite o novo — duas escritas no banco.
+      const code = await withSpan('auth.email_verificacao.gerar_token', { 'usuario.id': userId }, async () => {
+        await deleteAllEmailVerificationTokensForUser(userId)
 
-  const code      = generateVerificationCode()
-  const expiresAt = new Date(Date.now() + env.EMAIL_VERIFICATION_EXPIRES_HOURS * 60 * 60 * 1000)
+        const novoCodigo = generateVerificationCode()
+        const expiresAt  = new Date(Date.now() + env.EMAIL_VERIFICATION_EXPIRES_HOURS * 60 * 60 * 1000)
+        await createEmailVerificationToken({ token: novoCodigo, userId, expiresAt })
 
-  await createEmailVerificationToken({ token: code, userId, expiresAt })
+        return novoCodigo
+      })
 
-  // Sempre loga o código — útil em desenvolvimento sem SMTP configurado
-  logger.info(`[DEV] Código de verificação para ${userEmail}: ${code}`)
+      // Sempre loga o código — útil em desenvolvimento sem SMTP configurado
+      logger.info(`[DEV] Código de verificação para ${userEmail}: ${code}`)
 
-  await sendMail({
-    to:      userEmail,
-    subject: 'Seu código de verificação — MI UFPB',
-    text:    buildVerificationEmailText(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
-    html:    buildVerificationEmailHtml(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
-  })
+      // Envio SMTP — I/O externo, o ponto mais lento e mais propenso a falha
+      // deste fluxo. Se o servidor de e-mail cair, o span sai em vermelho.
+      await withSpan('auth.email_verificacao.envio_smtp', { 'auth.email_dominio': emailDomain(userEmail) }, async () => {
+        await sendMail({
+          to:      userEmail,
+          subject: 'Seu código de verificação — MI UFPB',
+          text:    buildVerificationEmailText(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
+          html:    buildVerificationEmailHtml(userName, code, env.EMAIL_VERIFICATION_EXPIRES_HOURS),
+        })
+      })
+    },
+  )
 }
 
 export async function verifyEmailService(code: string): Promise<void> {
-  const record = await findEmailVerificationToken(code)
+  // O código não vira atributo — é a credencial que autoriza a verificação.
+  return withSpan('auth.verificar_email', {}, async (span) => {
+    const record = await findEmailVerificationToken(code)
 
-  if (!record) {
-    throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.AUTH.INVALID_VERIFICATION_TOKEN))
-  }
+    if (!record) {
+      span.setAttribute('auth.falha', 'codigo_inexistente')
+      throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.AUTH.INVALID_VERIFICATION_TOKEN))
+    }
 
-  if (record.expiresAt < new Date()) {
+    span.setAttribute('usuario.id', record.userId)
+
+    if (record.expiresAt < new Date()) {
+      span.setAttribute('auth.falha', 'codigo_expirado')
+      await deleteEmailVerificationToken(code)
+      throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.AUTH.INVALID_VERIFICATION_TOKEN))
+    }
+
+    await prisma.user.update({
+      where: { id: record.userId },
+      data:  { emailVerified: true },
+    })
+
     await deleteEmailVerificationToken(code)
-    throw new GeneralErrorResponse(StatusCode.BAD_REQUEST, buildError(ERRORS.AUTH.INVALID_VERIFICATION_TOKEN))
-  }
-
-  await prisma.user.update({
-    where: { id: record.userId },
-    data:  { emailVerified: true },
   })
-
-  await deleteEmailVerificationToken(code)
 }
 
 // ── Templates de e-mail ───────────────────────────────────────────────────────

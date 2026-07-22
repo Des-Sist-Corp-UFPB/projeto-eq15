@@ -12,6 +12,20 @@ import { ERRORS, buildError } from '../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../utils/statusCode'
 import { logger } from '../../lib/logger'
+import { withSpan } from '../../lib/tracing'
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+/**
+ * Extrai apenas o domínio do e-mail para uso como atributo de span.
+ * Traces são dados de operação, não de auditoria: o e-mail completo é PII e
+ * não deve ser exportado para o backend de telemetria. O domínio já responde
+ * a perguntas úteis ("logins institucionais vs. externos") sem identificar
+ * ninguém — o vínculo com o usuário fica em `usuario.id`.
+ */
+function emailDomain(email: string): string {
+  return email.split('@')[1] ?? 'desconhecido'
+}
 
 // ── loginService ───────────────────────────────────────────────────────────────
 
@@ -25,33 +39,56 @@ export async function loginService(input: LoginRequest): Promise<IAuthUser> {
 
   const { email, password } = input
 
-  const user = await findUserByEmail(email)
-  if (!user) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+  return withSpan('auth.login', { 'auth.email_dominio': emailDomain(email) }, async (spanLogin) => {
+    const user = await findUserByEmail(email)
+    if (!user) {
+      spanLogin.setAttribute('auth.falha', 'usuario_inexistente')
+      throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+    }
 
-  const passwordMatch = await comparePassword(password, user.passwordHash)
-  if (!passwordMatch) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+    spanLogin.setAttribute('usuario.id', user.id)
 
-  if (user.suspended) throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.ACCOUNT_SUSPENDED))
+    // Comparação bcrypt — trabalho de CPU proporcional ao custo configurado em
+    // BCRYPT_SALT_ROUNDS. É o único span pesado deste fluxo que não é I/O.
+    const passwordMatch = await withSpan('auth.verificar_senha', {}, async () =>
+      comparePassword(password, user.passwordHash),
+    )
 
-  if (!user.emailVerified) throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.EMAIL_NOT_VERIFIED))
+    if (!passwordMatch) {
+      spanLogin.setAttribute('auth.falha', 'senha_incorreta')
+      throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.USER.INVALID_CREDENTIALS))
+    }
 
-  await createAuditLog({
-    actorId: user.id,
-    actorRole: user.role,
-    targetId: user.id,
-    action: 'USER_LOGGED_IN',
-    metadata: { email, role: user.role },
+    if (user.suspended) {
+      spanLogin.setAttribute('auth.falha', 'conta_suspensa')
+      throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.ACCOUNT_SUSPENDED))
+    }
+
+    if (!user.emailVerified) {
+      spanLogin.setAttribute('auth.falha', 'email_nao_verificado')
+      throw new GeneralErrorResponse(StatusCode.FORBIDDEN, buildError(ERRORS.AUTH.EMAIL_NOT_VERIFIED))
+    }
+
+    await createAuditLog({
+      actorId: user.id,
+      actorRole: user.role,
+      targetId: user.id,
+      action: 'USER_LOGGED_IN',
+      metadata: { email, role: user.role },
+    })
+
+    spanLogin.setAttribute('usuario.perfil', user.role)
+
+    logger.info('OUT - loginService')
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      canUpload: user.canUpload,
+    }
   })
-
-  logger.info('OUT - loginService')
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    canUpload: user.canUpload,
-  }
 }
 
 // ── refreshTokenService ────────────────────────────────────────────────────────
@@ -63,26 +100,40 @@ export async function loginService(input: LoginRequest): Promise<IAuthUser> {
 export async function refreshTokenService(token: string): Promise<IAuthUser> {
   logger.info('IN - refreshTokenService')
 
-  const stored = await findRefreshToken(token)
-  if (!stored) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
+  // O token em si nunca vira atributo de span — é credencial de sessão.
+  return withSpan('auth.refresh_token', {}, async (spanRefresh) => {
+    const stored = await findRefreshToken(token)
+    if (!stored) {
+      spanRefresh.setAttribute('auth.falha', 'token_inexistente')
+      throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
+    }
 
-  if (stored.expiresAt < new Date()) {
-    await deleteRefreshToken(token)
-    throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
-  }
+    if (stored.expiresAt < new Date()) {
+      spanRefresh.setAttribute('auth.falha', 'token_expirado')
+      await deleteRefreshToken(token)
+      throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
+    }
 
-  const user = await findUserById(stored.userId)
-  if (!user || user.suspended) throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
+    spanRefresh.setAttribute('usuario.id', stored.userId)
 
-  logger.info('OUT - refreshTokenService')
+    const user = await findUserById(stored.userId)
+    if (!user || user.suspended) {
+      spanRefresh.setAttribute('auth.falha', user ? 'conta_suspensa' : 'usuario_inexistente')
+      throw new GeneralErrorResponse(StatusCode.UNAUTHORIZED, buildError(ERRORS.AUTH.UNAUTHORIZED))
+    }
 
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    canUpload: user.canUpload,
-  }
+    spanRefresh.setAttribute('usuario.perfil', user.role)
+
+    logger.info('OUT - refreshTokenService')
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      canUpload: user.canUpload,
+    }
+  })
 }
 
 // ── logoutService ──────────────────────────────────────────────────────────────

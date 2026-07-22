@@ -7,6 +7,8 @@ import { getQdrant, QDRANT_COLLECTION, ensureQdrantCollection } from '../lib/qdr
 import { prisma } from '../database/prisma'
 import { env } from '../env'
 import { logger } from '../lib/logger'
+import { withSpan, withSpanSync } from '../lib/tracing'
+import type { Span } from '@opentelemetry/api'
 import type { VectorizePdfJob } from '../lib/queue'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -32,26 +34,48 @@ function chunkText(text: string): string[] {
 }
 
 async function downloadPdfBuffer(storageKey: string): Promise<Buffer> {
-  const stream = await minioClient.getObject(MINIO_BUCKET, storageKey)
-  const parts: Buffer[] = []
-  for await (const chunk of stream) {
-    parts.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  }
-  return Buffer.concat(parts)
+  return withSpan('mi.vetorizacao.download_pdf', { 'mi.storage_key': storageKey }, async (span) => {
+    const stream = await minioClient.getObject(MINIO_BUCKET, storageKey)
+    const parts: Buffer[] = []
+    for await (const chunk of stream) {
+      parts.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+    }
+    const buffer = Buffer.concat(parts)
+    span.setAttribute('mi.tamanho_bytes', buffer.length)
+    return buffer
+  })
 }
 
 async function embedBatch(texts: string[]): Promise<number[][]> {
-  const response = await openai.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: texts,
-  })
-  return response.data.map(d => d.embedding)
+  return withSpan(
+    'mi.vetorizacao.embedding_batch',
+    { 'ia.modelo': 'text-embedding-3-small', 'mi.chunks_no_batch': texts.length },
+    async (span) => {
+      const response = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: texts,
+      })
+      span.setAttribute('ia.tokens_embedding', response.usage?.prompt_tokens ?? 0)
+      return response.data.map(d => d.embedding)
+    },
+  )
 }
 
 // ── Job processor ──────────────────────────────────────────────────────────────
 
 async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
   const { materialId, storageKey } = job.data
+
+  // Span raiz do job — o worker é um processo separado, então este trace não
+  // tem o span HTTP do upload como pai; ele representa o trabalho assíncrono.
+  return withSpan(
+    'Vetorização de MI — mi.vetorizacao',
+    { 'mi.id': materialId, 'mi.storage_key': storageKey, 'job.id': job.id ?? '' },
+    async (spanJob) => runVectorizeJob(materialId, storageKey, spanJob),
+  )
+}
+
+async function runVectorizeJob(materialId: string, storageKey: string, spanJob: Span): Promise<void> {
   logger.info({ materialId }, 'IN - vectorizeWorker')
 
   await prisma.materialInstrucional.update({
@@ -61,9 +85,19 @@ async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
 
   try {
     const pdfBuffer = await downloadPdfBuffer(storageKey)
-    const { text }  = await pdfParse(pdfBuffer)
+    const { text }  = await withSpan(
+      'mi.vetorizacao.extrair_texto',
+      { 'mi.tamanho_bytes': pdfBuffer.length },
+      async (span) => {
+        const parsed = await pdfParse(pdfBuffer)
+        span.setAttribute('mi.paginas',    parsed.numpages ?? 0)
+        span.setAttribute('mi.caracteres', parsed.text?.length ?? 0)
+        return parsed
+      },
+    )
 
     if (!text?.trim()) {
+      spanJob.setAttribute('mi.sem_texto_extraivel', true)
       logger.warn({ materialId }, 'PDF has no extractable text — skipping')
       await prisma.materialInstrucional.update({
         where: { id: materialId },
@@ -72,8 +106,18 @@ async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
       return
     }
 
-    const chunks = chunkText(text)
+    const chunks = withSpanSync(
+      'mi.vetorizacao.chunking',
+      { 'mi.caracteres': text.length, 'mi.chunk_size': CHUNK_SIZE, 'mi.chunk_overlap': CHUNK_OVERLAP },
+      (span) => {
+        const result = chunkText(text)
+        span.setAttribute('mi.chunks_gerados', result.length)
+        return result
+      },
+    )
     logger.info({ materialId, chunkCount: chunks.length }, 'PDF chunked')
+
+    spanJob.setAttribute('mi.chunks_gerados', chunks.length)
 
     const qdrant = await getQdrant()
 
@@ -87,14 +131,20 @@ async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
       const batch      = chunks.slice(i, i + EMBED_BATCH)
       const embeddings = await embedBatch(batch)
 
-      await qdrant.upsert(QDRANT_COLLECTION, {
-        wait:   true,
-        points: batch.map((chunkText, j) => ({
-          id:      randomUUID(),
-          vector:  embeddings[j],
-          payload: { materialId, chunkIndex: i + j, text: chunkText },
-        })),
-      })
+      await withSpan(
+        'mi.vetorizacao.qdrant_upsert',
+        { 'mi.id': materialId, 'mi.chunks_no_batch': batch.length, 'busca.batch_inicial': i },
+        async () => {
+          await qdrant.upsert(QDRANT_COLLECTION, {
+            wait:   true,
+            points: batch.map((chunkText, j) => ({
+              id:      randomUUID(),
+              vector:  embeddings[j],
+              payload: { materialId, chunkIndex: i + j, text: chunkText },
+            })),
+          })
+        },
+      )
     }
 
     await prisma.materialInstrucional.update({
@@ -103,7 +153,24 @@ async function processJob(job: Job<VectorizePdfJob>): Promise<void> {
     })
 
     logger.info({ materialId, chunkCount: chunks.length }, 'OUT - vectorizeWorker')
+
+    logger.info(
+      {
+        evento:          'mi_vetorizado',
+        mi_id:           materialId,
+        chunks_gerados:  chunks.length,
+        caracteres:      text.length,
+      },
+      'Material Instrucional vetorizado',
+    )
   } catch (err) {
+    // Erro tratado: registra a exceção (com stack) antes de marcar o material
+    // como FAILED. A chave `err` é a que o Pino serializa como exceção.
+    logger.error(
+      { err, evento: 'falha_vetorizacao', mi_id: materialId },
+      'Falha ao vetorizar Material Instrucional',
+    )
+
     await prisma.materialInstrucional.update({
       where: { id: materialId },
       data:  { vectorStatus: 'FAILED' },

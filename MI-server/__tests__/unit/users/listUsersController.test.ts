@@ -133,7 +133,7 @@ describe('listUsersController', () => {
       await listUsersController(makeMockRequest(), makeMockReply()).catch(() => {})
 
       expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.any(Error) }),
+        expect.objectContaining({ err: expect.any(Error) }),
         'ERROR - listUsersController',
       )
     })

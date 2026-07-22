@@ -9,6 +9,8 @@ import { ERRORS, buildError } from '../../../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../../../errors/GeneralErrorResponse'
 import { StatusCode } from '../../../../utils/statusCode'
 import { logger } from '../../../../lib/logger'
+import { withSpan, withSpanSync } from '../../../../lib/tracing'
+import type { Span } from '@opentelemetry/api'
 import type { IMaterialChatResponse, ITokenUsage } from '../../../../@types/resources/materials/pdf'
 import type { MaterialForChat } from '../../../../repositories/resources/materials/pdf/materialPdfChatRepository'
 
@@ -75,21 +77,36 @@ interface EmbedResult {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function detectPromptInjection(question: string): string | null {
-  for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.test(question)) return pattern.source
-  }
-  return null
+  return withSpanSync('mi.chat.guardrail_injection', { 'busca.pergunta_tamanho': question.length }, (span) => {
+    for (const pattern of INJECTION_PATTERNS) {
+      if (pattern.test(question)) {
+        span.setAttribute('guardrail.bloqueado', true)
+        return pattern.source
+      }
+    }
+    span.setAttribute('guardrail.bloqueado', false)
+    return null
+  })
 }
 
 async function moderateContent(question: string): Promise<string[]> {
-  const response = await openai.moderations.create({ input: question })
-  const result   = response.results[0]
+  return withSpan('mi.chat.guardrail_moderacao', { 'busca.pergunta_tamanho': question.length }, async (span) => {
+    const response = await openai.moderations.create({ input: question })
+    const result   = response.results[0]
 
-  if (!result.flagged) return []
+    if (!result.flagged) {
+      span.setAttribute('guardrail.bloqueado', false)
+      return []
+    }
 
-  return Object.entries(result.categories)
-    .filter(([, flagged]) => flagged)
-    .map(([category]) => category)
+    const categorias = Object.entries(result.categories)
+      .filter(([, flagged]) => flagged)
+      .map(([category]) => category)
+
+    span.setAttribute('guardrail.bloqueado', true)
+    span.setAttribute('guardrail.categorias', categorias.join(','))
+    return categorias
+  })
 }
 
 async function fetchAndValidateMaterial(materialId: string): Promise<MaterialForChat> {
@@ -109,27 +126,50 @@ async function fetchAndValidateMaterial(materialId: string): Promise<MaterialFor
 }
 
 async function embedQuestion(question: string): Promise<EmbedResult> {
-  const response = await openai.embeddings.create({
-    model: EMBED_MODEL,
-    input: question,
-  })
-  return {
-    vector:          response.data[0].embedding,
-    embeddingTokens: response.usage.prompt_tokens,
-  }
+  return withSpan(
+    'mi.chat.embedding_pergunta',
+    { 'ia.modelo': EMBED_MODEL, 'busca.pergunta_tamanho': question.length },
+    async (span) => {
+      const response = await openai.embeddings.create({
+        model: EMBED_MODEL,
+        input: question,
+      })
+
+      // Tokens consumidos por operação — base para o controle de custo de IA.
+      span.setAttribute('ia.tokens_embedding', response.usage.prompt_tokens)
+
+      return {
+        vector:          response.data[0].embedding,
+        embeddingTokens: response.usage.prompt_tokens,
+      }
+    },
+  )
 }
 
 async function searchRelevantChunks(
   materialId: string,
   queryVector: number[],
 ): Promise<QdrantScoredPoint[]> {
-  const qdrant = await getQdrant()
-  return qdrant.search(QDRANT_COLLECTION, {
-    vector:       queryVector,
-    limit:        TOP_K,
-    filter:       { must: [{ key: 'materialId', match: { value: materialId } }] },
-    with_payload: true,
-  })
+  return withSpan(
+    'mi.chat.busca_semantica',
+    { 'mi.id': materialId, 'busca.top_k': TOP_K, 'busca.score_minimo': MIN_SCORE },
+    async (span) => {
+      const qdrant = await getQdrant()
+      const results = await qdrant.search(QDRANT_COLLECTION, {
+        vector:       queryVector,
+        limit:        TOP_K,
+        filter:       { must: [{ key: 'materialId', match: { value: materialId } }] },
+        with_payload: true,
+      })
+
+      span.setAttribute('busca.total_encontrado', results.length)
+      if (results.length > 0) {
+        span.setAttribute('busca.melhor_score', results[0].score)
+      }
+
+      return results
+    },
+  )
 }
 
 function extractValidChunks(results: QdrantScoredPoint[]): string[] {
@@ -145,6 +185,23 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
   logger.info('IN - materialPdfChatService')
 
   const { materialId, question, userId } = validateRequest(input, materialPdfChatSchema)
+
+  return withSpan(
+    'mi.chat.rag',
+    {
+      'mi.id':                  materialId,
+      'usuario.id':             userId,
+      'busca.pergunta_tamanho': question.length,
+    },
+    async (spanRag) => runChat({ materialId, question, userId }, spanRag),
+  )
+}
+
+/** Corpo do fluxo RAG — separado para que `materialPdfChatService` abra o span raiz. */
+async function runChat(
+  { materialId, question, userId }: { materialId: string; question: string; userId: string },
+  spanRag: Span,
+): Promise<IMaterialChatResponse> {
 
   // ── GuardRail 1: Prompt Injection ─────────────────────────────────────────
   const matchedPattern = detectPromptInjection(question)
@@ -222,6 +279,8 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
   const results = await searchRelevantChunks(materialId, queryVector)
   const chunks  = extractValidChunks(results)
 
+  spanRag.setAttribute('busca.trechos_usados', chunks.length)
+
   await createInspectionLog({
     correlationId: userId,
     context:       SVC_CTX,
@@ -257,6 +316,7 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
     }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog no-chunks write failed`))
 
     logger.info({ materialId }, 'OUT - materialPdfChatService: no relevant chunks found')
+    spanRag.setAttribute('busca.sem_resultado', true)
     return {
       answer:     'Não encontrei trechos relevantes no documento para responder a sua pergunta. Tente reformular ou faça uma pergunta diferente.',
       chunksUsed: 0,
@@ -266,14 +326,26 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
 
   // ── 4. Geração da resposta com o modelo de chat ───────────────────────────
   const context    = chunks.map((c, i) => `[Trecho ${i + 1}]\n${c}`).join('\n\n')
-  const completion = await openai.chat.completions.create({
-    model:      CHAT_MODEL,
-    max_tokens: MAX_TOKENS,
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user',   content: `Contexto do documento:\n\n${context}\n\n---\n\nPergunta: ${question}` },
-    ],
-  })
+  const completion = await withSpan(
+    'mi.chat.geracao_resposta',
+    { 'ia.modelo': CHAT_MODEL, 'busca.trechos_usados': chunks.length, 'ia.max_tokens': MAX_TOKENS },
+    async (span) => {
+      const result = await openai.chat.completions.create({
+        model:      CHAT_MODEL,
+        max_tokens: MAX_TOKENS,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user',   content: `Contexto do documento:\n\n${context}\n\n---\n\nPergunta: ${question}` },
+        ],
+      })
+
+      span.setAttribute('ia.tokens_prompt',     result.usage?.prompt_tokens     ?? 0)
+      span.setAttribute('ia.tokens_completion', result.usage?.completion_tokens ?? 0)
+      span.setAttribute('ia.tokens_total',      result.usage?.total_tokens      ?? 0)
+
+      return result
+    },
+  )
 
   const answer: string = completion.choices[0]?.message?.content?.trim() ?? ''
 
@@ -305,6 +377,24 @@ export async function materialPdfChatService(input: unknown): Promise<IMaterialC
   }).catch((err) => logger.error({ err }, `${SVC_CTX}: inspectionLog completion write failed`))
 
   logger.info({ materialId, chunksUsed: chunks.length, tokenUsage }, 'OUT - materialPdfChatService')
+
+  // Evento de negócio estruturado — consumo de IA pesquisável no Loki por
+  // usuário e por material, correlacionado ao trace pelo trace_id.
+  logger.info(
+    {
+      evento:           'rag_respondido',
+      mi_id:            materialId,
+      usuario_id:       userId,
+      ia_modelo:        CHAT_MODEL,
+      chunks_usados:    chunks.length,
+      tokens_prompt:    tokenUsage.promptTokens,
+      tokens_resposta:  tokenUsage.completionTokens,
+      tokens_total:     tokenUsage.totalTokens + tokenUsage.embeddingTokens,
+    },
+    'Busca semântica respondida',
+  )
+
+  spanRag.setAttribute('ia.tokens_total', tokenUsage.totalTokens + tokenUsage.embeddingTokens)
 
   return { answer, chunksUsed: chunks.length, tokenUsage }
 }

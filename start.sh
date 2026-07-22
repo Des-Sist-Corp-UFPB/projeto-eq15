@@ -25,5 +25,23 @@ rm -f /api/.env
 # Inicia Nginx em background (frontend na porta 80)
 nginx &
 
+# A telemetria é opt-in: só carrega o registro do OpenTelemetry quando
+# OTEL_EXPORTER_OTLP_ENDPOINT estiver definido. Definir apenas as variáveis
+# OTEL_* não basta — sem o --require, o SDK nunca é carregado e nada é
+# exportado, silenciosamente.
+OTEL_FLAG=""
+if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT}" ]; then
+  echo "▶ OpenTelemetry habilitado (serviço: ${OTEL_SERVICE_NAME:-nao definido})"
+  OTEL_FLAG="--require @opentelemetry/auto-instrumentations-node/register"
+fi
+
+# Worker de vetorização em background.
+#
+# Sem ele, os jobs enfileirados na aprovação de um MI ficam parados no Redis
+# para sempre: o material nunca sai de vectorStatus=PENDING e o chat com IA
+# responde MI_NOT_VECTORIZED para qualquer pergunta.
+echo "▶ Iniciando worker de vetorização"
+node ${OTEL_FLAG} /api/dist/workers/vectorizeWorker.js &
+
 # Node vira o processo principal (API na porta 3333)
-exec node /api/dist/server.js
+exec node ${OTEL_FLAG} /api/dist/server.js

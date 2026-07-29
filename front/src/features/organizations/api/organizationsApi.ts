@@ -58,6 +58,38 @@ export async function listMyOrganizationsRequest(): Promise<OrgListItemDTO[]> {
   return data
 }
 
+// ── Admin: listagem de todas as organizações ──────────────────────────────────
+
+export interface AdminOrganizationDTO {
+  id:          string
+  name:        string
+  description: string | null
+  status:      'ACTIVE' | 'ARCHIVED'
+  createdById: string
+  memberCount: number
+  createdAt:   string
+}
+
+export interface ListAllOrganizationsResponse {
+  organizations: AdminOrganizationDTO[]
+  total:         number
+  page:          number
+  perPage:       number
+}
+
+export async function listAllOrganizationsRequest(params?: {
+  status?:  'ACTIVE' | 'ARCHIVED'
+  page?:    number
+  perPage?: number
+}): Promise<ListAllOrganizationsResponse> {
+  const query = new URLSearchParams()
+  if (params?.status)  query.append('status',  params.status)
+  if (params?.page)    query.append('page',    String(params.page))
+  if (params?.perPage) query.append('perPage', String(params.perPage))
+  const { data } = await api.get<ListAllOrganizationsResponse>(`/organizations/all?${query}`)
+  return data
+}
+
 export async function updateOrganizationRequest(
   orgId: string,
   input: { name?: string; description?: string },

@@ -20,6 +20,25 @@ export interface IOrganizationListItem {
   createdAt:   Date
 }
 
+/** Item da listagem administrativa de organizações (sem vínculo com o usuário). */
+export interface IOrganizationAdminItem {
+  id:          string
+  name:        string
+  description: string | null
+  status:      string
+  createdById: string
+  memberCount: number
+  createdAt:   Date
+}
+
+/** Resultado paginado da listagem administrativa de organizações. */
+export interface IOrganizationAdminListResult {
+  organizations: IOrganizationAdminItem[]
+  total:         number
+  page:          number
+  perPage:       number
+}
+
 export interface IOrganizationMember {
   id:             string
   organizationId: string

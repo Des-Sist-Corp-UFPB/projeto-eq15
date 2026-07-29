@@ -8,6 +8,7 @@ import { HomePage } from '../pages/HomePage'
 import { UploadPage } from '../pages/UploadPage'
 import { MaterialsPage } from '../pages/MaterialsPage'
 import { MaterialDetailPage } from '../pages/MaterialDetailPage'
+import { AdminDashboardPage } from '../pages/AdminDashboardPage'
 import { AdminUsersPage } from '../pages/AdminUsersPage'
 import { AdminLogsPage } from '../pages/AdminLogsPage'
 import { ProfessorReviewPage } from '../pages/ProfessorReviewPage'
@@ -171,6 +172,14 @@ export function Router() {
         />
 
         {/* Exclusivas de ADMIN */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminRoute>
+              <AdminDashboardPage />
+            </AdminRoute>
+          }
+        />
         <Route
           path="/admin/users"
           element={

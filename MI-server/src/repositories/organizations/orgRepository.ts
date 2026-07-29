@@ -1,6 +1,11 @@
 // src/repositories/organizations/orgRepository.ts
+import type { OrgStatus, Prisma } from '@prisma/client'
 import { prisma } from '../../database/prisma'
-import type { IOrganization, IOrganizationListItem } from '../../@types/organizations'
+import type {
+  IOrganization,
+  IOrganizationListItem,
+  IOrganizationAdminListResult,
+} from '../../@types/organizations'
 import type { IUploadedMI } from '../../@types/resources/materials/pdf'
 import { ERRORS, buildError } from '../../lib/errors/errors'
 import { GeneralErrorResponse } from '../../errors/GeneralErrorResponse'
@@ -79,6 +84,54 @@ export async function listMyOrgs(userId: string): Promise<IOrganizationListItem[
     memberCount: m.organization._count.members,
     createdAt:   m.organization.createdAt,
   }))
+}
+
+/**
+ * Listagem administrativa de organizações (todas, não apenas as do usuário).
+ * Filtra por status opcional e devolve a contagem de membros de cada uma.
+ */
+export async function listAllOrgs(params: {
+  status?:  OrgStatus
+  page?:    number
+  perPage?: number
+}): Promise<IOrganizationAdminListResult> {
+  const { status, page = 1, perPage = 20 } = params
+  const where: Prisma.OrganizationWhereInput = {}
+  if (status !== undefined) where.status = status
+
+  const [orgs, total] = await prisma.$transaction([
+    prisma.organization.findMany({
+      where,
+      skip:    (page - 1) * perPage,
+      take:    perPage,
+      select: {
+        id:          true,
+        name:        true,
+        description: true,
+        status:      true,
+        createdById: true,
+        createdAt:   true,
+        _count:      { select: { members: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.organization.count({ where }),
+  ])
+
+  return {
+    organizations: orgs.map(o => ({
+      id:          o.id,
+      name:        o.name,
+      description: o.description,
+      status:      o.status,
+      createdById: o.createdById,
+      memberCount: o._count.members,
+      createdAt:   o.createdAt,
+    })),
+    total,
+    page,
+    perPage,
+  }
 }
 
 export async function findOrgApprovedMaterials(

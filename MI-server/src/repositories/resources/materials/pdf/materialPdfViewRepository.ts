@@ -29,6 +29,7 @@ export async function findMaterialDetailById(id: string): Promise<IPendingMateri
     where:  { id },
     select: {
       ...MI_SELECT,
+      vectorStatus:  true, // exposto no detalhe para o front sinalizar o processamento (fila de vetorização)
       uploadedBy:    { select: { name: true, email: true } },
       organizations: { select: { organization: { select: { id: true, name: true } } } },
     },

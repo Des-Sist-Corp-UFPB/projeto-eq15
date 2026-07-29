@@ -14,6 +14,7 @@ import { materialPdfPublicPresignedUrlController } from '../../../../controllers
 import { materialPdfReviewPresignedUrlController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewPresignedUrlController'
 import { materialPdfReviewController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewController'
 import { materialPdfChatController } from '../../../../controllers/resources/materials/pdf/materialPdfChatController'
+import { materialPdfSummaryController } from '../../../../controllers/resources/materials/pdf/materialPdfSummaryController'
 import { env } from '../../../../env'
 
 export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<void> {
@@ -159,5 +160,18 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
     '/:id/chat',
     { preHandler: [authenticate] },
     materialPdfChatController,
+  )
+
+  /**
+   * GET /mis/:id/summary
+   * Resumo por IA de um MI aprovado e vetorizado. Gera na primeira visita e
+   * devolve o cache persistido nas visitas seguintes (qualquer usuário).
+   * Resposta: { status: 'DONE' | 'PROCESSING', summary: string | null, generatedAt: string | null }
+   * Permissão: qualquer usuário autenticado.
+   */
+  app.get(
+    '/:id/summary',
+    { preHandler: [authenticate] },
+    materialPdfSummaryController,
   )
 }

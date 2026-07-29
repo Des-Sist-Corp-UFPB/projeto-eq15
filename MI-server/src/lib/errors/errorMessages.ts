@@ -24,6 +24,7 @@ export type ErrorMessageKey =
   | 'MI_NOT_PENDING'
   | 'MI_NOT_APPROVED'
   | 'MI_NOT_VECTORIZED'
+  | 'MI_SUMMARY_EMPTY'
   // ── Organizações ──────────────────────────────────────────────────────────
   | 'ORG_NOT_FOUND'
   | 'ORG_ARCHIVED'
@@ -62,6 +63,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_PENDING:           'Este material não está pendente de revisão.',
     MI_NOT_APPROVED:          'Este material ainda não foi aprovado para consulta.',
     MI_NOT_VECTORIZED:        'Este material ainda está sendo processado. Tente novamente em alguns instantes.',
+    MI_SUMMARY_EMPTY:         'Não foi possível gerar o resumo: o material não possui texto processado.',
     ORG_NOT_FOUND:            'Organização não encontrada.',
     ORG_ARCHIVED:             'Esta organização está arquivada.',
     ORG_NOT_MEMBER:           'Você não é membro desta organização.',
@@ -97,6 +99,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_PENDING:           'This material is not pending review.',
     MI_NOT_APPROVED:          'This material has not been approved for querying.',
     MI_NOT_VECTORIZED:        'This material is still being processed. Please try again in a few moments.',
+    MI_SUMMARY_EMPTY:         'Could not generate the summary: the material has no processed text.',
     ORG_NOT_FOUND:            'Organization not found.',
     ORG_ARCHIVED:             'This organization is archived.',
     ORG_NOT_MEMBER:           'You are not a member of this organization.',
@@ -132,6 +135,7 @@ export const errorMessages: Record<Language, Record<ErrorMessageKey, string>> = 
     MI_NOT_PENDING:           'Este material no está pendiente de revisión.',
     MI_NOT_APPROVED:          'Este material aún no ha sido aprobado para consulta.',
     MI_NOT_VECTORIZED:        'Este material aún se está procesando. Inténtalo de nuevo en unos instantes.',
+    MI_SUMMARY_EMPTY:         'No se pudo generar el resumen: el material no tiene texto procesado.',
     ORG_NOT_FOUND:            'Organización no encontrada.',
     ORG_ARCHIVED:             'Esta organización está archivada.',
     ORG_NOT_MEMBER:           'No eres miembro de esta organización.',

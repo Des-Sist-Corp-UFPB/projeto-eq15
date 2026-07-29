@@ -12,6 +12,7 @@ const PENDING_SELECT = {
   sizeBytes:        true,
   habilidadesBncc:  true,
   status:           true,
+  vectorStatus:     true,
   uploadedById:     true,
   createdAt:        true,
   updatedAt:        true,

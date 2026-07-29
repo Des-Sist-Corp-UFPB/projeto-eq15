@@ -6,6 +6,7 @@ import { createOrganizationController }     from '../../controllers/organization
 import { updateOrganizationController }     from '../../controllers/organizations/updateOrganizationController'
 import { archiveOrganizationController }    from '../../controllers/organizations/archiveOrganizationController'
 import { listMyOrganizationsController }    from '../../controllers/organizations/listMyOrganizationsController'
+import { listAllOrganizationsController }   from '../../controllers/organizations/listAllOrganizationsController'
 import { listOrgMembersController }         from '../../controllers/organizations/members/listOrgMembersController'
 import { removeMemberController }           from '../../controllers/organizations/members/removeMemberController'
 import { leaveOrganizationController }      from '../../controllers/organizations/members/leaveOrganizationController'
@@ -31,6 +32,9 @@ export async function organizationsRoutes(app: FastifyInstance): Promise<void> {
 
   /** GET /organizations/mine — lista organizações do usuário autenticado */
   app.get('/mine', { preHandler: [authenticate] }, listMyOrganizationsController)
+
+  /** GET /organizations/all — lista todas as organizações da plataforma (ADMIN) */
+  app.get('/all', { preHandler: [authenticate] }, listAllOrganizationsController)
 
   /** PUT /organizations/:orgId — edita nome/descrição (ADMIN da org) */
   app.put('/:orgId', { preHandler: [authenticate] }, updateOrganizationController)

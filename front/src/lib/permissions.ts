@@ -36,3 +36,8 @@ export function canUseAiChat(user: AuthUser | null): boolean {
 export function isSysAdmin(user: AuthUser | null): boolean {
   return user?.role === 'ADMIN'
 }
+
+/** Pode gerenciar materiais no acervo (ex.: soft delete)? — PROFESSOR ou ADMIN. */
+export function canManageMaterials(user: AuthUser | null): boolean {
+  return user?.role === 'PROFESSOR' || user?.role === 'ADMIN'
+}

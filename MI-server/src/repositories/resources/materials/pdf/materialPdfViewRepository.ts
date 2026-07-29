@@ -17,16 +17,17 @@ const MI_SELECT = {
 } as const
 
 export async function findMaterialById(id: string): Promise<IUploadedMI | null> {
-  return prisma.materialInstrucional.findUnique({
-    where:  { id },
+  // findFirst (não findUnique) para poder filtrar por deletedAt — soft delete oculta o material
+  return prisma.materialInstrucional.findFirst({
+    where:  { id, deletedAt: null },
     select: MI_SELECT,
   })
 }
 
 // Inclui os dados do autor e organizações — usado na tela de detalhe de um material específico
 export async function findMaterialDetailById(id: string): Promise<IPendingMaterial | null> {
-  return prisma.materialInstrucional.findUnique({
-    where:  { id },
+  return prisma.materialInstrucional.findFirst({
+    where:  { id, deletedAt: null },
     select: {
       ...MI_SELECT,
       vectorStatus:  true, // exposto no detalhe para o front sinalizar o processamento (fila de vetorização)

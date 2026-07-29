@@ -157,6 +157,12 @@ export async function reviewMaterialRequest(
   return data
 }
 
+/** Soft delete de um material (PROFESSOR/ADMIN) — oculta das listagens. */
+export async function deleteMaterialRequest(materialId: string): Promise<UploadedMI> {
+  const { data } = await api.delete<UploadedMI>(`/mis/${materialId}`)
+  return data
+}
+
 // ── Chat com IA (RAG) ─────────────────────────────────────────────────────────
 
 export interface MaterialChatResponse {

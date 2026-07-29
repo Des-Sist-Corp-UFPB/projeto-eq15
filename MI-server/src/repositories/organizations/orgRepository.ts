@@ -138,7 +138,7 @@ export async function findOrgApprovedMaterials(
   orgId: string,
 ): Promise<IUploadedMI[]> {
   const links = await prisma.materialInstrucionalOrganization.findMany({
-    where: { organizationId: orgId, material: { status: 'APPROVED' } },
+    where: { organizationId: orgId, material: { status: 'APPROVED', deletedAt: null } },
     include: {
       material: {
         select: {

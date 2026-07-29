@@ -127,6 +127,8 @@ model MaterialInstrucional {
   summary            String? // resumo gerado por IA (null até a primeira geração)
   summaryStatus      SummaryStatus @default(PENDING)
   summaryGeneratedAt DateTime? // quando o resumo em cache foi produzido
+  deletedAt          DateTime? // soft delete: quando preenchido, o material fica oculto em todas as listagens
+  deletedById        String? // quem realizou o soft delete (PROFESSOR/ADMIN)
   uploadedById       String
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
@@ -137,6 +139,7 @@ model MaterialInstrucional {
   @@index([uploadedById])
   @@index([status])
   @@index([vectorStatus])
+  @@index([deletedAt])
 }
 
 // ── Organizações ──────────────────────────────────────────────────────────────

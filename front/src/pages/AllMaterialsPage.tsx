@@ -4,11 +4,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Library, FileText,
   ExternalLink, AlertCircle, RefreshCw, Loader2,
-  Clock, CheckCircle2, XCircle,
+  Clock, CheckCircle2, XCircle, Trash2,
 } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
 import { HabilidadesBncc } from '../components/HabilidadesBncc'
+import { useAuth } from '../context/AuthContext'
+import { canManageMaterials } from '../lib/permissions'
 import { useAllMaterials } from '../features/materials/hooks/useAllMaterials'
+import { useDeleteMaterial } from '../features/materials/hooks/useDeleteMaterial'
 import { getReviewPresignedUrlRequest } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
 import type { MIStatus, PendingMaterial } from '../features/materials/api/materialsApi'
@@ -60,8 +63,13 @@ function StatusBadge({ status }: { status: MIStatus }) {
 
 function MaterialCard({ material }: { material: PendingMaterial }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [isOpening, setIsOpening] = useState(false)
   const [viewError, setViewError] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+
+  const canDelete = canManageMaterials(user)
+  const { mutate: deleteMaterial, isPending: isDeleting, error: deleteError } = useDeleteMaterial()
 
   async function handleView() {
     setIsOpening(true)
@@ -74,6 +82,10 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
     } finally {
       setIsOpening(false)
     }
+  }
+
+  function handleConfirmDelete() {
+    deleteMaterial(material.id, { onSuccess: () => setConfirming(false) })
   }
 
   return (
@@ -124,22 +136,68 @@ function MaterialCard({ material }: { material: PendingMaterial }) {
               <AlertCircle size={11} />{viewError}
             </p>
           )}
+          {deleteError && (
+            <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+              <AlertCircle size={11} />{getApiErrorMessage(deleteError)}
+            </p>
+          )}
         </div>
 
-        {/* Visualizar */}
-        <button
-          onClick={(e) => { e.stopPropagation(); handleView() }}
-          disabled={isOpening}
-          aria-label={`Visualizar ${material.title}`}
-          className="shrink-0 flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700
-                     bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400
-                     hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50
-                     px-3 py-1.5 text-xs font-medium transition-colors
-                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
-        >
-          {isOpening ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
-          <span className="hidden sm:inline">{isOpening ? 'Abrindo…' : 'Visualizar'}</span>
-        </button>
+        {/* Ações */}
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleView() }}
+            disabled={isOpening}
+            aria-label={`Visualizar ${material.title}`}
+            className="flex items-center gap-1.5 rounded-lg border border-indigo-200 dark:border-indigo-700
+                       bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400
+                       hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50
+                       px-3 py-1.5 text-xs font-medium transition-colors
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            {isOpening ? <Loader2 size={13} className="animate-spin" /> : <ExternalLink size={13} />}
+            <span className="hidden sm:inline">{isOpening ? 'Abrindo…' : 'Visualizar'}</span>
+          </button>
+
+          {/* Excluir (soft delete) — apenas PROFESSOR/ADMIN */}
+          {canDelete && (
+            confirming ? (
+              <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
+                <span className="hidden sm:inline text-xs text-gray-500 dark:text-gray-400">Excluir?</span>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  aria-label={`Confirmar exclusão de ${material.title}`}
+                  className="flex items-center gap-1 rounded-lg bg-red-600 text-white hover:bg-red-700
+                             disabled:opacity-50 px-2.5 py-1.5 text-xs font-medium transition-colors"
+                >
+                  {isDeleting ? <Loader2 size={13} className="animate-spin" /> : 'Sim'}
+                </button>
+                <button
+                  onClick={() => setConfirming(false)}
+                  disabled={isDeleting}
+                  className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
+                             text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
+                             px-2.5 py-1.5 text-xs font-medium transition-colors"
+                >
+                  Não
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => { e.stopPropagation(); setConfirming(true) }}
+                aria-label={`Excluir ${material.title}`}
+                className="flex items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-800
+                           bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400
+                           hover:bg-red-100 dark:hover:bg-red-900 px-3 py-1.5 text-xs font-medium transition-colors
+                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+              >
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">Excluir</span>
+              </button>
+            )
+          )}
+        </div>
       </div>
     </div>
   )

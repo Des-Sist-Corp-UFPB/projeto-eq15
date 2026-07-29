@@ -83,4 +83,30 @@ describe('AllMaterialsPage', () => {
       expect(mockApi.get.mock.calls.some((c) => String(c[0]).includes('page=2'))).toBe(true),
     )
   })
+
+  describe('soft delete', () => {
+    it('admin/professor faz soft delete com confirmação', async () => {
+      mockApi.get.mockResolvedValue({ data: { materials: [material('m1', 'Doc A')], total: 1, page: 1, perPage: 25 } })
+      mockApi.delete.mockResolvedValue({ data: {} })
+      const user = userEvent.setup()
+      renderWithProviders(<AllMaterialsPage />)
+
+      // Passo 1: clicar em Excluir revela a confirmação
+      await user.click(await screen.findByRole('button', { name: /Excluir Doc A/i }))
+      const confirmBtn = await screen.findByRole('button', { name: /Confirmar exclusão de Doc A/i })
+
+      // Passo 2: confirmar chama o DELETE do material
+      await user.click(confirmBtn)
+      await waitFor(() => expect(mockApi.delete).toHaveBeenCalledWith('/mis/m1'))
+    })
+
+    it('não mostra o botão Excluir para quem não é admin/professor', async () => {
+      setSession(makeUser({ role: 'INSTITUTIONALIZED', email: 'inst@dcx.ufpb.br' }))
+      mockApi.get.mockResolvedValue({ data: { materials: [material('m1', 'Doc A')], total: 1, page: 1, perPage: 25 } })
+      renderWithProviders(<AllMaterialsPage />)
+
+      await screen.findByText('Doc A')
+      expect(screen.queryByRole('button', { name: /Excluir Doc A/i })).not.toBeInTheDocument()
+    })
+  })
 })

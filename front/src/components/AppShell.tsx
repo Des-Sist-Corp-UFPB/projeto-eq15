@@ -11,7 +11,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { ThemeToggle } from './ThemeToggle'
 import { Logo } from './Logo'
-import { canUploadMaterials, isSysAdmin } from '../lib/permissions'
+import { canUploadMaterials, isSysAdmin, canManageMaterials } from '../lib/permissions'
 import type { AuthUser, Role } from '../types/auth'
 
 // ── Navegação lateral ───────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Convites',       icon: Mail,           to: '/invites',             show: (u) => !!u },
   { label: 'Painel',         icon: LayoutDashboard, to: '/admin/dashboard',    show: (u) => isSysAdmin(u) },
   { label: 'Revisar',        icon: ClipboardCheck, to: '/professor/review',    show: (u) => isSysAdmin(u) },
-  { label: 'Acervo',         icon: Library,        to: '/professor/materials', show: (u) => isSysAdmin(u) },
+  { label: 'Acervo',         icon: Library,        to: '/professor/materials', show: (u) => canManageMaterials(u) },
   { label: 'Usuários',       icon: ShieldCheck,    to: '/admin/users',         show: (u) => isSysAdmin(u) },
   { label: 'Logs',           icon: ScrollText,     to: '/admin/logs',          show: (u) => isSysAdmin(u) },
 ]

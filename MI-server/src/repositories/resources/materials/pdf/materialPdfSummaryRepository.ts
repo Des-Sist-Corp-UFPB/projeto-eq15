@@ -12,8 +12,8 @@ export interface MaterialForSummary {
 }
 
 export async function findMaterialForSummary(id: string): Promise<MaterialForSummary | null> {
-  return prisma.materialInstrucional.findUnique({
-    where:  { id },
+  return prisma.materialInstrucional.findFirst({
+    where:  { id, deletedAt: null },
     select: {
       id:                 true,
       status:             true,

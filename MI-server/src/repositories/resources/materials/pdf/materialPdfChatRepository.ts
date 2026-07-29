@@ -9,8 +9,8 @@ export interface MaterialForChat {
 }
 
 export async function findMaterialForChat(id: string): Promise<MaterialForChat | null> {
-  return prisma.materialInstrucional.findUnique({
-    where:  { id },
+  return prisma.materialInstrucional.findFirst({
+    where:  { id, deletedAt: null },
     select: { id: true, status: true, vectorStatus: true },
   })
 }

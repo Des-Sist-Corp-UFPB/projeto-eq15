@@ -9,7 +9,7 @@ export async function findDistinctHabilidades(): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ habilidade: string }[]>`
     SELECT DISTINCT unnest("habilidadesBncc") AS habilidade
     FROM "MaterialInstrucional"
-    WHERE status = 'APPROVED'::"MIStatus"
+    WHERE status = 'APPROVED'::"MIStatus" AND "deletedAt" IS NULL
     ORDER BY habilidade ASC
   `
   return rows.map((r) => r.habilidade)

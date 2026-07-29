@@ -26,7 +26,7 @@ export async function findPendingMaterials(params: {
 }): Promise<IPendingMaterial[]> {
   const { reviewerId, reviewerRole } = params
 
-  const where: Prisma.MaterialInstrucionalWhereInput = { status: 'PENDING_REVIEW' }
+  const where: Prisma.MaterialInstrucionalWhereInput = { status: 'PENDING_REVIEW', deletedAt: null }
 
   // Req 26: Professors only see org-labeled MIs if they belong to those orgs.
   // ADMINs see everything.

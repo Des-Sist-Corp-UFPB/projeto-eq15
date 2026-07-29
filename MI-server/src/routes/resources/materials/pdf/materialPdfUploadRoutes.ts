@@ -15,6 +15,7 @@ import { materialPdfReviewPresignedUrlController } from '../../../../controllers
 import { materialPdfReviewController } from '../../../../controllers/resources/materials/pdf/materialPdfReviewController'
 import { materialPdfChatController } from '../../../../controllers/resources/materials/pdf/materialPdfChatController'
 import { materialPdfSummaryController } from '../../../../controllers/resources/materials/pdf/materialPdfSummaryController'
+import { materialPdfDeleteController } from '../../../../controllers/resources/materials/pdf/materialPdfDeleteController'
 import { env } from '../../../../env'
 
 export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<void> {
@@ -160,6 +161,16 @@ export async function materialPdfUploadRoutes(app: FastifyInstance): Promise<voi
     '/:id/chat',
     { preHandler: [authenticate] },
     materialPdfChatController,
+  )
+
+  /**
+   * DELETE /mis/:id
+   * Soft delete de um material — oculta das listagens/visualização (PROFESSOR, ADMIN).
+   */
+  app.delete(
+    '/:id',
+    { preHandler: [authenticate] },
+    materialPdfDeleteController,
   )
 
   /**

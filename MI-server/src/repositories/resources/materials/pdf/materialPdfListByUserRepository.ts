@@ -18,7 +18,7 @@ const MI_SELECT = {
 
 export async function findMaterialsByUserId(userId: string): Promise<IUploadedMI[]> {
   return prisma.materialInstrucional.findMany({
-    where:   { uploadedById: userId },
+    where:   { uploadedById: userId, deletedAt: null },
     select:  MI_SELECT,
     orderBy: { createdAt: 'desc' },
   })

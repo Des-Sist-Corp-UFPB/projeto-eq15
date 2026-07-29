@@ -129,9 +129,9 @@ export function Router() {
         <Route
           path="/professor/materials"
           element={
-            <AdminRoute>
+            <ProfessorRoute>
               <AllMaterialsPage />
-            </AdminRoute>
+            </ProfessorRoute>
           }
         />
 

@@ -52,7 +52,7 @@ export async function findAllMaterials(
 ): Promise<AllMaterialsResult> {
   const { status, habilidades, includeSemHabilidade, search, page, perPage } = params
 
-  const where: Prisma.MaterialInstrucionalWhereInput = {}
+  const where: Prisma.MaterialInstrucionalWhereInput = { deletedAt: null }
   if (status) where.status = status
 
   // Filtro de habilidades: união entre "tem alguma das selecionadas" e "sem habilidade"

@@ -3,20 +3,21 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, FileText, ExternalLink, AlertCircle, RefreshCw, Loader2,
-  Clock, CheckCircle2, XCircle, User, HardDrive, Calendar, Sparkles,
+  Clock, CheckCircle2, XCircle, User, HardDrive, Calendar, Sparkles, Cog,
 } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
 import { HabilidadesBncc } from '../components/HabilidadesBncc'
 import { useAuth } from '../context/AuthContext'
 import { canUseAiChat } from '../lib/permissions'
 import { useMaterial } from '../features/materials/hooks/useMaterial'
+import { useMaterialSummary } from '../features/materials/hooks/useMaterialSummary'
 import {
   getReviewPresignedUrlRequest,
   getPublicPresignedUrlRequest,
   getMaterialPresignedUrlRequest,
 } from '../features/materials/api/materialsApi'
 import { getApiErrorMessage } from '../lib/apiError'
-import type { MIStatus, PendingMaterial } from '../features/materials/api/materialsApi'
+import type { MIStatus, PendingMaterial, VectorStatus } from '../features/materials/api/materialsApi'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,103 @@ function StatusBadge({ status }: { status: MIStatus }) {
       <Icon size={11} />{label}
     </span>
   )
+}
+
+// ── Recursos de IA (resumo + chat) ──────────────────────────────────────────────
+
+/** Materiais aprovados cujo processamento de vetorização já terminou têm IA disponível. */
+function isAiReady(material: PendingMaterial): boolean {
+  return material.status === 'APPROVED' && material.vectorStatus === 'DONE'
+}
+
+/**
+ * Aviso de que o material ainda não está pronto para IA — porque a vetorização
+ * está na fila/execução (Redis) ou falhou. Enquanto não estiver `DONE`, o chat e
+ * o resumo não são disponibilizados.
+ */
+function AiStatusNotice({ vectorStatus }: { vectorStatus: VectorStatus }) {
+  const failed = vectorStatus === 'FAILED'
+
+  const classes = failed
+    ? 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300'
+    : 'bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-300'
+
+  return (
+    <div className={`border-t border-gray-100 dark:border-gray-800 pt-5`}>
+      <div className={`flex items-start gap-2.5 rounded-xl border p-3.5 ${classes}`}>
+        {failed
+          ? <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          : <Cog size={16} className="shrink-0 mt-0.5 animate-spin [animation-duration:3s]" />}
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium">
+            {failed ? 'Recursos de IA indisponíveis' : 'Material em processamento'}
+          </p>
+          <p className="text-xs leading-relaxed opacity-90">
+            {failed
+              ? 'O processamento com IA deste material falhou. O resumo e o chat com a IA não estão disponíveis no momento.'
+              : 'Este material ainda está sendo processado para a busca com IA. O resumo e o chat ficarão disponíveis assim que o processamento terminar.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Resumo do material gerado por IA. Gerado sob demanda na primeira visita e
+ * cacheado no backend — visitas seguintes leem o resumo já pronto.
+ */
+function SummaryCard({ materialId }: { materialId: string }) {
+  const { data, isLoading, isError, error, refetch } = useMaterialSummary(materialId, true)
+
+  const isGenerating = isLoading || data?.status === 'PROCESSING'
+
+  return (
+    <div className="border-t border-gray-100 dark:border-gray-800 pt-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles size={15} className="text-indigo-500 dark:text-indigo-400" />
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Resumo por IA</h2>
+      </div>
+
+      {isGenerating && (
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <Loader2 size={14} className="animate-spin text-indigo-500" />
+          Gerando resumo com IA… isso pode levar alguns segundos.
+        </div>
+      )}
+
+      {!isGenerating && isError && (
+        <div className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <AlertCircle size={14} className="shrink-0 mt-0.5 text-amber-500" />
+          <div className="space-y-1.5">
+            <p>{getApiErrorMessage(error)}</p>
+            <button
+              onClick={() => refetch()}
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              <RefreshCw size={12} /> Tentar novamente
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isGenerating && !isError && data?.status === 'DONE' && data.summary && (
+        <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-line">
+          {data.summary}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Área de IA do material aprovado: mostra o resumo quando o material está pronto
+ * (vetorizado) ou um aviso de processamento/falha caso contrário.
+ */
+function AiSection({ material }: { material: PendingMaterial }) {
+  if (material.status !== 'APPROVED') return null
+  if (!isAiReady(material)) return <AiStatusNotice vectorStatus={material.vectorStatus} />
+  return <SummaryCard materialId={material.id} />
 }
 
 // ── Conteúdo ──────────────────────────────────────────────────────────────────
@@ -152,6 +250,9 @@ function DetailContent({ material }: { material: PendingMaterial }) {
         )}
       </div>
 
+      {/* Recursos de IA — resumo quando pronto, ou aviso de processamento/falha */}
+      <AiSection material={material} />
+
       {/* Erro ao abrir */}
       {viewError && (
         <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
@@ -173,8 +274,8 @@ function DetailContent({ material }: { material: PendingMaterial }) {
           {isOpening ? 'Abrindo…' : 'Abrir PDF'}
         </button>
 
-        {/* Conversar com IA — somente usuários institucionais e material aprovado */}
-        {canUseAiChat(user) && material.status === 'APPROVED' && (
+        {/* Conversar com IA — usuários institucionais, material aprovado e vetorizado */}
+        {canUseAiChat(user) && material.status === 'APPROVED' && isAiReady(material) && (
           <button
             onClick={() => navigate(`/materials/${material.id}/chat`, { state: { material } })}
             className="flex items-center justify-center gap-2 rounded-xl border border-indigo-200 dark:border-indigo-800
@@ -184,6 +285,27 @@ function DetailContent({ material }: { material: PendingMaterial }) {
           >
             <Sparkles size={15} />
             Conversar com IA
+          </button>
+        )}
+
+        {/* Material aprovado mas ainda não vetorizado — chat indisponível (motivo no aviso acima) */}
+        {canUseAiChat(user) && material.status === 'APPROVED' && !isAiReady(material) && (
+          <button
+            type="button"
+            disabled
+            title={
+              material.vectorStatus === 'FAILED'
+                ? 'O processamento com IA falhou; o chat está indisponível.'
+                : 'O material ainda está sendo processado; o chat ficará disponível em instantes.'
+            }
+            className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700
+                       bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm font-semibold text-gray-400 dark:text-gray-500
+                       cursor-not-allowed"
+          >
+            {material.vectorStatus === 'FAILED'
+              ? <Sparkles size={15} />
+              : <Cog size={15} className="animate-spin [animation-duration:3s]" />}
+            Chat com IA indisponível
           </button>
         )}
       </div>

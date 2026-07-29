@@ -105,21 +105,33 @@ enum VectorStatus {
   FAILED
 }
 
-model MaterialInstrucional {
-  id               String       @id @default(uuid())
-  title            String
-  originalFileName String
-  storageKey       String       @unique
-  mimeType         String
-  sizeBytes        Int
-  habilidadesBncc  String[]     @default([]) // códigos/nomes de habilidades da BNCC associadas ao material
-  status           MIStatus     @default(PENDING_REVIEW)
-  vectorStatus     VectorStatus @default(PENDING)
-  uploadedById     String
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+// Estado da geração do resumo por IA. Gerado sob demanda na primeira visita e
+// cacheado no próprio material — as visitas seguintes leem o resumo pronto.
+enum SummaryStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
 
-  uploadedBy    User                              @relation(fields: [uploadedById], references: [id])
+model MaterialInstrucional {
+  id                 String        @id @default(uuid())
+  title              String
+  originalFileName   String
+  storageKey         String        @unique
+  mimeType           String
+  sizeBytes          Int
+  habilidadesBncc    String[]      @default([]) // códigos/nomes de habilidades da BNCC associadas ao material
+  status             MIStatus      @default(PENDING_REVIEW)
+  vectorStatus       VectorStatus  @default(PENDING)
+  summary            String? // resumo gerado por IA (null até a primeira geração)
+  summaryStatus      SummaryStatus @default(PENDING)
+  summaryGeneratedAt DateTime? // quando o resumo em cache foi produzido
+  uploadedById       String
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  uploadedBy    User                               @relation(fields: [uploadedById], references: [id])
   organizations MaterialInstrucionalOrganization[]
 
   @@index([uploadedById])

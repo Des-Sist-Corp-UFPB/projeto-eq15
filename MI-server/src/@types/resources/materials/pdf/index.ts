@@ -1,5 +1,5 @@
 // src/@types/resources/materials/pdf/index.ts
-import type { MIStatus } from '@prisma/client'
+import type { MIStatus, VectorStatus } from '@prisma/client'
 
 /** Payload interno passado do controller para o service */
 export interface UploadMIInput {
@@ -28,6 +28,7 @@ export interface IPendingMaterial {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  vectorStatus: VectorStatus
   habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
@@ -49,6 +50,20 @@ export interface IMaterialChatResponse {
   answer:     string
   chunksUsed: number
   tokenUsage: ITokenUsage
+}
+
+/**
+ * Resposta do endpoint de resumo por IA.
+ *
+ * `status` reflete o estado do cache do resumo no material:
+ * - `DONE`       → `summary` preenchido (cache pronto para leitura)
+ * - `PROCESSING` → outra requisição está gerando; `summary` vem `null` e o
+ *                  cliente deve tentar novamente em instantes
+ */
+export interface IMaterialSummaryResponse {
+  status:      'DONE' | 'PROCESSING'
+  summary:     string | null
+  generatedAt: Date | null
 }
 
 /** Material Instrucional — nunca expõe campos internos desnecessários */

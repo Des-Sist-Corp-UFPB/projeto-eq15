@@ -3,6 +3,9 @@ import { api } from '../../../lib/api'
 
 export type MIStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
 
+/** Estado da vetorização do material (fila de processamento no Redis). */
+export type VectorStatus = 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED'
+
 export interface UploadedMI {
   id: string
   title: string
@@ -72,6 +75,7 @@ export interface PendingMaterial {
   mimeType: string
   sizeBytes: number
   status: MIStatus
+  vectorStatus: VectorStatus
   habilidadesBncc: string[]
   uploadedById: string
   uploadedBy: { name: string; email: string }
@@ -165,5 +169,18 @@ export async function materialChatRequest(
   question:   string,
 ): Promise<MaterialChatResponse> {
   const { data } = await api.post<MaterialChatResponse>(`/mis/${materialId}/chat`, { question })
+  return data
+}
+
+// ── Resumo por IA ─────────────────────────────────────────────────────────────
+
+export interface MaterialSummaryResponse {
+  status:      'DONE' | 'PROCESSING'
+  summary:     string | null
+  generatedAt: string | null
+}
+
+export async function getMaterialSummaryRequest(materialId: string): Promise<MaterialSummaryResponse> {
+  const { data } = await api.get<MaterialSummaryResponse>(`/mis/${materialId}/summary`)
   return data
 }

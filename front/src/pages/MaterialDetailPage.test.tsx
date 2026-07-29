@@ -21,6 +21,7 @@ function material(overrides = {}) {
     originalFileName: 'geo.pdf',
     storageKey: 'k', mimeType: 'application/pdf', sizeBytes: 5000,
     status: 'APPROVED' as const,
+    vectorStatus: 'DONE' as const,
     habilidadesBncc: ['EF03MA01'],
     uploadedById: 'u1',
     uploadedBy: { name: 'Prof. W', email: 'w@dcx.ufpb.br' },
@@ -67,5 +68,44 @@ describe('MaterialDetailPage', () => {
     // staff usa a rota de review
     expect(mockApi.get).toHaveBeenCalledWith('/mis/m1/review-presigned-url')
     vi.unstubAllGlobals()
+  })
+
+  describe('recursos de IA conforme o vectorStatus', () => {
+    it('material vetorizado (DONE): mostra o resumo e o botão de chat', async () => {
+      mockApi.get.mockImplementation((url: string) => {
+        if (url === '/mis/m1') return Promise.resolve({ data: material({ vectorStatus: 'DONE' }) })
+        if (url === '/mis/m1/summary')
+          return Promise.resolve({ data: { status: 'DONE', summary: 'Resumo gerado pela IA.', generatedAt: new Date().toISOString() } })
+        return Promise.resolve({ data: {} })
+      })
+
+      renderWithProviders(<MaterialDetailPage />, { route: '/materials/m1', path: '/materials/:id' })
+
+      expect(await screen.findByText('Resumo gerado pela IA.')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Conversar com IA/i })).toBeInTheDocument()
+      expect(screen.queryByText(/em processamento/i)).not.toBeInTheDocument()
+    })
+
+    it('material em processamento (PROCESSING): avisa e desabilita o chat, sem chamar o resumo', async () => {
+      mockApi.get.mockResolvedValue({ data: material({ vectorStatus: 'PROCESSING' }) })
+
+      renderWithProviders(<MaterialDetailPage />, { route: '/materials/m1', path: '/materials/:id' })
+
+      expect(await screen.findByText(/Material em processamento/i)).toBeInTheDocument()
+      const chatBtn = screen.getByRole('button', { name: /Chat com IA indisponível/i })
+      expect(chatBtn).toBeDisabled()
+      expect(screen.queryByRole('button', { name: /Conversar com IA/i })).not.toBeInTheDocument()
+      // não deve tentar gerar/buscar o resumo enquanto não vetorizado
+      expect(mockApi.get).not.toHaveBeenCalledWith('/mis/m1/summary')
+    })
+
+    it('material com falha de processamento (FAILED): avisa indisponibilidade dos recursos de IA', async () => {
+      mockApi.get.mockResolvedValue({ data: material({ vectorStatus: 'FAILED' }) })
+
+      renderWithProviders(<MaterialDetailPage />, { route: '/materials/m1', path: '/materials/:id' })
+
+      expect(await screen.findByText(/Recursos de IA indisponíveis/i)).toBeInTheDocument()
+      expect(mockApi.get).not.toHaveBeenCalledWith('/mis/m1/summary')
+    })
   })
 })

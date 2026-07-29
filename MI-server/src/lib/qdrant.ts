@@ -25,6 +25,16 @@ type QdrantClientInstance = {
     score:    number
     payload?: Record<string, unknown>
   }>>
+  scroll(name: string, params: {
+    filter?:       { must: Array<{ key: string; match: { value: unknown } }> }
+    limit?:        number
+    offset?:       string | number | null
+    with_payload?: boolean
+    with_vector?:  boolean
+  }): Promise<{
+    points: Array<{ id: string | number; payload?: Record<string, unknown> }>
+    next_page_offset?: string | number | null
+  }>
 }
 
 let _client: QdrantClientInstance | null = null

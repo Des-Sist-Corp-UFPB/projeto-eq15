@@ -27,17 +27,30 @@ describe('UploadPage', () => {
     expect(screen.getByText(/Permissão de upload não habilitada/i)).toBeInTheDocument()
   })
 
-  it('adiciona e remove habilidades BNCC', async () => {
+  it('seleciona uma habilidade da lista da BNCC de Computação e remove', async () => {
     setSession(makeUser({ role: 'PROFESSOR' }))
     const user = userEvent.setup()
     renderWithProviders(<UploadPage />, { route: '/upload' })
 
-    await user.type(screen.getByLabelText(/Habilidades BNCC/i), 'EF15LP01')
-    await user.click(screen.getByRole('button', { name: 'Adicionar' }))
-    expect(screen.getByText('EF15LP01')).toBeInTheDocument()
+    await user.type(screen.getByLabelText(/Habilidades BNCC/i), 'EF06CO02')
+    // sugestão da BNCC aparece no dropdown
+    await user.click(await screen.findByRole('option', { name: /EF06CO02/i }))
+    // vira uma tag removível
+    expect(screen.getByRole('button', { name: /Remover EF06CO02/i })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /Remover EF15LP01/i }))
-    expect(screen.queryByText('EF15LP01')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Remover EF06CO02/i }))
+    expect(screen.queryByRole('button', { name: /Remover EF06CO02/i })).not.toBeInTheDocument()
+  })
+
+  it('permite adicionar uma habilidade personalizada fora da lista', async () => {
+    setSession(makeUser({ role: 'PROFESSOR' }))
+    const user = userEvent.setup()
+    renderWithProviders(<UploadPage />, { route: '/upload' })
+
+    await user.type(screen.getByLabelText(/Habilidades BNCC/i), 'minha-hab-01')
+    await user.click(await screen.findByRole('button', { name: /Adicionar habilidade personalizada/i }))
+    // adicionada como código normalizado (maiúsculas)
+    expect(screen.getByRole('button', { name: /Remover MINHA-HAB-01/i })).toBeInTheDocument()
   })
 
   it('envia o material com o arquivo selecionado', async () => {

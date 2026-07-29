@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { AppShell } from '../components/AppShell'
+import { BnccHabilidadePicker } from '../components/BnccHabilidadePicker'
 import { canUploadMaterials } from '../lib/permissions'
 import { useUploadMaterial } from '../features/materials/hooks/useUploadMaterial'
 import { useMyOrganizations } from '../features/organizations/hooks/useMyOrganizations'
@@ -209,14 +210,12 @@ export function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [habilidadesBncc, setHabilidadesBncc] = useState<string[]>([])
-  const [habilidadeInput, setHabilidadeInput] = useState('')
   const [selectedOrgId, setSelectedOrgId] = useState('')
 
-  function addHabilidade() {
-    const value = habilidadeInput.trim()
-    if (!value) return
-    setHabilidadesBncc((prev) => (prev.includes(value) ? prev : [...prev, value]))
-    setHabilidadeInput('')
+  function addHabilidade(value: string) {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    setHabilidadesBncc((prev) => (prev.includes(trimmed) ? prev : [...prev, trimmed]))
   }
 
   function removeHabilidade(value: string) {
@@ -254,7 +253,6 @@ export function UploadPage() {
     setFile(null)
     setTitle('')
     setHabilidadesBncc([])
-    setHabilidadeInput('')
     setSelectedOrgId('')
     reset()
   }
@@ -348,70 +346,16 @@ export function UploadPage() {
                 {/* Habilidades BNCC */}
                 <div className="space-y-1.5">
                   <label htmlFor="mi-habilidade" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Habilidades BNCC
+                    Habilidades BNCC de Computação
                     <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 font-normal">(opcional)</span>
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      id="mi-habilidade"
-                      type="text"
-                      value={habilidadeInput}
-                      onChange={(e) => setHabilidadeInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          addHabilidade()
-                        }
-                      }}
-                      placeholder="Ex.: EF15LP01"
-                      maxLength={120}
-                      disabled={isUploading || !canUpload}
-                      className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2.5 text-sm
-                                 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500
-                                 bg-white dark:bg-gray-800
-                                 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30
-                                 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:cursor-not-allowed
-                                 transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={addHabilidade}
-                      disabled={isUploading || !canUpload || !habilidadeInput.trim()}
-                      className="shrink-0 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800
-                                 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300
-                                 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed
-                                 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
-                    >
-                      Adicionar
-                    </button>
-                  </div>
-
-                  {habilidadesBncc.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {habilidadesBncc.map((habilidade) => (
-                        <span
-                          key={habilidade}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 dark:border-indigo-800
-                                     bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 text-xs font-medium"
-                        >
-                          {habilidade}
-                          {!isUploading && (
-                            <button
-                              type="button"
-                              onClick={() => removeHabilidade(habilidade)}
-                              aria-label={`Remover ${habilidade}`}
-                              className="text-indigo-400 hover:text-red-500 transition-colors focus:outline-none"
-                            >
-                              <X size={12} />
-                            </button>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Pressione Enter ou clique em Adicionar para incluir cada habilidade.
-                  </p>
+                  <BnccHabilidadePicker
+                    inputId="mi-habilidade"
+                    selected={habilidadesBncc}
+                    onAdd={addHabilidade}
+                    onRemove={removeHabilidade}
+                    disabled={isUploading || !canUpload}
+                  />
                 </div>
 
                 {/* Projeto de destino */}
